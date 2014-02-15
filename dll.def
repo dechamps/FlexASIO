@@ -1,0 +1,11 @@
+; Module-definition file for the ASIOBridge DLL
+; Our DLL is just a COM class factory, so we only need to export the functions required by COM.
+; We can't use declspec(dllexport) for those because the naming convention doesn't match (leading "@")
+
+LIBRARY
+
+EXPORTS
+	DllCanUnloadNow     PRIVATE
+	DllGetClassObject   PRIVATE
+	DllRegisterServer   PRIVATE
+	DllUnregisterServer PRIVATE

@@ -1,0 +1,33 @@
+/*
+
+	Copyright (C) 2014 Etienne Dechamps (e-t172) <etienne@edechamps.fr>
+
+	This program is free software: you can redistribute it and/or modify
+	it under the terms of the GNU Lesser General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
+
+	This program is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU Lesser General Public License for more details.
+
+	You should have received a copy of the GNU Lesser General Public License
+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+*/
+
+[uuid(DCF8D18D-F399-49C8-8286-E84CA8AD7729), version(1.0)]
+library audiolysAPODll
+{
+	[object, uuid(1C653355-6D85-43AD-9674-05D4549F19C1)]
+	interface IASIOBridge : IUnknown
+	{
+	};
+
+	[uuid(462F2ABF-5278-436A-95B6-72CBF65482AE)]
+	coclass CASIOBridge
+	{
+		[default] interface IASIOBridge;
+	};
+}
