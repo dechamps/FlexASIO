@@ -145,6 +145,7 @@ class CASIOBridge :
 		ASIOCallbacks callbacks;
 
 		PaStream* stream;
+		bool host_supports_timeinfo;
 		// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 		size_t our_buffer_index;
 		ASIOSamplesUnion position;

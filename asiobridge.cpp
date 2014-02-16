@@ -432,6 +432,12 @@ ASIOError CASIOBridge::start() throw()
 		return ASE_NotPresent;
 	}
 
+	host_supports_timeinfo = callbacks.asioMessage &&
+		callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
+		callbacks.asioMessage(kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
+	if (host_supports_timeinfo)
+		Log() << "The host supports time info";
+
 	Log() << "Starting stream";
 	our_buffer_index = 0;
 	position.samples = 0;
@@ -515,7 +521,21 @@ int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long f
 	}
 
 	Log() << "Handing off the buffer to the ASIO host";
-	callbacks.bufferSwitch(our_buffer_index, ASIOFalse);
+	if (!host_supports_timeinfo)
+		callbacks.bufferSwitch(our_buffer_index, ASIOFalse);
+	else
+	{
+		ASIOTime time;
+		time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid | kSpeedValid;
+		time.timeInfo.speed = 1;
+		time.timeInfo.samplePosition = position.asio_samples;
+		time.timeInfo.systemTime = position_timestamp.asio_timestamp;
+		time.timeInfo.sampleRate = sample_rate;
+		time.timeCode.flags = 0;
+		time.timeCode.timeCodeSamples.lo = time.timeCode.timeCodeSamples.hi = 0;
+		time.timeCode.speed = 1;
+		callbacks.bufferSwitchTimeInfo(&time, our_buffer_index, ASIOFalse);
+	}
 	std::swap(locked_buffer_index, our_buffer_index);
 	position.samples += frameCount;
 	position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
