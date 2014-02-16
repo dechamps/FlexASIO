@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <atlbase.h>
 #include <atlcom.h>
@@ -31,6 +32,36 @@
 #include "iasiodrv.h"
 #include "util.h"
 #include "portaudio.h"
+
+const PaSampleFormat portaudio_sample_format = paFloat32;
+const ASIOSampleType asio_sample_type = ASIOSTFloat32LSB;
+typedef float Sample;
+
+struct Buffers
+{
+	Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size) :
+		buffer_count(buffer_count), channel_count(channel_count), buffer_size(buffer_size),
+		buffers(new Sample[getSize()]) { }
+	~Buffers() { delete[] buffers; }
+	Sample* getBuffer(size_t buffer, size_t channel) { return buffers + buffer * channel_count * buffer_size + channel * buffer_size; }
+	size_t getSize() { return buffer_count * channel_count * buffer_size; }
+	
+	const size_t buffer_count;
+	const size_t channel_count;
+	const size_t buffer_size;
+
+	// This is a giant buffer containing all ASIO buffers. It is organized as follows:
+	// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
+	// [ input channel 0 buffer 1 ] [ input channel 1 buffer 1 ] ... [ input channel N buffer 1 ] [ output channel 0 buffer 1 ] [ output channel 1 buffer 1 ] .. [ output channel N buffer 1 ]
+	// The reason why this is a giant blob is to slightly improve performance by (theroretically) improving memory locality.
+	Sample* const buffers;
+};
+
+union ASIOSamplesUnion
+{
+	ASIOSamples asio_samples;
+	long long int samples;
+};
 
 // ASIO doesn't use COM properly, and doesn't define a proper interface.
 // Instead, it uses the CLSID to create an instance and then blindfully casts it to IASIO, giving the finger to QueryInterface() and to sensible COM design in general.
@@ -70,22 +101,24 @@ class CASIOBridge :
 		virtual ASIOError setSampleRate(ASIOSampleRate sampleRate) throw();
 		virtual ASIOError getSampleRate(ASIOSampleRate* sampleRate) throw();
 
-		virtual ASIOError start() throw()  { Log() << "start()"; return ASE_OK; }
-		virtual ASIOError stop() throw()  { Log() << "stop()"; return ASE_OK; }
-		virtual ASIOError getLatencies(long* inputLatency, long* outputLatency) throw()  { Log() << "getLatencies()"; return ASE_OK; }
+		virtual ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw();
+		virtual ASIOError disposeBuffers() throw();
+		virtual ASIOError getLatencies(long* inputLatency, long* outputLatency) throw();
+
+		virtual ASIOError start() throw();
+		virtual ASIOError stop() throw();
+		virtual ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw();
+
 		virtual ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw()  { Log() << "getClockSources()"; return ASE_OK; }
 		virtual ASIOError setClockSource(long reference) throw()  { Log() << "setClockSources()"; return ASE_OK; }
-		virtual ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw()  { Log() << "getSamplePosition()"; return ASE_OK; }
-		virtual ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw()  { Log() << "createBuffers()"; return ASE_OK; }
-		virtual ASIOError disposeBuffers() throw()  { Log() << "disposeBuffers()"; return ASE_OK; }
-		virtual ASIOError controlPanel() throw()  { Log() << "controlPanel()"; return ASE_OK; }
-		virtual ASIOError future(long selector, void *opt) throw()  { Log() << "future()"; return ASE_OK; }
-		virtual ASIOError outputReady() throw()  { Log() << "outputReady()"; return ASE_OK; }
+		virtual ASIOError controlPanel() throw()  { Log() << "CASIOBridge::controlPanel()"; return ASE_NotPresent; }
+		virtual ASIOError future(long selector, void *opt) throw()  { Log() << "CASIOBridge::future()"; return ASE_InvalidParameter; }
+		virtual ASIOError outputReady() throw()  { Log() << "CASIOBridge::outputReady()"; return ASE_NotPresent; }
 
 	private:
 		PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer) throw();
 		static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<CASIOBridge*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
-		int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw() { return 0; }
+		int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw();
 
 		bool portaudio_initialized;
 		std::string init_error;
@@ -96,6 +129,19 @@ class CASIOBridge :
 		const PaDeviceInfo* output_device_info;
 
 		ASIOSampleRate sample_rate;
+
+		// PortAudio buffer addresses are dynamic and are only valid for the duration of the stream callback.
+		// In contrast, ASIO buffer addresses are static and are valid for as long as the stream is running.
+		// Thus we need our own buffer on top of PortAudio's buffers. This doens't add any latency because buffers are copied immediately.
+		std::unique_ptr<Buffers> buffers;
+		std::vector<ASIOBufferInfo> buffers_info;
+		ASIOCallbacks callbacks;
+
+		PaStream* stream;
+		// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
+		size_t our_buffer_index;
+		ASIOSamplesUnion position;
+		bool started;
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(CASIOBridge), CASIOBridge)

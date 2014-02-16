@@ -23,7 +23,7 @@ CASIOBridge::CASIOBridge() :
 	portaudio_initialized(false), init_error(""),
 	input_device_index(0), input_device_info(nullptr),
 	output_device_index(0), output_device_info(nullptr),
-	sample_rate(0)
+	sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 {
 	Log() << "CASIOBridge::CASIOBridge()";
 }
@@ -31,6 +31,11 @@ CASIOBridge::CASIOBridge() :
 ASIOBool CASIOBridge::init(void* sysHandle)
 {
 	Log() << "CASIOBridge::init()";
+	if (input_device_info || output_device_info)
+	{
+		Log() << "Already initialized";
+		return ASE_NotPresent;
+	}
 
 	Log() << "Initializing PortAudio";
 	PaError error = Pa_Initialize();
@@ -52,6 +57,8 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 		return ASIOFalse;
 	}
 
+	sample_rate = 0;
+
 	Log() << "Getting input device info";
 	if (input_device_index != paNoDevice)
 	{
@@ -62,6 +69,7 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 			Log() << init_error;
 			return ASIOFalse;
 		}
+		sample_rate = (std::max)(input_device_info->defaultSampleRate, sample_rate);
 	}
 
 	Log() << "Getting output device info";
@@ -74,7 +82,11 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 			Log() << init_error;
 			return ASIOFalse;
 		}
+		sample_rate = (std::max)(output_device_info->defaultSampleRate, sample_rate);
 	}
+
+	if (sample_rate == 0)
+		sample_rate = 44100;
 
 	Log() << "Initialized successfully";
 	return ASIOTrue;
@@ -139,9 +151,16 @@ ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
 		}
 	}
 
-	info->isActive = false; // TODO
+	info->isActive = false;
+	for (std::vector<ASIOBufferInfo>::const_iterator buffers_info_it = buffers_info.begin(); buffers_info_it != buffers_info.end(); ++buffers_info_it)
+		if (buffers_info_it->isInput == info->isInput && buffers_info_it->channelNum == info->channel)
+		{
+			info->isActive = true;
+			break;
+		}
+
 	info->channelGroup = 0;
-	info->type = ASIOSTFloat32LSB;
+	info->type = asio_sample_type;
 	std::stringstream channel_string;
 	channel_string << (info->isInput ? "Input" : "Output") << " " << info->channel;
 	strcpy_s(info->name, 32, channel_string.str().c_str());
@@ -171,7 +190,7 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 	{
 		input_parameters.device = input_device_index;
 		input_parameters.channelCount = input_device_info->maxInputChannels;
-		input_parameters.sampleFormat = paFloat32;
+		input_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		input_parameters.suggestedLatency = input_device_info->defaultLowInputLatency;
 		input_parameters.hostApiSpecificStreamInfo = NULL;
 	}
@@ -181,7 +200,7 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 	{
 		output_parameters.device = output_device_index;
 		output_parameters.channelCount = output_device_info->maxOutputChannels;
-		output_parameters.sampleFormat = paFloat32;
+		output_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		output_parameters.suggestedLatency = output_device_info->defaultLowOutputLatency;
 		output_parameters.hostApiSpecificStreamInfo = NULL;
 	}
@@ -190,7 +209,7 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 		stream,
 		input_device_info ? &input_parameters : NULL,
 		output_device_info ? &output_parameters : NULL,
-		sampleRate, framesPerBuffer, paPrimeOutputBuffersUsingStreamCallback, &CASIOBridge::StaticStreamCallback, this);
+		sampleRate, framesPerBuffer, paNoFlag, &CASIOBridge::StaticStreamCallback, this);
 }
 
 ASIOError CASIOBridge::canSampleRate(ASIOSampleRate sampleRate) throw()
@@ -202,8 +221,8 @@ ASIOError CASIOBridge::canSampleRate(ASIOSampleRate sampleRate) throw()
 		return ASE_NotPresent;
 	}
 
-	PaStream* stream;
-	PaError error = OpenStream(&stream, sampleRate, paFramesPerBufferUnspecified);
+	PaStream* temp_stream;
+	PaError error = OpenStream(&temp_stream, sampleRate, paFramesPerBufferUnspecified);
 	if (error != paNoError)
 	{
 		init_error = std::string("Cannot do this sample rate: ") + Pa_GetErrorText(error);
@@ -212,7 +231,7 @@ ASIOError CASIOBridge::canSampleRate(ASIOSampleRate sampleRate) throw()
 	}
 
 	Log() << "Sample rate is available";
-	Pa_CloseStream(stream);
+	Pa_CloseStream(temp_stream);
 	return ASE_OK;
 }
 
@@ -221,7 +240,7 @@ ASIOError CASIOBridge::getSampleRate(ASIOSampleRate* sampleRate) throw()
 	Log() << "CASIOBridge::getSampleRate()";
 	if (sample_rate == 0)
 	{
-		Log() << "getSampleRate() called before SetSampleRate()";
+		Log() << "getSampleRate() called in unitialized state";
 		return ASE_NoClock;
 	}
 	*sampleRate = sample_rate;
@@ -232,6 +251,247 @@ ASIOError CASIOBridge::getSampleRate(ASIOSampleRate* sampleRate) throw()
 ASIOError CASIOBridge::setSampleRate(ASIOSampleRate sampleRate) throw()
 {
 	Log() << "CASIOBridge::setSampleRate(" << sampleRate << ")";
+	if (buffers)
+	{
+		// TODO: reset the stream instead of ignoring the call
+		Log() << "Changing the sample rate after createBuffers() is not supported";
+		return ASE_NotPresent;
+	}
 	sample_rate = sampleRate;
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw()
+{
+	Log() << "CASIOBridge::createBuffers(" << numChannels << ", " << bufferSize << ")";
+	if (numChannels < 1 || bufferSize < 1 || !callbacks || !callbacks->bufferSwitch)
+	{
+		Log() << "Invalid invocation";
+		return ASE_InvalidMode;
+	}
+	if (!input_device_info && !output_device_info)
+	{
+		Log() << "createBuffers() called in unitialized state";
+		return ASE_InvalidMode;
+	}
+	if (buffers)
+	{
+		Log() << "createBuffers() called twice";
+		return ASE_InvalidMode;
+	}
+
+	buffers_info.reserve(numChannels);
+	std::unique_ptr<Buffers> temp_buffers(new Buffers(2, numChannels, bufferSize));
+	Log() << "Buffers instantiated, memory range : " << temp_buffers->buffers << "-" << temp_buffers->buffers + temp_buffers->getSize();
+	for (long channel_index = 0; channel_index < numChannels; ++channel_index)
+	{
+		ASIOBufferInfo& buffer_info = bufferInfos[channel_index];
+		if (buffer_info.isInput)
+		{
+			if (!input_device_info || buffer_info.channelNum >= input_device_info->maxInputChannels)
+			{
+				Log() << "out of bounds input channel";
+				return ASE_InvalidMode;
+			}
+		}
+		else
+		{
+			if (!output_device_info || buffer_info.channelNum >= output_device_info->maxOutputChannels)
+			{
+				Log() << "out of bounds output channel";
+				return ASE_InvalidMode;
+			}
+		}
+
+		Sample* first_half = temp_buffers->getBuffer(0, channel_index);
+		Sample* second_half = temp_buffers->getBuffer(1, channel_index);
+		buffer_info.buffers[0] = static_cast<void*>(first_half);
+		buffer_info.buffers[1] = static_cast<void*>(second_half);
+		Log() << "ASIO buffer #" << channel_index << " is " << (buffer_info.isInput ? "input" : "output") << " channel " << buffer_info.channelNum
+		      << " - first half: " << first_half << "-" << first_half + bufferSize << " - second half: " << second_half << "-" << second_half + bufferSize;
+		buffers_info.push_back(buffer_info);
+	}
+
+	
+	Log() << "Opening PortAudio stream";
+	if (sample_rate == 0)
+	{
+		sample_rate = 44100;
+		Log() << "The sample rate was never specified, using " << sample_rate << " as fallback";
+	}
+	PaStream* temp_stream;
+	PaError error = OpenStream(&temp_stream, sample_rate, temp_buffers->buffer_size);
+	if (error != paNoError)
+	{
+		init_error = std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error);
+		Log() << init_error;
+		return ASE_HWMalfunction;
+	}
+
+	buffers = std::move(temp_buffers);
+	stream = temp_stream;
+	this->callbacks = *callbacks;
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::disposeBuffers() throw()
+{
+	Log() << "CASIOBridge::disposeBuffers()";
+	if (!buffers)
+	{
+		Log() << "disposeBuffers() called before createBuffers()";
+		return ASE_InvalidMode;
+	}
+
+	Log() << "Closing PortAudio stream";
+	PaError error = Pa_CloseStream(stream);
+	if (error != paNoError)
+	{
+		init_error = std::string("Unable to close PortAudio stream: ") + Pa_GetErrorText(error);
+		Log() << init_error;
+		return ASE_NotPresent;
+	}
+
+	buffers.reset();
+	buffers_info.clear();
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::getLatencies(long* inputLatency, long* outputLatency)
+{
+	Log() << "CASIOBridge::getLatencies()";
+	if (!stream)
+	{
+		Log() << "getLatencies() called before createBuffers()";
+		return ASE_NotPresent;
+	}
+
+	const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
+	if (!stream_info)
+	{
+		Log() << "Unable to get stream info";
+		return ASE_NotPresent;
+	}
+
+	// TODO: should we add the buffer size?
+	*inputLatency = (long)(stream_info->inputLatency * sample_rate);
+	*outputLatency = (long)(stream_info->outputLatency * sample_rate);
+	Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::start() throw()
+{
+	Log() << "CASIOBridge::start()";
+	if (!buffers)
+	{
+		Log() << "start() called before createBuffers()";
+		return ASE_NotPresent;
+	}
+	if (started)
+	{
+		Log() << "start() called twice";
+		return ASE_NotPresent;
+	}
+
+	Log() << "Starting stream";
+	our_buffer_index = 0;
+	position.samples = 0;
+	started = true;
+	PaError error = Pa_StartStream(stream);
+	if (error != paNoError)
+	{
+		started = false;
+		init_error = std::string("Unable to start PortAudio stream: ") + Pa_GetErrorText(error);
+		Log() << init_error;
+		return ASE_HWMalfunction;
+	}
+
+	Log() << "Started successfully";
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::stop()
+{
+	Log() << "CASIOBridge::stop()";
+	if (!started)
+	{
+		Log() << "stop() called before start()";
+		return ASE_NotPresent;
+	}
+
+	Log() << "Stopping stream";
+	PaError error = Pa_StopStream(stream);
+	if (error != paNoError)
+	{
+		init_error = std::string("Unable to stop PortAudio stream: ") + Pa_GetErrorText(error);
+		Log() << init_error;
+		return ASE_NotPresent;
+	}
+
+	started = false;
+	stream = NULL;
+	Log() << "Stopped successfully";
+	return ASE_OK;
+}
+
+int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
+{
+	Log() << "CASIOBridge::StreamCallback("<< frameCount << ")";
+	if (!started)
+	{
+		Log() << "Ignoring callback as stream is not started";
+		return paContinue;
+	}
+	if (frameCount != buffers->buffer_size)
+	{
+		Log() << "Expected " << buffers->buffer_size << " frames, got " << frameCount << " instead, aborting";
+		return paContinue;
+	}
+
+	if (statusFlags & paInputOverflow)
+		Log() << "INPUT OVERFLOW detected (some input data was discarded)";
+	if (statusFlags & paInputUnderflow)
+		Log() << "INPUT UNDERFLOW detected (gaps were inserted in the input)";
+	if (statusFlags & paOutputOverflow)
+		Log() << "OUTPUT OVERFLOW detected (some output data was discarded)";
+	if (statusFlags & paOutputUnderflow)
+		Log() << "OUTPUT UNDERFLOW detected (gaps were inserted in the output)";
+
+	const Sample* const* input_samples = static_cast<const Sample* const*>(input);
+	Sample* const* output_samples = static_cast<Sample* const*>(output);
+
+	size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
+	Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
+	for (std::vector<ASIOBufferInfo>::const_iterator buffers_info_it = buffers_info.begin(); buffers_info_it != buffers_info.end(); ++buffers_info_it)
+	{
+		Sample* buffer = reinterpret_cast<Sample*>(buffers_info_it->buffers[our_buffer_index]);
+		if (buffers_info_it->isInput)
+			memcpy(buffer, input_samples[buffers_info_it->channelNum], frameCount * sizeof(Sample));
+		else
+			memcpy(output_samples[buffers_info_it->channelNum], buffer, frameCount * sizeof(Sample));
+	}
+
+	Log() << "Handing off the buffer to the ASIO host";
+	callbacks.bufferSwitch(our_buffer_index, ASIOFalse);
+	std::swap(locked_buffer_index, our_buffer_index);
+	position.samples += frameCount;
+	
+	Log() << "Returning from stream callback";
+	return paContinue;
+}
+
+ASIOError CASIOBridge::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+{
+	Log() << "CASIOBridge::getSamplePosition()";
+	if (!started)
+	{
+		Log() << "getSamplePosition() called before start()";
+		return ASE_SPNotAdvancing;
+	}
+
+	*sPos = position.asio_samples;
+	tStamp->lo = tStamp->hi = 0; // TODO
+	Log() << "Returning: sample position " << position.samples << ", timestamp 0";
 	return ASE_OK;
 }
