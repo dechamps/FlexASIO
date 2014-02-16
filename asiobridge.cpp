@@ -21,8 +21,7 @@
 
 CASIOBridge::CASIOBridge() :
 	portaudio_initialized(false), init_error(""),
-	input_device_index(0), input_device_info(nullptr),
-	output_device_index(0), output_device_info(nullptr),
+	pa_api_info(nullptr), input_device_info(nullptr), output_device_info(nullptr),
 	sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 {
 	Log() << "CASIOBridge::CASIOBridge()";
@@ -47,41 +46,56 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 	}
 	portaudio_initialized = true;
 
-	Log() << "Getting input/output device indexes";
-	input_device_index = Pa_GetDefaultInputDevice();
-	output_device_index = Pa_GetDefaultOutputDevice();
-	if (input_device_index == paNoDevice && output_device_index == paNoDevice)
+	// The default API used by PortAudio is WinMME. It's also the worst one.
+	// The following attempts to get a better API (in order of preference).
+	PaHostApiIndex pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paWASAPI);
+	if (pa_api_index == paHostApiNotFound)
+		pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
+	if (pa_api_index == paHostApiNotFound)
+		pa_api_index = Pa_GetDefaultHostApi();
+	if (pa_api_index < 0)
 	{
-		init_error = "No input nor output device found";
+		init_error = "Unable to get PortAudio API index";
 		Log() << init_error;
 		return ASIOFalse;
 	}
 
+	pa_api_info = Pa_GetHostApiInfo(pa_api_index);
+	if (!pa_api_info)
+	{
+		init_error = "Unable to get PortAudio API info";
+		Log() << init_error;
+		return ASIOFalse;
+	}
+	Log() << "Selected host API #" << pa_api_index << " (" << pa_api_info->name << ")";
+
 	sample_rate = 0;
 
 	Log() << "Getting input device info";
-	if (input_device_index != paNoDevice)
+	if (pa_api_info->defaultInputDevice != paNoDevice)
 	{
-		input_device_info = Pa_GetDeviceInfo(input_device_index);
+		input_device_info = Pa_GetDeviceInfo(pa_api_info->defaultInputDevice);
 		if (!input_device_info)
 		{
 			init_error = std::string("Unable to get input device info");
 			Log() << init_error;
 			return ASIOFalse;
 		}
+		Log() << "Selected input device: " << input_device_info->name;
 		sample_rate = (std::max)(input_device_info->defaultSampleRate, sample_rate);
 	}
 
 	Log() << "Getting output device info";
-	if (output_device_index != paNoDevice)
+	if (pa_api_info->defaultOutputDevice != paNoDevice)
 	{
-		output_device_info = Pa_GetDeviceInfo(output_device_index);
+		output_device_info = Pa_GetDeviceInfo(pa_api_info->defaultOutputDevice);
 		if (!output_device_info)
 		{
 			init_error = std::string("Unable to get output device info");
 			Log() << init_error;
 			return ASIOFalse;
 		}
+		Log() << "Selected output device: " << output_device_info->name;
 		sample_rate = (std::max)(output_device_info->defaultSampleRate, sample_rate);
 	}
 
@@ -221,7 +235,7 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 	PaStreamParameters input_parameters;
 	if (input_device_info)
 	{
-		input_parameters.device = input_device_index;
+		input_parameters.device = pa_api_info->defaultInputDevice;
 		input_parameters.channelCount = input_device_info->maxInputChannels;
 		input_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		input_parameters.suggestedLatency = input_device_info->defaultLowInputLatency;
@@ -231,7 +245,7 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 	PaStreamParameters output_parameters;
 	if (output_device_info)
 	{
-		output_parameters.device = output_device_index;
+		output_parameters.device = pa_api_info->defaultOutputDevice;
 		output_parameters.channelCount = output_device_info->maxOutputChannels;
 		output_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		output_parameters.suggestedLatency = output_device_info->defaultLowOutputLatency;

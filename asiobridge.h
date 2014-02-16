@@ -130,9 +130,8 @@ class CASIOBridge :
 		bool portaudio_initialized;
 		std::string init_error;
 
-		PaDeviceIndex input_device_index;
+		const PaHostApiInfo* pa_api_info;
 		const PaDeviceInfo* input_device_info;
-		PaDeviceIndex output_device_index;
 		const PaDeviceInfo* output_device_info;
 
 		ASIOSampleRate sample_rate;
