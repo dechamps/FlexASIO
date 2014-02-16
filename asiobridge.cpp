@@ -19,9 +19,14 @@
 
 #include "asiobridge.h"
 
+#include <MMReg.h>
+#include "pa_win_wasapi.h"
+
 CASIOBridge::CASIOBridge() :
-	portaudio_initialized(false), init_error(""),
-	pa_api_info(nullptr), input_device_info(nullptr), output_device_info(nullptr),
+	portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
+	input_device_info(nullptr), output_device_info(nullptr),
+	input_channel_count(0), output_channel_count(0),
+	input_channel_mask(0), output_channel_mask(0),
 	sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 {
 	Log() << "CASIOBridge::CASIOBridge()";
@@ -82,6 +87,7 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 			return ASIOFalse;
 		}
 		Log() << "Selected input device: " << input_device_info->name;
+		input_channel_count = input_device_info->maxInputChannels;
 		sample_rate = (std::max)(input_device_info->defaultSampleRate, sample_rate);
 	}
 
@@ -96,7 +102,32 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 			return ASIOFalse;
 		}
 		Log() << "Selected output device: " << output_device_info->name;
+		output_channel_count = output_device_info->maxOutputChannels;
 		sample_rate = (std::max)(output_device_info->defaultSampleRate, sample_rate);
+	}
+
+	if (pa_api_info->type == paWASAPI)
+	{
+		// PortAudio has some WASAPI-specific goodies to make us smarter.
+		WAVEFORMATEXTENSIBLE input_waveformat;
+		PaError error = PaWasapi_GetDeviceDefaultFormat(&input_waveformat, sizeof(input_waveformat), pa_api_info->defaultInputDevice);
+		if (error <= 0)
+			Log() << "Unable to get WASAPI default format for input device";
+		else
+		{
+			input_channel_count = input_waveformat.Format.nChannels;
+			input_channel_mask = input_waveformat.dwChannelMask;
+		}
+
+		WAVEFORMATEXTENSIBLE output_waveformat;
+		error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), pa_api_info->defaultOutputDevice);
+		if (error <= 0)
+			Log() << "Unable to get WASAPI default format for output device";
+		else
+		{
+			output_channel_count = output_waveformat.Format.nChannels;
+			output_channel_mask = output_waveformat.dwChannelMask;
+		}
 	}
 
 	if (sample_rate == 0)
@@ -162,18 +193,67 @@ ASIOError CASIOBridge::getChannels(long* numInputChannels, long* numOutputChanne
 		return ASE_NotPresent;
 	}
 
-	if (!input_device_info)
-		*numInputChannels = 0;
-	else
-		*numInputChannels = input_device_info->maxInputChannels;
-
-	if (!output_device_info)
-		*numOutputChannels = 0;
-	else
-		*numOutputChannels = output_device_info->maxOutputChannels;
+	*numInputChannels = input_channel_count;
+	*numOutputChannels = output_channel_count;
 
 	Log() << "Returning " << *numInputChannels << " input channels and " << *numOutputChannels << " output channels";
 	return ASE_OK;
+}
+
+namespace {
+std::string getChannelName(size_t channel, DWORD channelMask)
+{
+	// Search for the matching bit in channelMask
+	size_t current_channel = 0;
+	DWORD current_channel_speaker = 1;
+	for (;;)
+	{
+		while ((current_channel_speaker & channelMask) == 0 && current_channel_speaker < SPEAKER_ALL)
+			current_channel_speaker <<= 1;
+		if (current_channel_speaker == SPEAKER_ALL)
+			break;
+		// Now current_channel_speaker contains the speaker for current_channel
+		if (current_channel == channel)
+			break;
+		++current_channel;
+		current_channel_speaker <<= 1;
+	}
+
+	std::stringstream channel_name;
+	channel_name << channel;
+	if (current_channel_speaker == SPEAKER_ALL)
+		Log() << "Channel " << channel << " is outside channel mask " << channelMask;
+	else
+	{
+		const char* pretty_name = nullptr;
+		switch (current_channel_speaker)
+		{
+			case SPEAKER_FRONT_LEFT: pretty_name = "FL (Front Left)"; break;
+			case SPEAKER_FRONT_RIGHT: pretty_name = "FR (Front Right)"; break;
+			case SPEAKER_FRONT_CENTER: pretty_name = "FC (Front Center)"; break;
+			case SPEAKER_LOW_FREQUENCY: pretty_name = "LFE (Low Frequency)"; break;
+			case SPEAKER_BACK_LEFT: pretty_name = "BL (Back Left)"; break;
+			case SPEAKER_BACK_RIGHT: pretty_name = "BR (Back Right)"; break;
+			case SPEAKER_FRONT_LEFT_OF_CENTER: pretty_name = "FCL (Front Left Center)"; break;
+			case SPEAKER_FRONT_RIGHT_OF_CENTER: pretty_name = "FCR (Front Right Center)"; break;
+			case SPEAKER_BACK_CENTER: pretty_name = "BC (Back Center)"; break;
+			case SPEAKER_SIDE_LEFT: pretty_name = "SL (Side Left)"; break;
+			case SPEAKER_SIDE_RIGHT: pretty_name = "SR (Side Right)"; break;
+			case SPEAKER_TOP_CENTER: pretty_name = "TC (Top Center)"; break;
+			case SPEAKER_TOP_FRONT_LEFT: pretty_name = "TFL (Top Front Left)"; break;
+			case SPEAKER_TOP_FRONT_CENTER: pretty_name = "TFC (Top Front Center)"; break;
+			case SPEAKER_TOP_FRONT_RIGHT: pretty_name = "TFR (Top Front Right)"; break;
+			case SPEAKER_TOP_BACK_LEFT: pretty_name = "TBL (Top Back left)"; break;
+			case SPEAKER_TOP_BACK_CENTER: pretty_name = "TBC (Top Back Center)"; break;
+			case SPEAKER_TOP_BACK_RIGHT: pretty_name = "TBR (Top Back Right)"; break;
+		}
+		if (!pretty_name)
+			Log() << "Speaker " << current_channel_speaker << " is unknown";
+		else
+			channel_name << " " << pretty_name;
+	}
+	return channel_name.str();
+}
 }
 
 ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
@@ -183,7 +263,7 @@ ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
 	Log() << "Channel info requested for " << (info->isInput ? "input" : "output") << " channel " << info->channel;
 	if (info->isInput)
 	{
-		if (!input_device_info || info->channel > input_device_info->maxInputChannels)
+		if (info->channel < 0 || info->channel >= input_channel_count)
 		{
 			Log() << "No such input channel, returning error";
 			return ASE_NotPresent;
@@ -191,7 +271,7 @@ ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
 	}
 	else
 	{
-		if (!output_device_info || info->channel > output_device_info->maxOutputChannels)
+		if (info->channel < 0 || info->channel >= output_channel_count)
 		{
 			Log() << "No such output channel, returning error";
 			return ASE_NotPresent;
@@ -209,7 +289,7 @@ ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
 	info->channelGroup = 0;
 	info->type = asio_sample_type;
 	std::stringstream channel_string;
-	channel_string << (info->isInput ? "Input" : "Output") << " " << info->channel;
+	channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? input_channel_mask : output_channel_mask);
 	strcpy_s(info->name, 32, channel_string.str().c_str());
 	Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
 	return ASE_OK;
@@ -233,23 +313,51 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 	Log() << "CASIOBridge::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
 	PaStreamParameters input_parameters;
+	PaWasapiStreamInfo input_wasapi_stream_info;
 	if (input_device_info)
 	{
 		input_parameters.device = pa_api_info->defaultInputDevice;
-		input_parameters.channelCount = input_device_info->maxInputChannels;
+		input_parameters.channelCount = input_channel_count;
 		input_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		input_parameters.suggestedLatency = input_device_info->defaultLowInputLatency;
 		input_parameters.hostApiSpecificStreamInfo = NULL;
+		if (pa_api_info->type == paWASAPI)
+		{
+			input_wasapi_stream_info.size = sizeof(input_wasapi_stream_info);
+			input_wasapi_stream_info.hostApiType = paWASAPI;
+			input_wasapi_stream_info.version = 1;
+			input_wasapi_stream_info.flags = 0;
+			if (input_channel_mask != 0)
+			{
+				input_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
+				input_wasapi_stream_info.channelMask = input_channel_mask;
+			}
+			input_parameters.hostApiSpecificStreamInfo = &input_wasapi_stream_info;
+		}
 	}
 
 	PaStreamParameters output_parameters;
+	PaWasapiStreamInfo output_wasapi_stream_info;
 	if (output_device_info)
 	{
 		output_parameters.device = pa_api_info->defaultOutputDevice;
-		output_parameters.channelCount = output_device_info->maxOutputChannels;
+		output_parameters.channelCount = output_channel_count;
 		output_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		output_parameters.suggestedLatency = output_device_info->defaultLowOutputLatency;
 		output_parameters.hostApiSpecificStreamInfo = NULL;
+		if (pa_api_info->type == paWASAPI)
+		{
+			output_wasapi_stream_info.size = sizeof(output_wasapi_stream_info);
+			output_wasapi_stream_info.hostApiType = paWASAPI;
+			output_wasapi_stream_info.version = 1;
+			output_wasapi_stream_info.flags = 0;
+			if (output_channel_mask != 0)
+			{
+				output_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
+				output_wasapi_stream_info.channelMask = output_channel_mask;
+			}
+			output_parameters.hostApiSpecificStreamInfo = &output_wasapi_stream_info;
+		}
 	}
 
 	return Pa_OpenStream(
@@ -343,7 +451,7 @@ ASIOError CASIOBridge::createBuffers(ASIOBufferInfo* bufferInfos, long numChanne
 		ASIOBufferInfo& buffer_info = bufferInfos[channel_index];
 		if (buffer_info.isInput)
 		{
-			if (!input_device_info || buffer_info.channelNum >= input_device_info->maxInputChannels)
+			if (buffer_info.channelNum < 0 || buffer_info.channelNum >= input_channel_count)
 			{
 				Log() << "out of bounds input channel";
 				return ASE_InvalidMode;
@@ -351,7 +459,7 @@ ASIOError CASIOBridge::createBuffers(ASIOBufferInfo* bufferInfos, long numChanne
 		}
 		else
 		{
-			if (!output_device_info || buffer_info.channelNum >= output_device_info->maxOutputChannels)
+			if (buffer_info.channelNum < 0 || buffer_info.channelNum >= output_channel_count)
 			{
 				Log() << "out of bounds output channel";
 				return ASE_InvalidMode;
@@ -528,7 +636,7 @@ int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long f
 	const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 	Sample* const* output_samples = static_cast<Sample* const*>(output);
 
-	for (int output_channel_index = 0; output_channel_index < output_device_info->maxOutputChannels; ++output_channel_index)
+	for (int output_channel_index = 0; output_channel_index < output_channel_count; ++output_channel_index)
 		memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
 
 	size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.

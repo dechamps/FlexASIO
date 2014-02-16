@@ -133,6 +133,11 @@ class CASIOBridge :
 		const PaHostApiInfo* pa_api_info;
 		const PaDeviceInfo* input_device_info;
 		const PaDeviceInfo* output_device_info;
+		long input_channel_count;
+		long output_channel_count;
+		// WAVEFORMATEXTENSIBLE channel masks. Not always available.
+		DWORD input_channel_mask;
+		DWORD output_channel_mask;
 
 		ASIOSampleRate sample_rate;
 
