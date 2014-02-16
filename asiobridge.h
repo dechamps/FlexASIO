@@ -41,7 +41,7 @@ struct Buffers
 {
 	Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size) :
 		buffer_count(buffer_count), channel_count(channel_count), buffer_size(buffer_size),
-		buffers(new Sample[getSize()]) { }
+		buffers(new Sample[getSize()]()) { }
 	~Buffers() { delete[] buffers; }
 	Sample* getBuffer(size_t buffer, size_t channel) { return buffers + buffer * channel_count * buffer_size + channel * buffer_size; }
 	size_t getSize() { return buffer_count * channel_count * buffer_size; }
