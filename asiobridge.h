@@ -63,6 +63,12 @@ union ASIOSamplesUnion
 	long long int samples;
 };
 
+union ASIOTimeStampUnion
+{
+	ASIOTimeStamp asio_timestamp;
+	long long int timestamp;
+};
+
 // ASIO doesn't use COM properly, and doesn't define a proper interface.
 // Instead, it uses the CLSID to create an instance and then blindfully casts it to IASIO, giving the finger to QueryInterface() and to sensible COM design in general.
 // Of course, since this is a blind cast, the order of inheritance below becomes critical: if IASIO is not first, the cast is likely to produce a wrong vtable offset, crashing the whole thing. What a nice design.
@@ -142,6 +148,7 @@ class CASIOBridge :
 		// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 		size_t our_buffer_index;
 		ASIOSamplesUnion position;
+		ASIOTimeStampUnion position_timestamp;
 		bool started;
 };
 

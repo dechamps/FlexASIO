@@ -435,6 +435,7 @@ ASIOError CASIOBridge::start() throw()
 	Log() << "Starting stream";
 	our_buffer_index = 0;
 	position.samples = 0;
+	position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
 	started = true;
 	PaError error = Pa_StartStream(stream);
 	if (error != paNoError)
@@ -514,6 +515,7 @@ int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long f
 	callbacks.bufferSwitch(our_buffer_index, ASIOFalse);
 	std::swap(locked_buffer_index, our_buffer_index);
 	position.samples += frameCount;
+	position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
 	
 	Log() << "Returning from stream callback";
 	return paContinue;
@@ -529,7 +531,7 @@ ASIOError CASIOBridge::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStam
 	}
 
 	*sPos = position.asio_samples;
-	tStamp->lo = tStamp->hi = 0; // TODO
-	Log() << "Returning: sample position " << position.samples << ", timestamp 0";
+	*tStamp = position_timestamp.asio_timestamp;
+	Log() << "Returning: sample position " << position.samples << ", timestamp " << position_timestamp.timestamp;
 	return ASE_OK;
 }
