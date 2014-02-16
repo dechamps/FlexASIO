@@ -286,9 +286,17 @@ ASIOError CASIOBridge::setSampleRate(ASIOSampleRate sampleRate) throw()
 	Log() << "CASIOBridge::setSampleRate(" << sampleRate << ")";
 	if (buffers)
 	{
-		// TODO: reset the stream instead of ignoring the call
-		Log() << "Changing the sample rate after createBuffers() is not supported";
-		return ASE_NotPresent;
+		if (callbacks.asioMessage)
+		{
+			Log() << "Sending a reset request to the host as it's not possible to change sample rate when streaming";
+			callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
+			return ASE_OK;
+		}
+		else
+		{
+			Log() << "Changing the sample rate after createBuffers() is not supported";
+			return ASE_NotPresent;
+		}
 	}
 	sample_rate = sampleRate;
 	return ASE_OK;
