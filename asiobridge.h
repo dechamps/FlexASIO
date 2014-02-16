@@ -94,6 +94,8 @@ class CASIOBridge :
 		virtual long getDriverVersion() throw()  { Log() << "CASIOBridge::getDriverVersion()"; return 0; }
 		virtual void getErrorMessage(char* string) throw()  { Log() << "CASIOBridge::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
 
+		virtual ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw();
+		virtual ASIOError setClockSource(long reference) throw();
 		virtual ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw();
 		virtual ASIOError getChannelInfo(ASIOChannelInfo* info) throw();
 		virtual ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw();
@@ -109,8 +111,7 @@ class CASIOBridge :
 		virtual ASIOError stop() throw();
 		virtual ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw();
 
-		virtual ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw()  { Log() << "getClockSources()"; return ASE_OK; }
-		virtual ASIOError setClockSource(long reference) throw()  { Log() << "setClockSources()"; return ASE_OK; }
+		// Not implemented
 		virtual ASIOError controlPanel() throw()  { Log() << "CASIOBridge::controlPanel()"; return ASE_NotPresent; }
 		virtual ASIOError future(long selector, void *opt) throw()  { Log() << "CASIOBridge::future()"; return ASE_InvalidParameter; }
 		virtual ASIOError outputReady() throw()  { Log() << "CASIOBridge::outputReady()"; return ASE_NotPresent; }

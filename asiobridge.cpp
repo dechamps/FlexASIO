@@ -106,6 +106,35 @@ CASIOBridge::~CASIOBridge()
 	}
 }
 
+ASIOError CASIOBridge::getClockSources(ASIOClockSource* clocks, long* numSources) throw()
+{
+	Log() << "CASIOBridge::getClockSources()";
+	if (!clocks || !numSources || *numSources < 1)
+	{
+		Log() << "Invalid parameters";
+		return ASE_NotPresent;
+	}
+
+	clocks->index = 0;
+	clocks->associatedChannel = -1;
+	clocks->associatedGroup = -1;
+	clocks->isCurrentSource = ASIOTrue;
+	strcpy_s(clocks->name, 32, "Internal");
+	*numSources = 1;
+	return ASE_OK;
+}
+
+ASIOError CASIOBridge::setClockSource(long reference) throw()
+{
+	Log() << "CASIOBridge::setClockSource(" << reference << ")";
+	if (reference != 0)
+	{
+		Log() << "Parameter out of bounds";
+		return ASE_InvalidMode;
+	}
+	return ASE_OK;
+}
+
 ASIOError CASIOBridge::getChannels(long* numInputChannels, long* numOutputChannels)
 {
 	Log() << "CASIOBridge::getChannels()";
