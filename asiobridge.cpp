@@ -500,6 +500,9 @@ int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long f
 	const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 	Sample* const* output_samples = static_cast<Sample* const*>(output);
 
+	for (int output_channel_index = 0; output_channel_index < output_device_info->maxOutputChannels; ++output_channel_index)
+		memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
+
 	size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
 	Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
 	for (std::vector<ASIOBufferInfo>::const_iterator buffers_info_it = buffers_info.begin(); buffers_info_it != buffers_info.end(); ++buffers_info_it)
