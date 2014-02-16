@@ -95,6 +95,10 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 CASIOBridge::~CASIOBridge()
 {
 	Log() << "CASIOBridge::~CASIOBridge()";
+	if (started)
+		stop();
+	if (buffers)
+		disposeBuffers();
 	if (portaudio_initialized)
 	{
 		Log() << "Closing PortAudio";
@@ -369,6 +373,11 @@ ASIOError CASIOBridge::disposeBuffers() throw()
 	if (!buffers)
 	{
 		Log() << "disposeBuffers() called before createBuffers()";
+		return ASE_InvalidMode;
+	}
+	if (started)
+	{
+		Log() << "disposeBuffers() called before stop()";
 		return ASE_InvalidMode;
 	}
 
