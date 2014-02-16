@@ -72,6 +72,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
