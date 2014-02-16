@@ -389,6 +389,7 @@ ASIOError CASIOBridge::disposeBuffers() throw()
 		Log() << init_error;
 		return ASE_NotPresent;
 	}
+	stream = NULL;
 
 	buffers.reset();
 	buffers_info.clear();
@@ -475,7 +476,6 @@ ASIOError CASIOBridge::stop()
 	}
 
 	started = false;
-	stream = NULL;
 	Log() << "Stopped successfully";
 	return ASE_OK;
 }
