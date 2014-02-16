@@ -1,3 +1,5 @@
 #include "asiobridge.rc.h"
 
 IDR_ASIOBRIDGE REGISTRY "asiobridge.rgs"
+
+1 TYPELIB "ASIOBridge.tlb"

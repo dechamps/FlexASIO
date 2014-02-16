@@ -48,9 +48,16 @@
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <Midl />
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
     </Midl>
+    <Midl>
+      <TypeLibraryName>$(ProjectName).tlb</TypeLibraryName>
+    </Midl>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -68,7 +75,11 @@
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
+      <TypeLibraryName>$(ProjectName).tlb</TypeLibraryName>
     </Midl>
+    <ResourceCompile>
+      <AdditionalIncludeDirectories>$(IntDir)</AdditionalIncludeDirectories>
+    </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="asiobridge.cpp" />
