@@ -21,13 +21,13 @@
 library audiolysAPODll
 {
 	[object, uuid(1C653355-6D85-43AD-9674-05D4549F19C1)]
-	interface IASIOBridge : IUnknown
+	interface IFlexASIO : IUnknown
 	{
 	};
 
 	[uuid(462F2ABF-5278-436A-95B6-72CBF65482AE)]
-	coclass CASIOBridge
+	coclass CFlexASIO
 	{
-		[default] interface IASIOBridge;
+		[default] interface IFlexASIO;
 	};
 }

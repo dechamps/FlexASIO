@@ -12,7 +12,7 @@
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EFC61192-2DB9-46B1-BF85-98FC6EF1E6D1}</ProjectGuid>
-    <RootNamespace>ASIOBridge</RootNamespace>
+    <RootNamespace>FlexASIO</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -83,23 +83,23 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="asiobridge.cpp" />
+    <ClCompile Include="flexasio.cpp" />
     <ClCompile Include="comdll.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dll.def" />
-    <None Include="asiobridge.rgs" />
+    <None Include="flexasio.rgs" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="asiobridge.rc" />
+    <ResourceCompile Include="flexasio.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="asiobridge.h" />
-    <ClInclude Include="asiobridge.rc.h" />
+    <ClInclude Include="flexasio.h" />
+    <ClInclude Include="flexasio.rc.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
-    <Midl Include="asiobridge.idl" />
+    <Midl Include="flexasio.idl" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

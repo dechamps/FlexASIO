@@ -1,15 +1,15 @@
 HKCR
 {
-	ForceRemove asiobridge.ASIOBridge.1 = s 'ASIOBridge'
+	ForceRemove flexasio.FlexASIO.1 = s 'FlexASIO'
 	{
 		CLSID = s '{462F2ABF-5278-436A-95B6-72CBF65482AE}'
 	}
 
 	NoRemove CLSID
 	{
-		ForceRemove {462F2ABF-5278-436A-95B6-72CBF65482AE} = s 'ASIOBridge'
+		ForceRemove {462F2ABF-5278-436A-95B6-72CBF65482AE} = s 'FlexASIO'
 		{
-			ProgID = s 'asiobridge.ASIOBridge.1'
+			ProgID = s 'flexasio.FlexASIO.1'
 			Version = s '0.1'
 			InprocServer32 = s '%MODULE%'
 			{
@@ -25,10 +25,10 @@ HKLM
 	{
 		NoRemove ASIO
 		{
-			ForceRemove ASIOBridge
+			ForceRemove FlexASIO
 			{
 				val CLSID = s '{462F2ABF-5278-436A-95B6-72CBF65482AE}'
-				val Description = s 'ASIOBridge'
+				val Description = s 'FlexASIO'
 			}
 		}
 	}

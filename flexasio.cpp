@@ -17,24 +17,24 @@
 
 */
 
-#include "asiobridge.h"
+#include "flexasio.h"
 
 #include <MMReg.h>
 #include "pa_win_wasapi.h"
 
-CASIOBridge::CASIOBridge() :
+CFlexASIO::CFlexASIO() :
 	portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
 	input_device_info(nullptr), output_device_info(nullptr),
 	input_channel_count(0), output_channel_count(0),
 	input_channel_mask(0), output_channel_mask(0),
 	sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 {
-	Log() << "CASIOBridge::CASIOBridge()";
+	Log() << "CFlexASIO::CFlexASIO()";
 }
 
-ASIOBool CASIOBridge::init(void* sysHandle)
+ASIOBool CFlexASIO::init(void* sysHandle)
 {
-	Log() << "CASIOBridge::init()";
+	Log() << "CFlexASIO::init()";
 	if (input_device_info || output_device_info)
 	{
 		Log() << "Already initialized";
@@ -137,9 +137,9 @@ ASIOBool CASIOBridge::init(void* sysHandle)
 	return ASIOTrue;
 }
 
-CASIOBridge::~CASIOBridge()
+CFlexASIO::~CFlexASIO()
 {
-	Log() << "CASIOBridge::~CASIOBridge()";
+	Log() << "CFlexASIO::~CFlexASIO()";
 	if (started)
 		stop();
 	if (buffers)
@@ -155,9 +155,9 @@ CASIOBridge::~CASIOBridge()
 	}
 }
 
-ASIOError CASIOBridge::getClockSources(ASIOClockSource* clocks, long* numSources) throw()
+ASIOError CFlexASIO::getClockSources(ASIOClockSource* clocks, long* numSources) throw()
 {
-	Log() << "CASIOBridge::getClockSources()";
+	Log() << "CFlexASIO::getClockSources()";
 	if (!clocks || !numSources || *numSources < 1)
 	{
 		Log() << "Invalid parameters";
@@ -173,9 +173,9 @@ ASIOError CASIOBridge::getClockSources(ASIOClockSource* clocks, long* numSources
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::setClockSource(long reference) throw()
+ASIOError CFlexASIO::setClockSource(long reference) throw()
 {
-	Log() << "CASIOBridge::setClockSource(" << reference << ")";
+	Log() << "CFlexASIO::setClockSource(" << reference << ")";
 	if (reference != 0)
 	{
 		Log() << "Parameter out of bounds";
@@ -184,9 +184,9 @@ ASIOError CASIOBridge::setClockSource(long reference) throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::getChannels(long* numInputChannels, long* numOutputChannels)
+ASIOError CFlexASIO::getChannels(long* numInputChannels, long* numOutputChannels)
 {
-	Log() << "CASIOBridge::getChannels()";
+	Log() << "CFlexASIO::getChannels()";
 	if (!input_device_info && !output_device_info)
 	{
 		Log() << "getChannels() called in unitialized state";
@@ -256,9 +256,9 @@ std::string getChannelName(size_t channel, DWORD channelMask)
 }
 }
 
-ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
+ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info)
 {
-	Log() << "CASIOBridge::getChannelInfo()";
+	Log() << "CFlexASIO::getChannelInfo()";
 
 	Log() << "Channel info requested for " << (info->isInput ? "input" : "output") << " channel " << info->channel;
 	if (info->isInput)
@@ -295,11 +295,11 @@ ASIOError CASIOBridge::getChannelInfo(ASIOChannelInfo* info)
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
+ASIOError CFlexASIO::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
 {
 	// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
 	// TODO: let the user should these values
-	Log() << "CASIOBridge::getBufferSize()";
+	Log() << "CFlexASIO::getBufferSize()";
 	*minSize = 48; // 1 ms at 48kHz, there's basically no chance we'll get glitch-free streaming below this
 	*maxSize = 48000; // 1 second at 48kHz, more would be silly
 	*preferredSize = 1024; // typical - 21.3 ms at 48kHz
@@ -308,9 +308,9 @@ ASIOError CASIOBridge::getBufferSize(long* minSize, long* maxSize, long* preferr
 	return ASE_OK;
 }
 
-PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer) throw()
+PaError CFlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer) throw()
 {
-	Log() << "CASIOBridge::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
+	Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
 	PaStreamParameters input_parameters;
 	PaWasapiStreamInfo input_wasapi_stream_info;
@@ -364,12 +364,12 @@ PaError CASIOBridge::OpenStream(PaStream** stream, double sampleRate, unsigned l
 		stream,
 		input_device_info ? &input_parameters : NULL,
 		output_device_info ? &output_parameters : NULL,
-		sampleRate, framesPerBuffer, paNoFlag, &CASIOBridge::StaticStreamCallback, this);
+		sampleRate, framesPerBuffer, paNoFlag, &CFlexASIO::StaticStreamCallback, this);
 }
 
-ASIOError CASIOBridge::canSampleRate(ASIOSampleRate sampleRate) throw()
+ASIOError CFlexASIO::canSampleRate(ASIOSampleRate sampleRate) throw()
 {
-	Log() << "CASIOBridge::canSampleRate(" << sampleRate << ")";
+	Log() << "CFlexASIO::canSampleRate(" << sampleRate << ")";
 	if (!input_device_info && !output_device_info)
 	{
 		Log() << "canSampleRate() called in unitialized state";
@@ -390,9 +390,9 @@ ASIOError CASIOBridge::canSampleRate(ASIOSampleRate sampleRate) throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::getSampleRate(ASIOSampleRate* sampleRate) throw()
+ASIOError CFlexASIO::getSampleRate(ASIOSampleRate* sampleRate) throw()
 {
-	Log() << "CASIOBridge::getSampleRate()";
+	Log() << "CFlexASIO::getSampleRate()";
 	if (sample_rate == 0)
 	{
 		Log() << "getSampleRate() called in unitialized state";
@@ -403,9 +403,9 @@ ASIOError CASIOBridge::getSampleRate(ASIOSampleRate* sampleRate) throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::setSampleRate(ASIOSampleRate sampleRate) throw()
+ASIOError CFlexASIO::setSampleRate(ASIOSampleRate sampleRate) throw()
 {
-	Log() << "CASIOBridge::setSampleRate(" << sampleRate << ")";
+	Log() << "CFlexASIO::setSampleRate(" << sampleRate << ")";
 	if (buffers)
 	{
 		if (callbacks.asioMessage)
@@ -424,9 +424,9 @@ ASIOError CASIOBridge::setSampleRate(ASIOSampleRate sampleRate) throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw()
+ASIOError CFlexASIO::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw()
 {
-	Log() << "CASIOBridge::createBuffers(" << numChannels << ", " << bufferSize << ")";
+	Log() << "CFlexASIO::createBuffers(" << numChannels << ", " << bufferSize << ")";
 	if (numChannels < 1 || bufferSize < 1 || !callbacks || !callbacks->bufferSwitch)
 	{
 		Log() << "Invalid invocation";
@@ -497,9 +497,9 @@ ASIOError CASIOBridge::createBuffers(ASIOBufferInfo* bufferInfos, long numChanne
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::disposeBuffers() throw()
+ASIOError CFlexASIO::disposeBuffers() throw()
 {
-	Log() << "CASIOBridge::disposeBuffers()";
+	Log() << "CFlexASIO::disposeBuffers()";
 	if (!buffers)
 	{
 		Log() << "disposeBuffers() called before createBuffers()";
@@ -526,9 +526,9 @@ ASIOError CASIOBridge::disposeBuffers() throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::getLatencies(long* inputLatency, long* outputLatency)
+ASIOError CFlexASIO::getLatencies(long* inputLatency, long* outputLatency)
 {
-	Log() << "CASIOBridge::getLatencies()";
+	Log() << "CFlexASIO::getLatencies()";
 	if (!stream)
 	{
 		Log() << "getLatencies() called before createBuffers()";
@@ -549,9 +549,9 @@ ASIOError CASIOBridge::getLatencies(long* inputLatency, long* outputLatency)
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::start() throw()
+ASIOError CFlexASIO::start() throw()
 {
-	Log() << "CASIOBridge::start()";
+	Log() << "CFlexASIO::start()";
 	if (!buffers)
 	{
 		Log() << "start() called before createBuffers()";
@@ -587,9 +587,9 @@ ASIOError CASIOBridge::start() throw()
 	return ASE_OK;
 }
 
-ASIOError CASIOBridge::stop()
+ASIOError CFlexASIO::stop()
 {
-	Log() << "CASIOBridge::stop()";
+	Log() << "CFlexASIO::stop()";
 	if (!started)
 	{
 		Log() << "stop() called before start()";
@@ -610,9 +610,9 @@ ASIOError CASIOBridge::stop()
 	return ASE_OK;
 }
 
-int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
+int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 {
-	Log() << "CASIOBridge::StreamCallback("<< frameCount << ")";
+	Log() << "CFlexASIO::StreamCallback("<< frameCount << ")";
 	if (!started)
 	{
 		Log() << "Ignoring callback as stream is not started";
@@ -674,9 +674,9 @@ int CASIOBridge::StreamCallback(const void *input, void *output, unsigned long f
 	return paContinue;
 }
 
-ASIOError CASIOBridge::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+ASIOError CFlexASIO::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 {
-	Log() << "CASIOBridge::getSamplePosition()";
+	Log() << "CFlexASIO::getSamplePosition()";
 	if (!started)
 	{
 		Log() << "getSamplePosition() called before start()";

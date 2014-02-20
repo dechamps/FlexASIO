@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include "asiobridge_h.h"
+#include "flexasio_h.h"
 
 #include <memory>
 #include <string>
@@ -28,7 +28,7 @@
 #include <atlbase.h>
 #include <atlcom.h>
 
-#include "asiobridge.rc.h"
+#include "flexasio.rc.h"
 #include "iasiodrv.h"
 #include "util.h"
 #include "portaudio.h"
@@ -72,33 +72,33 @@ union ASIOTimeStampUnion
 // ASIO doesn't use COM properly, and doesn't define a proper interface.
 // Instead, it uses the CLSID to create an instance and then blindfully casts it to IASIO, giving the finger to QueryInterface() and to sensible COM design in general.
 // Of course, since this is a blind cast, the order of inheritance below becomes critical: if IASIO is not first, the cast is likely to produce a wrong vtable offset, crashing the whole thing. What a nice design.
-class CASIOBridge :
+class CFlexASIO :
 	public IASIO,
-	public IASIOBridge,
+	public IFlexASIO,
 	public CComObjectRootEx<CComMultiThreadModel>,
-	public CComCoClass<CASIOBridge, &__uuidof(CASIOBridge)>
+	public CComCoClass<CFlexASIO, &__uuidof(CFlexASIO)>
 {
-	BEGIN_COM_MAP(CASIOBridge)
-		COM_INTERFACE_ENTRY(IASIOBridge)
+	BEGIN_COM_MAP(CFlexASIO)
+		COM_INTERFACE_ENTRY(IFlexASIO)
 
 		 // To add insult to injury, ASIO mistakes the CLSID for an IID when calling CoCreateInstance(). Yuck.
-		COM_INTERFACE_ENTRY(CASIOBridge)
+		COM_INTERFACE_ENTRY(CFlexASIO)
 
 		// IASIO doesn't have an IID (see above), which is why it doesn't appear here.
 	END_COM_MAP()
 
-	DECLARE_REGISTRY_RESOURCEID(IDR_ASIOBRIDGE)
+	DECLARE_REGISTRY_RESOURCEID(IDR_FLEXASIO)
 
 	public:
-		CASIOBridge() throw();
-		virtual ~CASIOBridge() throw();
+		CFlexASIO() throw();
+		virtual ~CFlexASIO() throw();
 
 		// IASIO implementation
 
 		virtual ASIOBool init(void* sysHandle);
-		virtual void getDriverName(char* name) throw()  { Log() << "CASIOBridge::getDriverName()"; strcpy_s(name, 32, "ASIOBridge"); }
-		virtual long getDriverVersion() throw()  { Log() << "CASIOBridge::getDriverVersion()"; return 0; }
-		virtual void getErrorMessage(char* string) throw()  { Log() << "CASIOBridge::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
+		virtual void getDriverName(char* name) throw()  { Log() << "CFlexASIO::getDriverName()"; strcpy_s(name, 32, "FlexASIO"); }
+		virtual long getDriverVersion() throw()  { Log() << "CFlexASIO::getDriverVersion()"; return 0; }
+		virtual void getErrorMessage(char* string) throw()  { Log() << "CFlexASIO::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
 
 		virtual ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw();
 		virtual ASIOError setClockSource(long reference) throw();
@@ -118,13 +118,13 @@ class CASIOBridge :
 		virtual ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw();
 
 		// Not implemented
-		virtual ASIOError controlPanel() throw()  { Log() << "CASIOBridge::controlPanel()"; return ASE_NotPresent; }
-		virtual ASIOError future(long selector, void *opt) throw()  { Log() << "CASIOBridge::future()"; return ASE_InvalidParameter; }
-		virtual ASIOError outputReady() throw()  { Log() << "CASIOBridge::outputReady()"; return ASE_NotPresent; }
+		virtual ASIOError controlPanel() throw()  { Log() << "CFlexASIO::controlPanel()"; return ASE_NotPresent; }
+		virtual ASIOError future(long selector, void *opt) throw()  { Log() << "CFlexASIO::future()"; return ASE_InvalidParameter; }
+		virtual ASIOError outputReady() throw()  { Log() << "CFlexASIO::outputReady()"; return ASE_NotPresent; }
 
 	private:
 		PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer) throw();
-		static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<CASIOBridge*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
+		static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<CFlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
 		int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw();
 
 		bool portaudio_initialized;
@@ -157,4 +157,4 @@ class CASIOBridge :
 		bool started;
 };
 
-OBJECT_ENTRY_AUTO(__uuidof(CASIOBridge), CASIOBridge)
+OBJECT_ENTRY_AUTO(__uuidof(CFlexASIO), CFlexASIO)

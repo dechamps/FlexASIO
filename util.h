@@ -29,7 +29,7 @@ class Log : public std::stringstream
 	public:
 		Log()
 		{
-			*this << "ASIOBridge: [" << timeGetTime() << "] ";
+			*this << "FlexASIO: [" << timeGetTime() << "] ";
 		}
 
 		~Log()

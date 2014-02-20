@@ -1,24 +1,24 @@
 [Setup]
-AppID=ASIOBridge
-AppName=ASIOBridge
-AppVerName=ASIOBridge 0.1
+AppID=FlexASIO
+AppName=FlexASIO
+AppVerName=FlexASIO 0.1
 AppVersion=0.1
 AppPublisher=Etienne Dechamps
-AppPublisherURL=https://github.com/dechamps/ASIOBridge
-AppSupportURL=https://github.com/dechamps/ASIOBridge
-AppUpdatesURL=https://github.com/dechamps/ASIOBridge
+AppPublisherURL=https://github.com/dechamps/FlexASIO
+AppSupportURL=https://github.com/dechamps/FlexASIO
+AppUpdatesURL=https://github.com/dechamps/FlexASIO
 AppContact=etienne@edechamps.fr
 
 OutputDir=.
-OutputBaseFilename=ASIOBridge-0.1
+OutputBaseFilename=FlexASIO-0.1
 
-DefaultDirName={pf}\ASIOBridge
+DefaultDirName={pf}\FlexASIO
 AppendDefaultDirName=no
 
 LicenseFile=LICENSE.txt
 
 [Files]
-Source:"Release\ASIOBridge.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 32bit
+Source:"Release\FlexASIO.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 32bit
 Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
 
 ; PortAudio library, 32-bit DLL.
