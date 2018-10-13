@@ -1,7 +1,4 @@
 /Debug
 /Release
-/ipch
-/FlexASIO.sdf
-/FlexASIO.suo
 /FlexASIO.vcxproj.user
-/FlexASIO.opensdf
+.vs/

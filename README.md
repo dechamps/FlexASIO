@@ -128,7 +128,7 @@ https://github.com/dechamps/FlexASIO/issues
 
 ## DEVELOPER INFORMATION
 
-FlexASIO currently uses the Microsoft Visual C++ 2010 toolchain,
+FlexASIO currently uses the Microsoft Visual C++ 2017 toolchain,
 though it should work just fine with any later version. You will need
 the following dependencies:
  - ASIO SDK (include only):
@@ -138,5 +138,5 @@ the following dependencies:
 
 The installer can be built using Inno Setup:
 http://www.jrsoftware.org/isdl.php You will need to put
-the PortAudio DLL and the MSVC 2010 runtime DLLs in the redist/ folder
+the PortAudio DLL and the MSVC 2017 runtime DLLs in the redist/ folder
 first.
