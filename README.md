@@ -43,7 +43,8 @@ which can be extremely useful in some scenarios. That's what I'm using
 it for.
 
 FlexASIO should be able to run on any version of Microsoft Windows,
-even very old ones, at least in theory.
+even very old ones, at least in theory. It is compatible with 32-bit and
+64-bit ASIO host applications.
 
 ## HOW TO USE
 
@@ -57,7 +58,8 @@ control panel.
 If you don't want to use the installer, you can install it manually by
 simply registering the DLL:
 
-    regsvr32 FlexASIO.dll
+    regsvr32 FlexASIO_x64.dll
+    regsvr32 FlexASIO_x86.dll
 
 Use the `/u` switch to unregister.
 
@@ -117,9 +119,6 @@ a limitation of PortAudio.
 
 FlexASIO is Windows-only for now. That could change in the future, as
 PortAudio itself is cross-platform.
-
-FlexASIO is 32-bit only for now. Porting it to 64-bit is
-straightforward, I just haven't gotten around to doing it yet.
 
 ## REPORTING ISSUES
 

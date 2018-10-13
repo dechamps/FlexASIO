@@ -75,6 +75,7 @@
       </RegisterOutput>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)_x86$(TargetExt)</OutputFile>
     </Link>
     <Midl />
     <Midl>
@@ -99,6 +100,7 @@
       </RegisterOutput>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <AdditionalDependencies>portaudio_x64.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <OutputFile>$(OutDir)$(TargetName)_x64$(TargetExt)</OutputFile>
     </Link>
     <Midl />
     <Midl>
@@ -125,6 +127,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
+      <OutputFile>$(OutDir)$(TargetName)_x86$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
@@ -148,6 +151,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>portaudio_x64.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
+      <OutputFile>$(OutDir)$(TargetName)_x64$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
