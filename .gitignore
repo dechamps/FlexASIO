@@ -3,3 +3,5 @@
 /FlexASIO.vcxproj.user
 .vs/
 x64/
+redist/
+FlexASIO-*.exe
