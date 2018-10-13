@@ -19,6 +19,7 @@
 
 #include "flexasio.h"
 
+#include <algorithm>
 #include <MMReg.h>
 #include "pa_win_wasapi.h"
 
