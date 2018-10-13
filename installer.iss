@@ -23,8 +23,11 @@ Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
 
 ; PortAudio library, 32-bit DLL.
 Source:"redist\portaudio_x86.dll"; DestDir: "{app}"; Flags: ignoreversion
-; Microsoft Visual C++ 2017 runtime DLLs
-; From: (Visual Studio 2017 install dir)\Community\VC\Redist\MSVC\14.15.26706\x86\Microsoft.VC141.CRT
-Source:"redist\msvcp140.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source:"redist\vcruntime140.dll"; DestDir: "{app}"; Flags: ignoreversion
+
+; Microsoft Visual C++ 2017 runtime
+; From: (Visual Studio 2017 install dir)\Community\VC\Redist\MSVC\14.15.26706
+Source: "redist\vcredist_x86.exe"; DestDir: {tmp}; Flags: deleteafterinstall
+
+[Run]
+Filename:"{tmp}\vcredist_x86.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime"
  
