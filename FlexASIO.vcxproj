@@ -62,7 +62,18 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <TargetName>$(ProjectName)_$(PlatformShortName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <TargetName>$(ProjectName)_$(PlatformShortName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)_$(PlatformShortName)</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <TargetName>$(ProjectName)_$(PlatformShortName)</TargetName>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -75,7 +86,6 @@
       </RegisterOutput>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetName)_x86$(TargetExt)</OutputFile>
     </Link>
     <Midl />
     <Midl>
@@ -100,7 +110,6 @@
       </RegisterOutput>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
       <AdditionalDependencies>portaudio_x64.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>$(OutDir)$(TargetName)_x64$(TargetExt)</OutputFile>
     </Link>
     <Midl />
     <Midl>
@@ -127,7 +136,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>portaudio_x86.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
-      <OutputFile>$(OutDir)$(TargetName)_x86$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
@@ -151,7 +159,6 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>portaudio_x64.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
-      <OutputFile>$(OutDir)$(TargetName)_x64$(TargetExt)</OutputFile>
     </Link>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
