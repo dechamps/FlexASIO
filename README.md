@@ -130,9 +130,9 @@ https://github.com/dechamps/FlexASIO/issues
 FlexASIO currently uses the Microsoft Visual C++ 2017 toolchain,
 though it should work just fine with any later version. You will need
 the following dependencies:
- - ASIO SDK (include only):
+ - ASIO SDK (copy the ASIOSDK2.3.1 folder into the FlexASIO folder):
    http://www.steinberg.net/en/company/developer.html
- - PortAudio (include and link):
+ - PortAudio (add include and link directories):
    http://www.portaudio.com/download.html
 
 The installer can be built using Inno Setup:
