@@ -169,6 +169,7 @@
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="create.cpp" />
     <ClCompile Include="flexasio.cpp" />
     <ClCompile Include="comdll.cpp" />
   </ItemGroup>
@@ -180,6 +181,7 @@
     <ResourceCompile Include="flexasio.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="create.h" />
     <ClInclude Include="flexasio.h" />
     <ClInclude Include="flexasio.rc.h" />
     <ClInclude Include="util.h" />

@@ -1,6 +1,7 @@
 ; Module-definition file for the FlexASIO DLL
-; Our DLL is just a COM class factory, so we only need to export the functions required by COM.
+; Our DLL is a COM class factory, so we only need to export the functions required by COM.
 ; We can't use declspec(dllexport) for those because the naming convention doesn't match (leading "@")
+; We also a couple of functions for users that want to instantiate FlexASIO directly (e.g. FlexASIOTest).
 
 LIBRARY
 
@@ -9,3 +10,5 @@ EXPORTS
 	DllGetClassObject   PRIVATE
 	DllRegisterServer   PRIVATE
 	DllUnregisterServer PRIVATE
+	CreateFlexASIO
+	ReleaseFlexASIO
