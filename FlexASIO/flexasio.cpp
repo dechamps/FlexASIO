@@ -484,7 +484,7 @@ ASIOError CFlexASIO::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels
 		Log() << "The sample rate was never specified, using " << sample_rate << " as fallback";
 	}
 	PaStream* temp_stream;
-	PaError error = OpenStream(&temp_stream, sample_rate, temp_buffers->buffer_size);
+	PaError error = OpenStream(&temp_stream, sample_rate, unsigned long(temp_buffers->buffer_size));
 	if (error != paNoError)
 	{
 		init_error = std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error);
@@ -653,7 +653,7 @@ int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long fra
 
 	Log() << "Handing off the buffer to the ASIO host";
 	if (!host_supports_timeinfo)
-		callbacks.bufferSwitch(our_buffer_index, ASIOFalse);
+		callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
 	else
 	{
 		ASIOTime time;
@@ -665,7 +665,7 @@ int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long fra
 		time.timeCode.flags = 0;
 		time.timeCode.timeCodeSamples.lo = time.timeCode.timeCodeSamples.hi = 0;
 		time.timeCode.speed = 1;
-		callbacks.bufferSwitchTimeInfo(&time, our_buffer_index, ASIOFalse);
+		callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 	}
 	std::swap(locked_buffer_index, our_buffer_index);
 	position.samples += frameCount;
