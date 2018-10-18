@@ -29,7 +29,7 @@
 #include <atlcom.h>
 
 #include "flexasio.rc.h"
-#include "ASIOSDK2.3.1\common\iasiodrv.h"
+#include "..\ASIOSDK2.3.1\common\iasiodrv.h"
 #include "util.h"
 #include "portaudio.h"
 

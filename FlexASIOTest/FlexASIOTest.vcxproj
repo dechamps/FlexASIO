@@ -141,7 +141,7 @@
     <ProjectReference Include="..\ASIOHost\ASIOHost.vcxproj">
       <Project>{10c0db40-8f17-4efd-abc5-8dfded9a6910}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\FlexASIO.vcxproj">
+    <ProjectReference Include="..\FlexASIO\FlexASIO.vcxproj">
       <Project>{efc61192-2db9-46b1-bf85-98fc6ef1e6d1}</Project>
     </ProjectReference>
   </ItemGroup>
