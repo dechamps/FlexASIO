@@ -15,6 +15,7 @@
     <Midl />
     <Link>
       <ModuleDefinitionFile>dll.def</ModuleDefinitionFile>
+      <AdditionalDependencies>portaudio_$(PlatformShortName).lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup />
