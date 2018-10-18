@@ -5,6 +5,8 @@
   <PropertyGroup>
     <TargetName>$(ProjectName)_$(PlatformShortName)</TargetName>
     <_PropertySheetDisplayName>FlexASIO Common</_PropertySheetDisplayName>
+    <OutDir>$(SolutionDir)build\$(PlatformShortName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)build\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>

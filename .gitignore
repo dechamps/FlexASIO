@@ -2,19 +2,6 @@
 .vs/
 
 /ASIOSDK2.3.1/
-
 /redist/
-/FlexASIO-*.exe
 
-/Debug/
-/Release/
-/x64/
-/ASIOHost/Debug/
-/ASIOHost/Release/
-/ASIOHost/x64/
-/FlexASIO/Debug/
-/FlexASIO/Release/
-/FlexASIO/x64/
-/FlexASIOTest/Release/
-/FlexASIOTest/Debug/
-/FlexASIOTest/x64/
+/build/
