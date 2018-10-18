@@ -24,6 +24,7 @@ Source:"build\x64\Release\FlexASIO_x64.pdb"; DestDir: "{app}"; Flags: ignorevers
 Source:"build\x86\Release\FlexASIO_x86.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 32bit
 Source:"build\x86\Release\FlexASIO_x86.pdb"; DestDir: "{app}"; Flags: ignoreversion 32bit
 Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
+Source:"README.md"; DestDir:"{app}"; Flags: ignoreversion
 
 ; PortAudio library.
 ; Note that these are not actually build artefacts; you need to put them there manually.
