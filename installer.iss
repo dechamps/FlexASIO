@@ -20,14 +20,18 @@ LicenseFile=LICENSE.txt
 
 [Files]
 Source:"build\x64\Release\FlexASIO_x64.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 64bit; Check: Is64BitInstallMode
+Source:"build\x64\Release\FlexASIO_x64.pdb"; DestDir: "{app}"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
 Source:"build\x86\Release\FlexASIO_x86.dll"; DestDir: "{app}"; Flags: ignoreversion regserver 32bit
+Source:"build\x86\Release\FlexASIO_x86.pdb"; DestDir: "{app}"; Flags: ignoreversion 32bit
 Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
 
 ; PortAudio library.
 ; Note that these are not actually build artefacts; you need to put them there manually.
 ; The reason why this is fetching these DLLs from build is because it's convenient to have them there during testing.
 Source:"build\x64\Release\portaudio_x64.dll"; DestDir: "{app}"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
+Source:"build\x64\Release\portaudio_x64.pdb"; DestDir: "{app}"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
 Source:"build\x86\Release\portaudio_x86.dll"; DestDir: "{app}"; Flags: ignoreversion 32bit
+Source:"build\x86\Release\portaudio_x86.pdb"; DestDir: "{app}"; Flags: ignoreversion 32bit
 
 ; Microsoft Visual C++ 2017 runtime
 ; From: (Visual Studio 2017 install dir)\Community\VC\Redist\MSVC\14.15.26706
