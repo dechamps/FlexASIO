@@ -23,7 +23,7 @@
 #include <MMReg.h>
 #include "pa_win_wasapi.h"
 
-CFlexASIO::CFlexASIO() :
+CFlexASIO::CFlexASIO() throw() :
 	portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
 	input_device_info(nullptr), output_device_info(nullptr),
 	input_channel_count(0), output_channel_count(0),
@@ -33,7 +33,7 @@ CFlexASIO::CFlexASIO() :
 	Log() << "CFlexASIO::CFlexASIO()";
 }
 
-ASIOBool CFlexASIO::init(void* sysHandle)
+ASIOBool CFlexASIO::init(void* sysHandle) throw()
 {
 	Log() << "CFlexASIO::init()";
 	if (input_device_info || output_device_info)
@@ -138,7 +138,7 @@ ASIOBool CFlexASIO::init(void* sysHandle)
 	return ASIOTrue;
 }
 
-CFlexASIO::~CFlexASIO()
+CFlexASIO::~CFlexASIO() throw()
 {
 	Log() << "CFlexASIO::~CFlexASIO()";
 	if (started)
@@ -185,7 +185,7 @@ ASIOError CFlexASIO::setClockSource(long reference) throw()
 	return ASE_OK;
 }
 
-ASIOError CFlexASIO::getChannels(long* numInputChannels, long* numOutputChannels)
+ASIOError CFlexASIO::getChannels(long* numInputChannels, long* numOutputChannels) throw()
 {
 	Log() << "CFlexASIO::getChannels()";
 	if (!input_device_info && !output_device_info)
@@ -257,7 +257,7 @@ std::string getChannelName(size_t channel, DWORD channelMask)
 }
 }
 
-ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info)
+ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info) throw()
 {
 	Log() << "CFlexASIO::getChannelInfo()";
 
@@ -296,7 +296,7 @@ ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info)
 	return ASE_OK;
 }
 
-ASIOError CFlexASIO::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
+ASIOError CFlexASIO::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw()
 {
 	// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
 	// TODO: let the user should these values
@@ -527,7 +527,7 @@ ASIOError CFlexASIO::disposeBuffers() throw()
 	return ASE_OK;
 }
 
-ASIOError CFlexASIO::getLatencies(long* inputLatency, long* outputLatency)
+ASIOError CFlexASIO::getLatencies(long* inputLatency, long* outputLatency) throw()
 {
 	Log() << "CFlexASIO::getLatencies()";
 	if (!stream)
@@ -588,7 +588,7 @@ ASIOError CFlexASIO::start() throw()
 	return ASE_OK;
 }
 
-ASIOError CFlexASIO::stop()
+ASIOError CFlexASIO::stop() throw()
 {
 	Log() << "CFlexASIO::stop()";
 	if (!started)
@@ -611,7 +611,7 @@ ASIOError CFlexASIO::stop()
 	return ASE_OK;
 }
 
-int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
+int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw()
 {
 	Log() << "CFlexASIO::StreamCallback("<< frameCount << ")";
 	if (!started)
@@ -675,7 +675,7 @@ int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long fra
 	return paContinue;
 }
 
-ASIOError CFlexASIO::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+ASIOError CFlexASIO::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw()
 {
 	Log() << "CFlexASIO::getSamplePosition()";
 	if (!started)

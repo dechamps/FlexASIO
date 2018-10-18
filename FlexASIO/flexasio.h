@@ -95,7 +95,7 @@ class CFlexASIO :
 
 		// IASIO implementation
 
-		virtual ASIOBool init(void* sysHandle);
+		virtual ASIOBool init(void* sysHandle) throw();
 		virtual void getDriverName(char* name) throw()  { Log() << "CFlexASIO::getDriverName()"; strcpy_s(name, 32, "FlexASIO"); }
 		virtual long getDriverVersion() throw()  { Log() << "CFlexASIO::getDriverVersion()"; return 0; }
 		virtual void getErrorMessage(char* string) throw()  { Log() << "CFlexASIO::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
