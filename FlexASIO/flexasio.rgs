@@ -10,7 +10,6 @@ HKCR
 		ForceRemove {462F2ABF-5278-436A-95B6-72CBF65482AE} = s 'FlexASIO'
 		{
 			ProgID = s 'flexasio.FlexASIO.1'
-			Version = s '0.1'
 			InprocServer32 = s '%MODULE%'
 			{
 				val ThreadingModel = s 'Both'
