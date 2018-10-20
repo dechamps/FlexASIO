@@ -346,33 +346,33 @@ ASIOError CFlexASIO::getChannels(long* numInputChannels, long* numOutputChannels
 }
 
 namespace {
-std::string getChannelName(size_t channel, DWORD channelMask)
-{
-	// Search for the matching bit in channelMask
-	size_t current_channel = 0;
-	DWORD current_channel_speaker = 1;
-	for (;;)
+	std::string getChannelName(size_t channel, DWORD channelMask)
 	{
-		while ((current_channel_speaker & channelMask) == 0 && current_channel_speaker < SPEAKER_ALL)
-			current_channel_speaker <<= 1;
-		if (current_channel_speaker == SPEAKER_ALL)
-			break;
-		// Now current_channel_speaker contains the speaker for current_channel
-		if (current_channel == channel)
-			break;
-		++current_channel;
-		current_channel_speaker <<= 1;
-	}
-
-	std::stringstream channel_name;
-	channel_name << channel;
-	if (current_channel_speaker == SPEAKER_ALL)
-		Log() << "Channel " << channel << " is outside channel mask " << channelMask;
-	else
-	{
-		const char* pretty_name = nullptr;
-		switch (current_channel_speaker)
+		// Search for the matching bit in channelMask
+		size_t current_channel = 0;
+		DWORD current_channel_speaker = 1;
+		for (;;)
 		{
+			while ((current_channel_speaker & channelMask) == 0 && current_channel_speaker < SPEAKER_ALL)
+				current_channel_speaker <<= 1;
+			if (current_channel_speaker == SPEAKER_ALL)
+				break;
+			// Now current_channel_speaker contains the speaker for current_channel
+			if (current_channel == channel)
+				break;
+			++current_channel;
+			current_channel_speaker <<= 1;
+		}
+
+		std::stringstream channel_name;
+		channel_name << channel;
+		if (current_channel_speaker == SPEAKER_ALL)
+			Log() << "Channel " << channel << " is outside channel mask " << channelMask;
+		else
+		{
+			const char* pretty_name = nullptr;
+			switch (current_channel_speaker)
+			{
 			case SPEAKER_FRONT_LEFT: pretty_name = "FL (Front Left)"; break;
 			case SPEAKER_FRONT_RIGHT: pretty_name = "FR (Front Right)"; break;
 			case SPEAKER_FRONT_CENTER: pretty_name = "FC (Front Center)"; break;
@@ -391,14 +391,14 @@ std::string getChannelName(size_t channel, DWORD channelMask)
 			case SPEAKER_TOP_BACK_LEFT: pretty_name = "TBL (Top Back left)"; break;
 			case SPEAKER_TOP_BACK_CENTER: pretty_name = "TBC (Top Back Center)"; break;
 			case SPEAKER_TOP_BACK_RIGHT: pretty_name = "TBR (Top Back Right)"; break;
+			}
+			if (!pretty_name)
+				Log() << "Speaker " << current_channel_speaker << " is unknown";
+			else
+				channel_name << " " << pretty_name;
 		}
-		if (!pretty_name)
-			Log() << "Speaker " << current_channel_speaker << " is unknown";
-		else
-			channel_name << " " << pretty_name;
+		return channel_name.str();
 	}
-	return channel_name.str();
-}
 }
 
 ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info) throw()
@@ -616,11 +616,11 @@ ASIOError CFlexASIO::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels
 		buffer_info.buffers[0] = static_cast<void*>(first_half);
 		buffer_info.buffers[1] = static_cast<void*>(second_half);
 		Log() << "ASIO buffer #" << channel_index << " is " << (buffer_info.isInput ? "input" : "output") << " channel " << buffer_info.channelNum
-		      << " - first half: " << first_half << "-" << first_half + bufferSize << " - second half: " << second_half << "-" << second_half + bufferSize;
+			<< " - first half: " << first_half << "-" << first_half + bufferSize << " - second half: " << second_half << "-" << second_half + bufferSize;
 		buffers_info.push_back(buffer_info);
 	}
 
-	
+
 	Log() << "Opening PortAudio stream";
 	if (sample_rate == 0)
 	{
@@ -757,7 +757,7 @@ ASIOError CFlexASIO::stop() throw()
 
 int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw()
 {
-	Log() << "CFlexASIO::StreamCallback("<< frameCount << ")";
+	Log() << "CFlexASIO::StreamCallback(" << frameCount << ")";
 	if (!started)
 	{
 		Log() << "Ignoring callback as stream is not started";
@@ -814,7 +814,7 @@ int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long fra
 	std::swap(locked_buffer_index, our_buffer_index);
 	position.samples += frameCount;
 	position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
-	
+
 	Log() << "Returning from stream callback";
 	return paContinue;
 }

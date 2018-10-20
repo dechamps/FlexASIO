@@ -26,15 +26,15 @@
 
 class Log : public std::stringstream
 {
-	public:
-		Log()
-		{
-			*this << "FlexASIO: [" << timeGetTime() << "] ";
-		}
+public:
+	Log()
+	{
+		*this << "FlexASIO: [" << timeGetTime() << "] ";
+	}
 
-		~Log()
-		{
-			*this << std::endl;
-			OutputDebugString(str().c_str());
-		}
+	~Log()
+	{
+		*this << std::endl;
+		OutputDebugString(str().c_str());
+	}
 };
