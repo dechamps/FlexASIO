@@ -21,6 +21,7 @@
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(IntDir)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>BUILD_CONFIGURATION=\"$(Configuration)\";BUILD_PLATFORM=\"$(PlatformShortName)\"</PreprocessorDefinitions>
     </ResourceCompile>
     <Midl>
       <OutputDirectory>$(IntDir)</OutputDirectory>
