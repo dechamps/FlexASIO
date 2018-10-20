@@ -120,6 +120,31 @@ a limitation of PortAudio.
 FlexASIO is Windows-only for now. That could change in the future, as
 PortAudio itself is cross-platform.
 
+## TROUBLESHOOTING
+
+FlexASIO includes a logging system that describes everything that is
+happening within the driver in an excruciating amount of detail. It is
+especially useful for troubleshooting driver initialization failures and
+other issues. It can also be used for verification (e.g. to double-check
+that FlexASIO is using the device and audio format that you expect).
+
+To enable logging, simply create an empty file (e.g. with Notepad) named
+`FlexASIO.log` directly under your user directory (e.g.
+`C:\Users\Your Name Here\FlexASIO.log`). Then restart your ASIO host
+application. FlexASIO will notice the presence of the file and start
+logging to it.
+
+Note that the contents of the log file are intended for consumption by
+developers. That said, grave errors should stick out in an obvious way
+(especially if you look towards the end of the log). If you are having
+trouble interpreting the contents of the log, feel free to ask for help
+by opening an issue (see "Reporting Issues", below).
+
+*Do not forget to remove the logfile once you're done with it* (or move
+it elsewhere). Indeed, logging slows down FlexASIO, which can lead to
+buffer underruns (audio glitches). The logfile can also grow to a very
+large size over time.
+
 ## REPORTING ISSUES
 
 Just use the GitHub issue tracker:

@@ -92,6 +92,7 @@
   <ItemGroup>
     <ClCompile Include="flexasio.cpp" />
     <ClCompile Include="comdll.cpp" />
+    <ClCompile Include="log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dll.def" />

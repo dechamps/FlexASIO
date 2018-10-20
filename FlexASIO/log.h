@@ -19,32 +19,22 @@
 
 #pragma once
 
-#include <windows.h>
-
-#include <string>
-#include <sstream>
+#include <optional>
+#include <fstream>
 
 namespace flexasio {
 
-	class Log
+	class Log final
 	{
 	private:
-		std::stringstream ss;
+		std::optional<std::ofstream> file;
 
 	public:
-		Log()
-		{
-			ss << "FlexASIO: [" << timeGetTime() << "] ";
-		}
-
-		~Log()
-		{
-			ss << std::endl;
-			OutputDebugString(ss.str().c_str());
-		}
+		Log();
+		~Log();
 
 		template <typename T> friend Log& operator<<(Log& lhs, T&& rhs) {
-			lhs.ss << std::forward<T>(rhs);
+			if (lhs.file.has_value()) *lhs.file << std::forward<T>(rhs);
 			return lhs;
 		}
 	};

@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <sstream>
 #include <vector>
 
 #include <atlbase.h>
