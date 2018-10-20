@@ -104,7 +104,7 @@
   <ItemGroup>
     <ClInclude Include="flexasio.h" />
     <ClInclude Include="flexasio.rc.h" />
-    <ClInclude Include="util.h" />
+    <ClInclude Include="log.h" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="flexasio.idl" />

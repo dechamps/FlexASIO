@@ -36,7 +36,7 @@
 #include "..\ASIOSDK2.3.1\common\iasiodrv.h"
 
 #include "flexasio.rc.h"
-#include "util.h"
+#include "log.h"
 #include "flexasio_h.h"
 #include "../build/version.h"
 
