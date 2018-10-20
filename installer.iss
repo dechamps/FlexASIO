@@ -1,10 +1,20 @@
-#include "build\version.h"
-
 #define FIND_VS_RESULT Exec("powershell", "-ExecutionPolicy Bypass -NoProfile -NonInteractive -File find_visual_studio.ps1", SourcePath, , SW_HIDE)
 #if FIND_VS_RESULT != 0
 #error Unable to find Visual Studio directory
 #endif
 #include "build\visual_studio.h"
+
+#define BUILD_X64_RESULT Exec(VISUAL_STUDIO_INSTALLATION_PATH + "\MSBuild\15.0\Bin\MSBuild.exe", "-property:Configuration=Release;Platform=x64 /t:Clean,Build", SourcePath)
+#if BUILD_X64_RESULT != 0
+#error Unable to build solution for X64
+#endif
+
+#define BUILD_X86_RESULT Exec(VISUAL_STUDIO_INSTALLATION_PATH + "\MSBuild\15.0\Bin\MSBuild.exe", "-property:Configuration=Release;Platform=Win32 /t:Clean,Build", SourcePath)
+#if BUILD_X86_RESULT != 0
+#error Unable to build solution for X86
+#endif
+
+#include "build\version.h"
 
 [Setup]
 AppID=FlexASIO
