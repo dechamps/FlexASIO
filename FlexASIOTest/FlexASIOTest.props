@@ -3,7 +3,9 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="..\FlexASIO.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <ProjectDescription>FlexASIO Self-test program</ProjectDescription>
+  </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup>
     <Link>
@@ -14,5 +16,9 @@
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <BuildMacro Include="ProjectDescription">
+      <Value>$(ProjectDescription)</Value>
+    </BuildMacro>
+  </ItemGroup>
 </Project>

@@ -3,7 +3,9 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="..\FlexASIO.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <ProjectDescription>FlexASIO ASIO Driver DLL</ProjectDescription>
+  </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
@@ -18,5 +20,9 @@
       <AdditionalDependencies>portaudio_$(PlatformShortName).lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <BuildMacro Include="ProjectDescription">
+      <Value>$(ProjectDescription)</Value>
+    </BuildMacro>
+  </ItemGroup>
 </Project>

@@ -92,6 +92,9 @@
       <Project>{efc61192-2db9-46b1-bf85-98fc6ef1e6d1}</Project>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="..\versioninfo.rc" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

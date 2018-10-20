@@ -1,0 +1,21 @@
+#include <winver.h>  // Required, otherwise VERSIONINFO doesn't work
+
+#include "build/version.h"
+
+VS_VERSION_INFO VERSIONINFO
+{
+	BLOCK "StringFileInfo"
+	{
+		BLOCK "04090000" // US. English, ASCII
+		{
+			VALUE "FileDescription", PROJECT_DESCRIPTION " (" BUILD_CONFIGURATION " " BUILD_PLATFORM ")"
+			VALUE "LegalCopyright", "GNU General Public License, version 3"
+			VALUE "ProductName", "FlexASIO https://github.com/dechamps/FlexASIO"
+			VALUE "ProductVersion", FLEXASIO_VERSION " built on " FLEXASIO_BUILD_TIMESTR
+		}
+	}
+	BLOCK "VarFileInfo"
+	{
+		VALUE "Translation", 0x0409, 0x0000
+	}
+}

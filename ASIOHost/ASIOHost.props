@@ -3,7 +3,9 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="..\FlexASIO.props" />
   </ImportGroup>
-  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Label="UserMacros">
+    <ProjectDescription>ASIO Host SDK minimal library for FlexASIO</ProjectDescription>
+  </PropertyGroup>
   <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
@@ -13,5 +15,9 @@
       <TreatWarningAsError>false</TreatWarningAsError>
     </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <BuildMacro Include="ProjectDescription">
+      <Value>$(ProjectDescription)</Value>
+    </BuildMacro>
+  </ItemGroup>
 </Project>

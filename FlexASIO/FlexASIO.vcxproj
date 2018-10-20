@@ -99,6 +99,7 @@
     <None Include="flexasio.rgs" />
   </ItemGroup>
   <ItemGroup>
+    <ResourceCompile Include="..\versioninfo.rc" />
     <ResourceCompile Include="flexasio.rc" />
   </ItemGroup>
   <ItemGroup>
