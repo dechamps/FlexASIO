@@ -1,8 +1,10 @@
+#include "build\version.h"
+
 [Setup]
 AppID=FlexASIO
 AppName=FlexASIO
-AppVerName=FlexASIO 0.2
-AppVersion=0.2
+AppVerName=FlexASIO {#FLEXASIO_VERSION}
+AppVersion={#FLEXASIO_VERSION}
 AppPublisher=Etienne Dechamps
 AppPublisherURL=https://github.com/dechamps/FlexASIO
 AppSupportURL=https://github.com/dechamps/FlexASIO
@@ -10,7 +12,7 @@ AppUpdatesURL=https://github.com/dechamps/FlexASIO
 AppContact=etienne@edechamps.fr
 
 OutputDir=build
-OutputBaseFilename=FlexASIO-0.2
+OutputBaseFilename=FlexASIO-{#FLEXASIO_VERSION}
 
 DefaultDirName={pf}\FlexASIO
 AppendDefaultDirName=no
