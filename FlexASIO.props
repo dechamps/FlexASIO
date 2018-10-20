@@ -26,6 +26,12 @@
       <OutputDirectory>$(IntDir)</OutputDirectory>
       <TypeLibraryName>$(ProjectName).tlb</TypeLibraryName>
     </Midl>
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -NoProfile -NonInteractive -File ..\version.ps1</Command>
+    </PreBuildEvent>
+    <PreBuildEvent>
+      <Message>Generating version information</Message>
+    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

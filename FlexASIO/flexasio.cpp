@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <MMReg.h>
 #include "pa_win_wasapi.h"
+#include "../build/version.h"
 
 CFlexASIO::CFlexASIO() throw() :
 	portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
@@ -31,6 +32,7 @@ CFlexASIO::CFlexASIO() throw() :
 	sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 {
 	Log() << "CFlexASIO::CFlexASIO()";
+	Log() << "FlexASIO version " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
 }
 
 ASIOBool CFlexASIO::init(void* sysHandle) throw()
