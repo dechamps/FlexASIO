@@ -1,5 +1,11 @@
 #include "build\version.h"
 
+#define FIND_VS_RESULT Exec("powershell", "-ExecutionPolicy Bypass -NoProfile -NonInteractive -File find_visual_studio.ps1", SourcePath, , SW_HIDE)
+#if FIND_VS_RESULT != 0
+#error Unable to find Visual Studio directory
+#endif
+#include "build\visual_studio.h"
+
 [Setup]
 AppID=FlexASIO
 AppName=FlexASIO
@@ -37,10 +43,8 @@ Source:"build\x64\Release\portaudio_x64.pdb"; DestDir: "{app}\x64"; Flags: ignor
 Source:"build\x86\Release\portaudio_x86.dll"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\portaudio_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 
-; Microsoft Visual C++ 2017 runtime
-; From: (Visual Studio 2017 install dir)\Community\VC\Redist\MSVC\14.15.26706
-Source: "redist\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall 64bit; Check: Is64BitInstallMode
-Source: "redist\vcredist_x86.exe"; DestDir: {tmp}; Flags: deleteafterinstall 32bit
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall 64bit; Check: Is64BitInstallMode
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\vcredist_x86.exe"; DestDir: {tmp}; Flags: deleteafterinstall 32bit
 
 [Run]
 Filename:"{tmp}\vcredist_x64.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime (x64)"; Flags: 64bit; Check: Is64BitInstallMode
