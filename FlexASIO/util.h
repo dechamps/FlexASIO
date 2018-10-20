@@ -24,17 +24,25 @@
 #include <string>
 #include <sstream>
 
-class Log : public std::stringstream
+class Log
 {
+private:
+	std::stringstream ss;
+
 public:
 	Log()
 	{
-		*this << "FlexASIO: [" << timeGetTime() << "] ";
+		ss << "FlexASIO: [" << timeGetTime() << "] ";
 	}
 
 	~Log()
 	{
-		*this << std::endl;
-		OutputDebugString(str().c_str());
+		ss << std::endl;
+		OutputDebugString(ss.str().c_str());
+	}
+
+	template <typename T> friend Log& operator<<(Log& lhs, T&& rhs) {
+		lhs.ss << std::forward<T>(rhs);
+		return lhs;
 	}
 };
