@@ -20,23 +20,24 @@
 #pragma once
 
 #include <optional>
-#include <fstream>
+#include <sstream>
 
 namespace flexasio {
 
 	class Log final
 	{
-	private:
-		std::optional<std::ofstream> file;
-
 	public:
 		Log();
 		~Log();
 
 		template <typename T> friend Log& operator<<(Log& lhs, T&& rhs) {
-			if (lhs.file.has_value()) *lhs.file << std::forward<T>(rhs);
+			if (!lhs.stream.has_value()) return lhs;
+			*lhs.stream << std::forward<T>(rhs);
 			return lhs;
 		}
+
+	private:
+		std::optional<std::stringstream> stream;
 	};
 
 }
