@@ -53,12 +53,11 @@ Source:"build\x64\Release\portaudio_x64.pdb"; DestDir: "{app}\x64"; Flags: ignor
 Source:"build\x86\Release\portaudio_x86.dll"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\portaudio_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 
-Source: "{#VISUAL_STUDIO_REDIST_PATH}\vcredist_x64.exe"; DestDir: {tmp}; Flags: deleteafterinstall 64bit; Check: Is64BitInstallMode
-Source: "{#VISUAL_STUDIO_REDIST_PATH}\vcredist_x86.exe"; DestDir: {tmp}; Flags: deleteafterinstall 32bit
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\x64\Microsoft.VC141.CRT\msvcp140.dll"; DestDir: "{app}\x64"; Flags: 64bit; Check: Is64BitInstallMode
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\x64\Microsoft.VC141.CRT\vcruntime140.dll"; DestDir: "{app}\x64"; Flags: 64bit; Check: Is64BitInstallMode
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\x86\Microsoft.VC141.CRT\msvcp140.dll"; DestDir: "{app}\x86"; Flags: 32bit
+Source: "{#VISUAL_STUDIO_REDIST_PATH}\x86\Microsoft.VC141.CRT\vcruntime140.dll"; DestDir: "{app}\x86"; Flags: 32bit
 
 [Run]
-Filename:"{tmp}\vcredist_x64.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime (x64)"; Flags: 64bit; Check: Is64BitInstallMode
-Filename:"{tmp}\vcredist_x86.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime (x86)"; Flags: 32bit
-
 Filename:"https://github.com/dechamps/FlexASIO/blob/{#FLEXASIO_GITSTR}/README.md"; Description:"Open README"; Flags: postinstall shellexec nowait
  
