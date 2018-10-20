@@ -7,8 +7,9 @@ AppVerName=FlexASIO {#FLEXASIO_VERSION}
 AppVersion={#FLEXASIO_VERSION}
 AppPublisher=Etienne Dechamps
 AppPublisherURL=https://github.com/dechamps/FlexASIO
-AppSupportURL=https://github.com/dechamps/FlexASIO
-AppUpdatesURL=https://github.com/dechamps/FlexASIO
+AppSupportURL=https://github.com/dechamps/FlexASIO/issues
+AppUpdatesURL=https://github.com/dechamps/FlexASIO/releases
+AppReadmeFile=https://github.com/dechamps/FlexASIO/blob/{#FLEXASIO_GITSTR}/README.md
 AppContact=etienne@edechamps.fr
 
 OutputDir=build
@@ -44,4 +45,6 @@ Source: "redist\vcredist_x86.exe"; DestDir: {tmp}; Flags: deleteafterinstall 32b
 [Run]
 Filename:"{tmp}\vcredist_x64.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime (x64)"; Flags: 64bit; Check: Is64BitInstallMode
 Filename:"{tmp}\vcredist_x86.exe"; Parameters: "/passive"; StatusMsg: "Installing Microsoft Visual C++ 2017 runtime (x86)"; Flags: 32bit
+
+Filename:"https://github.com/dechamps/FlexASIO/blob/{#FLEXASIO_GITSTR}/README.md"; Description:"Open README"; Flags: postinstall shellexec nowait
  
