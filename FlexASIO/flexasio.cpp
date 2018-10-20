@@ -105,36 +105,36 @@ namespace flexasio {
 
 		public:
 			CFlexASIO() throw();
-			virtual ~CFlexASIO() throw();
+			~CFlexASIO() throw();
 
 			// IASIO implementation
 
-			virtual ASIOBool init(void* sysHandle) throw();
-			virtual void getDriverName(char* name) throw() { Log() << "CFlexASIO::getDriverName()"; strcpy_s(name, 32, "FlexASIO"); }
-			virtual long getDriverVersion() throw() { Log() << "CFlexASIO::getDriverVersion()"; return 0; }
-			virtual void getErrorMessage(char* string) throw() { Log() << "CFlexASIO::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
+			ASIOBool init(void* sysHandle) throw() final;
+			void getDriverName(char* name) throw() final { Log() << "CFlexASIO::getDriverName()"; strcpy_s(name, 32, "FlexASIO"); }
+			long getDriverVersion() throw() final { Log() << "CFlexASIO::getDriverVersion()"; return 0; }
+			void getErrorMessage(char* string) throw() final { Log() << "CFlexASIO::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
 
-			virtual ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw();
-			virtual ASIOError setClockSource(long reference) throw();
-			virtual ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw();
-			virtual ASIOError getChannelInfo(ASIOChannelInfo* info) throw();
-			virtual ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw();
-			virtual ASIOError canSampleRate(ASIOSampleRate sampleRate) throw();
-			virtual ASIOError setSampleRate(ASIOSampleRate sampleRate) throw();
-			virtual ASIOError getSampleRate(ASIOSampleRate* sampleRate) throw();
+			ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw() final;
+			ASIOError setClockSource(long reference) throw() final;
+			ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw() final;
+			ASIOError getChannelInfo(ASIOChannelInfo* info) throw() final;
+			ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw() final;
+			ASIOError canSampleRate(ASIOSampleRate sampleRate) throw() final;
+			ASIOError setSampleRate(ASIOSampleRate sampleRate) throw() final;
+			ASIOError getSampleRate(ASIOSampleRate* sampleRate) throw() final;
 
-			virtual ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw();
-			virtual ASIOError disposeBuffers() throw();
-			virtual ASIOError getLatencies(long* inputLatency, long* outputLatency) throw();
+			ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw() final;
+			ASIOError disposeBuffers() throw() final;
+			ASIOError getLatencies(long* inputLatency, long* outputLatency) throw() final;
 
-			virtual ASIOError start() throw();
-			virtual ASIOError stop() throw();
-			virtual ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw();
+			ASIOError start() throw() final;
+			ASIOError stop() throw() final;
+			ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw() final;
 
 			// Not implemented
-			virtual ASIOError controlPanel() throw() { Log() << "CFlexASIO::controlPanel()"; return ASE_NotPresent; }
-			virtual ASIOError future(long selector, void *opt) throw() { Log() << "CFlexASIO::future()"; return ASE_InvalidParameter; }
-			virtual ASIOError outputReady() throw() { Log() << "CFlexASIO::outputReady()"; return ASE_NotPresent; }
+			ASIOError controlPanel() throw() final { Log() << "CFlexASIO::controlPanel()"; return ASE_NotPresent; }
+			ASIOError future(long selector, void *opt) throw() final { Log() << "CFlexASIO::future()"; return ASE_InvalidParameter; }
+			ASIOError outputReady() throw() final { Log() << "CFlexASIO::outputReady()"; return ASE_NotPresent; }
 
 		private:
 			PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer) throw();
