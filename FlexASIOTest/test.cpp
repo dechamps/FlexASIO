@@ -172,6 +172,13 @@ namespace flexasio_test {
 			return Buffers(bufferInfos);
 		}
 
+		void GetLatencies() {
+			long inputLatency = LONG_MIN, outputLatency = LONG_MIN;
+			std::cout << "ASIOGetLatencies()" << std::endl;
+			if (PrintError(ASIOGetLatencies(&inputLatency, &outputLatency)) != ASE_OK) return;
+			std::cout << "Latencies: input " << inputLatency << " samples, output " << outputLatency << " samples" << std::endl;
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -217,6 +224,10 @@ namespace flexasio_test {
 
 			GetSampleRate();
 			GetAllChannelInfo(ioChannelCounts);
+
+			std::cout << std::endl;
+
+			GetLatencies();
 
 			std::cout << std::endl;
 
