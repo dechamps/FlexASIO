@@ -141,6 +141,7 @@ namespace flexasio_test {
 			Buffers(Buffers&&) = default;
 			~Buffers() {
 				if (info.size() == 0) return;
+				std::cout << std::endl;
 				std::cout << "ASIODisposeBuffers()" << std::endl;
 				PrintError(ASIODisposeBuffers());
 			}
@@ -177,6 +178,16 @@ namespace flexasio_test {
 			std::cout << "ASIOGetLatencies()" << std::endl;
 			if (PrintError(ASIOGetLatencies(&inputLatency, &outputLatency)) != ASE_OK) return;
 			std::cout << "Latencies: input " << inputLatency << " samples, output " << outputLatency << " samples" << std::endl;
+		}
+
+		bool Start() {
+			std::cout << "ASIOStart()" << std::endl;
+			return PrintError(ASIOStart()) == ASE_OK;
+		}
+
+		bool Stop() {
+			std::cout << "ASIOStop()" << std::endl;
+			return PrintError(ASIOStop()) == ASE_OK;
 		}
 
 		bool Run() {
@@ -230,6 +241,12 @@ namespace flexasio_test {
 			GetLatencies();
 
 			std::cout << std::endl;
+
+			if (!Start()) return false;
+
+			std::cout << std::endl;
+
+			if (!Stop()) return false;
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
