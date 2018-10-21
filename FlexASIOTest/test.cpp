@@ -134,8 +134,22 @@ namespace flexasio_test {
 			for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) GetChannelInfo(outputChannel, false);
 		}
 
+		struct Buffers {
+			Buffers() = default;
+			explicit Buffers(std::vector<ASIOBufferInfo> info) : info(std::move(info)) {}
+			Buffers(const Buffers&) = delete;
+			Buffers(Buffers&&) = default;
+			~Buffers() {
+				if (info.size() == 0) return;
+				std::cout << "ASIODisposeBuffers()" << std::endl;
+				PrintError(ASIODisposeBuffers());
+			}
+
+			std::vector<ASIOBufferInfo> info;
+		};
+
 		// TODO: we should also test with not all channels active.
-		std::vector<ASIOBufferInfo> CreateBuffers(std::pair<long, long> ioChannelCounts, long bufferSize, ASIOCallbacks callbacks) {
+		Buffers CreateBuffers(std::pair<long, long> ioChannelCounts, long bufferSize, ASIOCallbacks callbacks) {
 			std::vector<ASIOBufferInfo> bufferInfos;
 			for (long inputChannel = 0; inputChannel < ioChannelCounts.first; ++inputChannel) {
 				auto& bufferInfo = bufferInfos.emplace_back();
@@ -155,7 +169,7 @@ namespace flexasio_test {
 			std::cout << ", bufferSize = " << bufferSize << ", bufferSwitch = " << (void*)(callbacks.bufferSwitch) << " sampleRateDidChange = " << (void*)(callbacks.sampleRateDidChange) << " asioMessage = " << (void*)(callbacks.asioMessage) << " bufferSwitchTimeInfo = " << (void*)(callbacks.bufferSwitchTimeInfo) << ")" << std::endl;
 
 			if (PrintError(ASIOCreateBuffers(bufferInfos.data(), long(bufferInfos.size()), bufferSize, &callbacks)) != ASE_OK) return {};
-			return bufferInfos;
+			return Buffers(bufferInfos);
 		}
 
 		bool Run() {
@@ -197,12 +211,14 @@ namespace flexasio_test {
 			callbacks.asioMessage = [](long, long, void*, double*) -> long { return 0; };
 			callbacks.bufferSwitchTimeInfo = [](ASIOTime*, long, ASIOBool) -> ASIOTime* { return nullptr; };
 			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks);
-			if (buffers.size() == 0) return false;
+			if (buffers.info.size() == 0) return false;
 
 			std::cout << std::endl;
 
 			GetSampleRate();
 			GetAllChannelInfo(ioChannelCounts);
+
+			std::cout << std::endl;
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
