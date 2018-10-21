@@ -2,6 +2,7 @@
 #include <optional>
 #include <string_view>
 
+#include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
 #include "..\FlexASIO\flexasio.h"
 
@@ -70,6 +71,15 @@ namespace flexasio_test {
 			return bufferSize;
 		}
 
+		std::optional<ASIOSampleRate> GetSampleRate() {
+			std::cout << "ASIOGetSampleRate()" << std::endl;
+			ASIOSampleRate sampleRate = NAN;
+			const auto error = PrintError(ASIOGetSampleRate(&sampleRate));
+			if (error != ASE_OK) return std::nullopt;
+			std::cout << "Sample rate: " << sampleRate << std::endl;
+			return sampleRate;
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -82,6 +92,10 @@ namespace flexasio_test {
 
 			const auto bufferSize = GetBufferSize();
 			if (!bufferSize.has_value()) return false;
+
+			std::cout << std::endl;
+
+			GetSampleRate();
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
