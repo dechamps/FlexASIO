@@ -182,7 +182,7 @@ namespace flexasio {
 			sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 		{
 			Log() << "CFlexASIO::CFlexASIO()";
-			Log() << "FlexASIO version " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
+			Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
 		}
 
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()

@@ -18,6 +18,7 @@
       <TreatWarningAsError>true</TreatWarningAsError>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>BUILD_CONFIGURATION="$(Configuration)";BUILD_PLATFORM="$(PlatformShortName)";%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(IntDir)</AdditionalIncludeDirectories>
