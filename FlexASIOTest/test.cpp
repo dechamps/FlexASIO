@@ -54,6 +54,22 @@ namespace flexasio_test {
 			return { numInputChannels, numOutputChannels };
 		}
 
+		struct BufferSize {
+			long min = LONG_MIN;
+			long max = LONG_MIN;
+			long preferred = LONG_MIN;
+			long granularity = LONG_MIN;
+		};
+
+		std::optional<BufferSize> GetBufferSize() {
+			std::cout << "ASIOGetBufferSize()" << std::endl;
+			BufferSize bufferSize;
+			const auto error = PrintError(ASIOGetBufferSize(&bufferSize.min, &bufferSize.max, &bufferSize.preferred, &bufferSize.granularity));
+			if (error != ASE_OK) return std::nullopt;
+			std::cout << "Buffer size: min " << bufferSize.min << " max " << bufferSize.max << " preferred " << bufferSize.preferred << " granularity " << bufferSize.granularity << std::endl;
+			return bufferSize;
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -61,6 +77,11 @@ namespace flexasio_test {
 
 			const auto channelCounts = GetChannels();
 			if (channelCounts.first == 0 && channelCounts.second == 0) return false;
+
+			std::cout << std::endl;
+
+			const auto bufferSize = GetBufferSize();
+			if (!bufferSize.has_value()) return false;
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
