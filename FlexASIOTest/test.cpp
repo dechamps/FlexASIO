@@ -1,7 +1,9 @@
 #include <iostream>
+#include <functional>
 #include <optional>
 #include <string_view>
 #include <vector>
+#include <cassert>
 
 #include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
@@ -12,6 +14,11 @@ extern IASIO* theAsioDriver;
 
 namespace flexasio_test {
 	namespace {
+
+		template <typename FunctionPointer> struct function_pointer_traits;
+		template <typename ReturnValue, typename... Args> struct function_pointer_traits<ReturnValue(*)(Args...)> {
+			using function = std::function<ReturnValue(Args...)>;
+		};
 
 		std::string_view GetASIOErrorString(ASIOError error) {
 			switch (error) {
@@ -190,6 +197,45 @@ namespace flexasio_test {
 			return PrintError(ASIOStop()) == ASE_OK;
 		}
 
+		// Allows the use of capturing lambdas for ASIO callbacks, even though ASIO doesn't provide any mechanism to pass user context to callbacks.
+		// This works by assuming that we will only use one set of callbacks at a time, such that we can use global state as a side channel.
+		struct Callbacks {
+			Callbacks() {
+				assert(global == nullptr);
+				global = this;
+			}
+			~Callbacks() {
+				assert(global == this);
+				global = nullptr;
+			}
+
+			function_pointer_traits<decltype(ASIOCallbacks::bufferSwitch)>::function bufferSwitch;
+			function_pointer_traits<decltype(ASIOCallbacks::sampleRateDidChange)>::function sampleRateDidChange;
+			function_pointer_traits<decltype(ASIOCallbacks::asioMessage)>::function asioMessage;
+			function_pointer_traits<decltype(ASIOCallbacks::bufferSwitchTimeInfo)>::function bufferSwitchTimeInfo;
+
+			ASIOCallbacks GetASIOCallbacks() const {
+				ASIOCallbacks callbacks;
+				callbacks.bufferSwitch = GetASIOCallback<&Callbacks::bufferSwitch>();
+				callbacks.sampleRateDidChange = GetASIOCallback<&Callbacks::sampleRateDidChange>();
+				callbacks.asioMessage = GetASIOCallback<&Callbacks::asioMessage>();
+				callbacks.bufferSwitchTimeInfo = GetASIOCallback<&Callbacks::bufferSwitchTimeInfo>();
+				return callbacks;
+			}
+
+		private:
+			template <auto memberFunction> auto GetASIOCallback() const {
+				return [](auto... args) {
+					assert(global != nullptr);
+					return (global->*memberFunction)(args...);
+				};
+			}
+
+			static Callbacks* global;
+		};
+
+		Callbacks* Callbacks::global = nullptr;
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -223,12 +269,27 @@ namespace flexasio_test {
 
 			std::cout << std::endl;
 
-			ASIOCallbacks callbacks;
-			callbacks.bufferSwitch = [](long, ASIOBool) {};
-			callbacks.sampleRateDidChange = [](ASIOSampleRate) {};
-			callbacks.asioMessage = [](long, long, void*, double*) -> long { return 0; };
-			callbacks.bufferSwitchTimeInfo = [](ASIOTime*, long, ASIOBool) -> ASIOTime* { return nullptr; };
-			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks);
+			Callbacks callbacks;
+			callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
+				std::cout << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				std::cout << "<-" << std::endl;
+			};
+			callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
+				std::cout << "sampleRateDidChange(" << sampleRate << ")" << std::endl;
+				std::cout << "<-" << std::endl;
+			};
+			callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
+				std::cout << "asioMessage(selector = " << selector << ", value = " << value << ", message = " << message << ", opt = " << opt << ")" << std::endl;
+				std::cout << "<- 0" << std::endl;
+				return 0;
+			};
+			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
+				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				std::cout << "<- nullptr" << std::endl;
+				return nullptr;
+			};
+
+			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
 			if (buffers.info.size() == 0) return false;
 
 			std::cout << std::endl;
