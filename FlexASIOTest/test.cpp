@@ -1,6 +1,7 @@
 #include <iostream>
 #include <optional>
 #include <string_view>
+#include <vector>
 
 #include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
@@ -27,6 +28,33 @@ namespace flexasio_test {
 			}
 		}
 
+		std::string_view GetASIOSampleTypeString(ASIOSampleType sampleType) {
+			switch (sampleType) {
+			case ASIOSTInt16MSB: return "ASIOSTInt16MSB";
+			case ASIOSTInt24MSB: return "ASIOSTInt24MSB";
+			case ASIOSTInt32MSB: return "ASIOSTInt32MSB";
+			case ASIOSTFloat32MSB: return "ASIOSTFloat32MSB";
+			case ASIOSTFloat64MSB: return "ASIOSTFloat64MSB";
+			case ASIOSTInt32MSB16: return "ASIOSTInt32MSB16";
+			case ASIOSTInt32MSB18: return "ASIOSTInt32MSB18";
+			case ASIOSTInt32MSB20: return "ASIOSTInt32MSB20";
+			case ASIOSTInt32MSB24: return "ASIOSTInt32MSB24";
+			case ASIOSTInt16LSB: return "ASIOSTInt16LSB";
+			case ASIOSTInt24LSB: return "ASIOSTInt24LSB";
+			case ASIOSTInt32LSB: return "ASIOSTInt32LSB";
+			case ASIOSTFloat32LSB: return "ASIOSTFloat32LSB";
+			case ASIOSTFloat64LSB: return "ASIOSTFloat64LSB";
+			case ASIOSTInt32LSB16: return "ASIOSTInt32LSB16";
+			case ASIOSTInt32LSB18: return "ASIOSTInt32LSB18";
+			case ASIOSTInt32LSB20: return "ASIOSTInt32LSB20";
+			case ASIOSTInt32LSB24: return "ASIOSTInt32LSB24";
+			case ASIOSTDSDInt8LSB1: return "ASIOSTDSDInt8LSB1";
+			case ASIOSTDSDInt8MSB1: return "ASIOSTDSDInt8MSB1";
+			case  ASIOSTDSDInt8NER8: return "ASIOSTDSDInt8NER8";
+			default: return "(unknown ASIO sample type)";
+			}
+		}
+
 		ASIOError PrintError(ASIOError error) {
 			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
 			return error;
@@ -37,11 +65,7 @@ namespace flexasio_test {
 			asioDriverInfo.asioVersion = 2;
 			std::cout << "ASIOInit(asioVersion = " << asioDriverInfo.asioVersion << ")" << std::endl;
 			const auto initError = PrintError(ASIOInit(&asioDriverInfo));
-			std::cout << "ASIODriverInfo::asioVersion: " << asioDriverInfo.asioVersion << std::endl;
-			std::cout << "ASIODriverInfo::driverVersion: " << asioDriverInfo.asioVersion << std::endl;
-			std::cout << "ASIODriverInfo::name: " << asioDriverInfo.name << std::endl;
-			std::cout << "ASIODriverInfo::errorMessage: " << asioDriverInfo.errorMessage << std::endl;
-			std::cout << "ASIODriverInfo::sysRef: " << asioDriverInfo.sysRef << std::endl;
+			std::cout << "asioVersion = " << asioDriverInfo.asioVersion << " driverVersion = " << asioDriverInfo.asioVersion << " name = " << asioDriverInfo.name << " errorMessage = " << asioDriverInfo.errorMessage << " sysRef = " << asioDriverInfo.sysRef << std::endl;
 			if (initError != ASE_OK) return std::nullopt;
 			return asioDriverInfo;
 		}
@@ -95,13 +119,28 @@ namespace flexasio_test {
 			return PrintError(ASIOOutputReady()) == ASE_OK;
 		}
 
+		std::optional<ASIOChannelInfo> GetChannelInfo(long channel, ASIOBool isInput) {
+			std::cout << "ASIOGetChannelInfo(channel = " << channel << " isInput = " << isInput << ")" << std::endl;
+			ASIOChannelInfo channelInfo;
+			channelInfo.channel = channel;
+			channelInfo.isInput = isInput;
+			if (PrintError(ASIOGetChannelInfo(&channelInfo)) != ASE_OK) return std::nullopt;
+			std::cout << "isActive = " << channelInfo.isActive << " channelGroup = " << channelInfo.channelGroup << " type = " << GetASIOSampleTypeString(channelInfo.type) << " name = " << channelInfo.name << std::endl;
+			return channelInfo;
+		}
+
+		void GetAllChannelInfo(std::pair<long, long> ioChannelCounts) {
+			for (long inputChannel = 0; inputChannel < ioChannelCounts.first; ++inputChannel) GetChannelInfo(inputChannel, true);
+			for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) GetChannelInfo(outputChannel, false);
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
 			std::cout << std::endl;
 
-			const auto channelCounts = GetChannels();
-			if (channelCounts.first == 0 && channelCounts.second == 0) return false;
+			const auto ioChannelCounts = GetChannels();
+			if (ioChannelCounts.first == 0 && ioChannelCounts.second == 0) return false;
 
 			std::cout << std::endl;
 
@@ -121,6 +160,10 @@ namespace flexasio_test {
 			std::cout << std::endl;
 
 			OutputReady();
+
+			std::cout << std::endl;
+
+			GetAllChannelInfo(ioChannelCounts);
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
