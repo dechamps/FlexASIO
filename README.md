@@ -122,6 +122,8 @@ PortAudio itself is cross-platform.
 
 ## TROUBLESHOOTING
 
+### Logging
+
 FlexASIO includes a logging system that describes everything that is
 happening within the driver in an excruciating amount of detail. It is
 especially useful for troubleshooting driver initialization failures and
@@ -145,10 +147,33 @@ it elsewhere). Indeed, logging slows down FlexASIO, which can lead to
 buffer underruns (audio glitches). The logfile can also grow to a very
 large size over time.
 
+### Test program
+
+FlexASIO includes a rudimentary self-test program that can help diagnose
+issues in some cases. It attempts to emulate what a basic ASIO host
+application would do in a controlled, easily reproducible environment.
+
+The program is called `FlexASIOTest.exe` and can be found in the `x64`
+(64-bit) or `x86` (32-bit) subfolder in the FlexASIO installation
+folder. It is a console program that should be run from the command
+line.
+
+It is a good idea to have logging enabled while running the test (see
+above).
+
+Note that a successful test run does not necessarily mean FlexASIO is
+not at fault. Indeed it might be that the ASIO host application that
+you're using is triggering a pathological case in FlexASIO. If you
+suspect that's the case, please feel free to ask for help (see below).
+
 ## REPORTING ISSUES
 
-Just use the GitHub issue tracker:
-https://github.com/dechamps/FlexASIO/issues
+Just use the
+[GitHub issue tracker](https://github.com/dechamps/FlexASIO/issues).
+When asking for help, it is strongly recommended to produce a log (see
+above) while the problem is occuring, and attach it to your report. The
+output of `FlexASIOTest` (see above), along with its log output, might
+also help.
 
 ## DEVELOPER INFORMATION
 
