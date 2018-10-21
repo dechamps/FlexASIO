@@ -3,6 +3,9 @@ Author: Etienne Dechamps <etienne@edechamps.fr>
 Website: https://github.com/dechamps/FlexASIO
 License: General Public License, version 3
 
+**If you are looking for an installer, see the
+[GitHub releases page](https://github.com/dechamps/FlexASIO/releases).**
+
 ## DESCRIPTION
 
 Background: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
