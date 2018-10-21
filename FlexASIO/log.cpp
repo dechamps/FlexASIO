@@ -118,7 +118,7 @@ namespace flexasio {
 
 		FILETIME now;
 		GetSystemTimePreciseAsFileTime(&now);
-		*stream << FormatFiletimeISO8601(now) << " ";
+		*stream << FormatFiletimeISO8601(now) << " " << GetCurrentProcessId() << " " << GetCurrentThreadId() << " ";
 	}
 
 	Log::~Log() {
