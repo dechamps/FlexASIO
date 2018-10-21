@@ -199,6 +199,11 @@ namespace flexasio_test {
 			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks);
 			if (buffers.size() == 0) return false;
 
+			std::cout << std::endl;
+
+			GetSampleRate();
+			GetAllChannelInfo(ioChannelCounts);
+
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
 			return true;
