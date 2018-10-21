@@ -231,6 +231,8 @@ namespace flexasio {
 			Log() << "CFlexASIO::CFlexASIO()";
 			Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
 			Log() << "Host process: " << GetModuleName();
+			// Note: we're supposed to use Pa_GetVersionInfo(), but sadly, it looks like it's not exported from the PortAudio DLL.
+			Log() << "PortAudio version: " << Pa_GetVersionText();
 		}
 
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()
