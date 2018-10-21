@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <mutex>
@@ -7,10 +8,68 @@
 #include <string>
 
 #include <shlobj.h>
+#include <windows.h>
 
 namespace flexasio {
 
 	namespace {
+
+		int64_t FileTimeToTenthsOfUs(const FILETIME filetime) {
+			ULARGE_INTEGER integer;
+			integer.LowPart = filetime.dwLowDateTime;
+			integer.HighPart = filetime.dwHighDateTime;
+			return integer.QuadPart;
+		}
+
+		std::string FormatSystemTimeISO8601(const SYSTEMTIME& systemtime) {
+			std::stringstream stream;
+			stream.fill('0');
+			stream << std::setw(2) << systemtime.wYear << "-" << std::setw(2) << systemtime.wMonth << "-" << std::setw(2) << systemtime.wDay;
+			stream << "T";
+			stream << std::setw(2) << systemtime.wHour << ":" << std::setw(2) << systemtime.wMinute << ":" << std::setw(2) << systemtime.wSecond;
+			return stream.str();
+		}
+
+		std::pair<TIME_ZONE_INFORMATION, LONG> GetTimezoneAndBias() {
+			TIME_ZONE_INFORMATION localTimezone;
+			// Note: contrary to what MSDN seems to indicate, TIME_ZONE_INFORMATION::Bias does *not* include the StandardBias/DaylightBias.
+			switch (GetTimeZoneInformation(&localTimezone)) {
+			case TIME_ZONE_ID_UNKNOWN:
+				return { localTimezone, localTimezone.Bias };
+			case TIME_ZONE_ID_STANDARD:
+				return { localTimezone, localTimezone.Bias + localTimezone.StandardBias };
+			case TIME_ZONE_ID_DAYLIGHT:
+				return { localTimezone, localTimezone.Bias + localTimezone.DaylightBias };
+			default:
+				abort();
+			}
+		}
+
+		std::string FormatFiletimeISO8601(const FILETIME filetime) {
+			SYSTEMTIME systemtimeUTC;
+			assert(FileTimeToSystemTime(&filetime, &systemtimeUTC));
+			systemtimeUTC.wMilliseconds = 0;
+
+			const auto localTimezoneAndBias = GetTimezoneAndBias();
+
+			SYSTEMTIME systemtimeLocal;
+			assert(SystemTimeToTzSpecificLocalTime(&localTimezoneAndBias.first, &systemtimeUTC, &systemtimeLocal));
+
+			std::stringstream stream;
+			stream.fill('0');
+
+			stream << FormatSystemTimeISO8601(systemtimeLocal);
+
+			FILETIME truncatedFiletime;
+			assert(SystemTimeToFileTime(&systemtimeUTC, &truncatedFiletime));
+			stream << "." << std::setw(7) << FileTimeToTenthsOfUs(filetime) - FileTimeToTenthsOfUs(truncatedFiletime);
+
+			stream << ((localTimezoneAndBias.second >= 0) ? "-" : "+");
+			const auto absoluteBias = std::abs(localTimezoneAndBias.second);
+			stream << std::setw(2) << absoluteBias / 60 << ":" << std::setw(2) << absoluteBias % 60;
+
+			return stream.str();
+		}
 
 		std::optional<std::wstring> GetUserDirectory() {
 			PWSTR userDirectory = nullptr;
@@ -56,7 +115,10 @@ namespace flexasio {
 	Log::Log() {
 		if (GetLogOutput() == nullptr) return;
 		stream.emplace();
-		*stream << "FlexASIO: [" << timeGetTime() << "] ";
+
+		FILETIME now;
+		GetSystemTimePreciseAsFileTime(&now);
+		*stream << FormatFiletimeISO8601(now) << " ";
 	}
 
 	Log::~Log() {
