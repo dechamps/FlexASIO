@@ -172,9 +172,15 @@ namespace flexasio {
 			bool started;
 		};
 
-		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO)
+		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
-			CFlexASIO::CFlexASIO() throw() :
+		std::string GetModuleName() {
+			std::string moduleName(MAX_PATH, 0);
+			moduleName.resize(GetModuleFileNameA(NULL, moduleName.data(), DWORD(moduleName.size())));
+			return moduleName;
+		}
+
+		CFlexASIO::CFlexASIO() throw() :
 			portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
 			input_device_info(nullptr), output_device_info(nullptr),
 			input_channel_count(0), output_channel_count(0),
@@ -183,6 +189,7 @@ namespace flexasio {
 		{
 			Log() << "CFlexASIO::CFlexASIO()";
 			Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
+			Log() << "Host process: " << GetModuleName();
 		}
 
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()
