@@ -22,8 +22,11 @@
 #include <cassert>
 #include <algorithm>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <sstream>
+#include <string_view>
+#include <cctype>
 #include <vector>
 
 #include <atlbase.h>
@@ -41,6 +44,12 @@
 #include "flexasio_h.h"
 #include "../build/version.h"
 
+// From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
+extern "C" {
+	typedef void(*PaUtilLogCallback) (const char *log);
+	extern void PaUtil_SetDebugPrintFunction(PaUtilLogCallback cb);
+}
+
 // Provide a definition for the ::CFlexASIO class declaration that the MIDL compiler generated.
 // The actual implementation is in a derived class in an anonymous namespace, as it should be.
 //
@@ -51,6 +60,36 @@ class CFlexASIO : public IASIO, public IFlexASIO {};
 
 namespace flexasio {
 	namespace {
+
+		class PortAudioLogger final {
+		public:
+			PortAudioLogger() {
+				std::scoped_lock lock(mutex);
+				if (referenceCount++ > 0) return;
+				Log() << "Enabling PortAudio debug output redirection";
+				PaUtil_SetDebugPrintFunction(DebugPrint);
+			}
+
+			~PortAudioLogger() {
+				std::scoped_lock lock(mutex);
+				if (--referenceCount > 0) return;
+				Log() << "Disabling PortAudio debug output redirection";
+				PaUtil_SetDebugPrintFunction(NULL);
+			}
+
+		private:
+			static void DebugPrint(const char* log) {
+				std::string_view logline(log);
+				while (!logline.empty() && isspace(logline.back())) logline.remove_suffix(1);
+				Log() << "[PortAudio] " << logline;
+			}
+
+			static std::mutex mutex;
+			static size_t referenceCount;
+		};
+
+		std::mutex PortAudioLogger::mutex;
+		size_t PortAudioLogger::referenceCount = 0;
 
 		const PaSampleFormat portaudio_sample_format = paFloat32;
 		const ASIOSampleType asio_sample_type = ASIOSTFloat32LSB;
@@ -141,6 +180,8 @@ namespace flexasio {
 			PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer) throw();
 			static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<CFlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
 			int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw();
+
+			PortAudioLogger portAudioLogger;
 
 			bool portaudio_initialized;
 			std::string init_error;
