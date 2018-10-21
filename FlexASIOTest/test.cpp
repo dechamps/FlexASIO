@@ -80,6 +80,11 @@ namespace flexasio_test {
 			return sampleRate;
 		}
 
+		bool CanSampleRate(ASIOSampleRate sampleRate) {
+			std::cout << "ASIOCanSampleRate(" << sampleRate << ")" << std::endl;
+			return PrintError(ASIOCanSampleRate(sampleRate)) == ASE_OK;
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -96,6 +101,12 @@ namespace flexasio_test {
 			std::cout << std::endl;
 
 			GetSampleRate();
+
+			std::cout << std::endl;
+
+			for (const auto sampleRate : { 44100, 48000, 96000, 192000 }) {
+				CanSampleRate(sampleRate);
+			}
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
