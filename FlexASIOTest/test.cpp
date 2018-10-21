@@ -1,5 +1,7 @@
+#include <condition_variable>
 #include <iostream>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -269,9 +271,21 @@ namespace flexasio_test {
 
 			std::cout << std::endl;
 
+			std::mutex bufferSwitchCountMutex;
+			std::condition_variable bufferSwitchCountCondition;
+			size_t bufferSwitchCount = 0;
+			const auto incrementBufferSwitchCount = [&] {
+				{
+					std::scoped_lock bufferSwitchCountLock(bufferSwitchCountMutex);
+					++bufferSwitchCount;
+				}
+				bufferSwitchCountCondition.notify_all();
+			};
+
 			Callbacks callbacks;
 			callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				incrementBufferSwitchCount();
 				std::cout << "<-" << std::endl;
 			};
 			callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
@@ -285,6 +299,7 @@ namespace flexasio_test {
 			};
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				incrementBufferSwitchCount();
 				std::cout << "<- nullptr" << std::endl;
 				return nullptr;
 			};
@@ -306,6 +321,18 @@ namespace flexasio_test {
 			if (!Start()) return false;
 
 			std::cout << std::endl;
+
+			constexpr size_t bufferSwitchCountThreshold = 10;
+			std::cout << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches..." << std::endl;
+			std::cout << std::endl;
+
+			{
+				std::unique_lock bufferSwitchCountLock(bufferSwitchCountMutex);
+				bufferSwitchCountCondition.wait(bufferSwitchCountLock, [&] { return bufferSwitchCount >= bufferSwitchCountThreshold;  });
+			}
+
+			std::cout << std::endl;
+			std::cout << "Reached " << bufferSwitchCountThreshold << " buffer switches, stopping" << std::endl;
 
 			if (!Stop()) return false;
 
