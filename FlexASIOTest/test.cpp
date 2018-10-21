@@ -26,12 +26,16 @@ namespace flexasio_test {
 			}
 		}
 
+		ASIOError PrintError(ASIOError error) {
+			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
+			return error;
+		}
+
 		std::optional<ASIODriverInfo> Init() {
 			ASIODriverInfo asioDriverInfo = { 0 };
 			asioDriverInfo.asioVersion = 2;
 			std::cout << "ASIOInit(asioVersion = " << asioDriverInfo.asioVersion << ")" << std::endl;
-			const auto initError = ASIOInit(&asioDriverInfo);
-			std::cout << "-> " << GetASIOErrorString(initError) << std::endl;
+			const auto initError = PrintError(ASIOInit(&asioDriverInfo));
 			std::cout << "ASIODriverInfo::asioVersion: " << asioDriverInfo.asioVersion << std::endl;
 			std::cout << "ASIODriverInfo::driverVersion: " << asioDriverInfo.asioVersion << std::endl;
 			std::cout << "ASIODriverInfo::name: " << asioDriverInfo.name << std::endl;
@@ -41,8 +45,22 @@ namespace flexasio_test {
 			return asioDriverInfo;
 		}
 
+		std::pair<long, long> GetChannels() {
+			std::cout << "ASIOGetChannels()" << std::endl;
+			long numInputChannels, numOutputChannels;
+			const auto error = PrintError(ASIOGetChannels(&numInputChannels, &numOutputChannels));
+			if (error != ASE_OK) return { 0, 0 };
+			std::cout << "Channel count: " << numInputChannels << " input, " << numOutputChannels << " output" << std::endl;
+			return { numInputChannels, numOutputChannels };
+		}
+
 		bool Run() {
 			if (!Init()) return false;
+
+			std::cout << std::endl;
+
+			const auto channelCounts = GetChannels();
+			if (channelCounts.first == 0 && channelCounts.second == 0) return false;
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
