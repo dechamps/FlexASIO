@@ -134,6 +134,30 @@ namespace flexasio_test {
 			for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) GetChannelInfo(outputChannel, false);
 		}
 
+		// TODO: we should also test with not all channels active.
+		std::vector<ASIOBufferInfo> CreateBuffers(std::pair<long, long> ioChannelCounts, long bufferSize, ASIOCallbacks callbacks) {
+			std::vector<ASIOBufferInfo> bufferInfos;
+			for (long inputChannel = 0; inputChannel < ioChannelCounts.first; ++inputChannel) {
+				auto& bufferInfo = bufferInfos.emplace_back();
+				bufferInfo.isInput = true;
+				bufferInfo.channelNum = inputChannel;
+			}
+			for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) {
+				auto& bufferInfo = bufferInfos.emplace_back();
+				bufferInfo.isInput = false;
+				bufferInfo.channelNum = outputChannel;
+			}
+
+			std::cout << "ASIOCreateBuffers(";
+			for (const auto& bufferInfo : bufferInfos) {
+				std::cout << "isInput = " << bufferInfo.isInput << " channelNum = " << bufferInfo.channelNum << " ";
+			}
+			std::cout << ", bufferSize = " << bufferSize << ", bufferSwitch = " << (void*)(callbacks.bufferSwitch) << " sampleRateDidChange = " << (void*)(callbacks.sampleRateDidChange) << " asioMessage = " << (void*)(callbacks.asioMessage) << " bufferSwitchTimeInfo = " << (void*)(callbacks.bufferSwitchTimeInfo) << ")" << std::endl;
+
+			if (PrintError(ASIOCreateBuffers(bufferInfos.data(), long(bufferInfos.size()), bufferSize, &callbacks)) != ASE_OK) return {};
+			return bufferInfos;
+		}
+
 		bool Run() {
 			if (!Init()) return false;
 
@@ -164,6 +188,16 @@ namespace flexasio_test {
 			std::cout << std::endl;
 
 			GetAllChannelInfo(ioChannelCounts);
+
+			std::cout << std::endl;
+
+			ASIOCallbacks callbacks;
+			callbacks.bufferSwitch = [](long, ASIOBool) {};
+			callbacks.sampleRateDidChange = [](ASIOSampleRate) {};
+			callbacks.asioMessage = [](long, long, void*, double*) -> long { return 0; };
+			callbacks.bufferSwitchTimeInfo = [](ASIOTime*, long, ASIOBool) -> ASIOTime* { return nullptr; };
+			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks);
+			if (buffers.size() == 0) return false;
 
 			// Note: we don't call ASIOExit() because it gets confused by our driver setup trickery (see InitAndRun()).
 			// That said, this doesn't really matter because ASIOExit() is basically a no-op in our case, anyway.
