@@ -75,6 +75,26 @@ namespace flexasio_test {
 				});
 		}
 
+		std::string GetASIOMessageSelectorString(long selector) {
+			return EnumToString(selector, {
+				{kAsioSelectorSupported, "kAsioSelectorSupported"},
+				{kAsioEngineVersion, "kAsioEngineVersion"},
+				{kAsioResetRequest, "kAsioResetRequest"},
+				{kAsioBufferSizeChange, "kAsioBufferSizeChange"},
+				{kAsioResyncRequest, "kAsioResyncRequest"},
+				{kAsioLatenciesChanged, "kAsioLatenciesChanged"},
+				{kAsioSupportsTimeInfo, "kAsioSupportsTimeInfo"},
+				{kAsioSupportsTimeCode, "kAsioSupportsTimeCode"},
+				{kAsioMMCCommand, "kAsioMMCCommand"},
+				{kAsioSupportsInputMonitor, "kAsioSupportsInputMonitor"},
+				{kAsioSupportsInputGain, "kAsioSupportsInputGain"},
+				{kAsioSupportsInputMeter, "kAsioSupportsInputMeter"},
+				{kAsioSupportsOutputGain, "kAsioSupportsOutputGain"},
+				{kAsioSupportsOutputMeter, "kAsioSupportsOutputMeter"},
+				{kAsioOverload, "kAsioOverload"},
+				});
+		}
+
 		ASIOError PrintError(ASIOError error) {
 			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
 			return error;
@@ -304,7 +324,7 @@ namespace flexasio_test {
 				std::cout << "<-" << std::endl;
 			};
 			callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
-				std::cout << "asioMessage(selector = " << selector << ", value = " << value << ", message = " << message << ", opt = " << opt << ")" << std::endl;
+				std::cout << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")" << std::endl;
 				std::cout << "<- 0" << std::endl;
 				return 0;
 			};
