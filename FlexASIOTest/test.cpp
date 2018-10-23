@@ -6,6 +6,7 @@
 #include <string_view>
 #include <vector>
 #include <cassert>
+#include <sstream>
 
 #include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
@@ -22,46 +23,56 @@ namespace flexasio_test {
 			using function = std::function<ReturnValue(Args...)>;
 		};
 
-		std::string_view GetASIOErrorString(ASIOError error) {
-			switch (error) {
-			case ASE_OK: return "ASE_OK";
-			case ASE_SUCCESS: return "ASE_SUCCESS";
-			case ASE_NotPresent: return "ASE_NotPresent";
-			case ASE_HWMalfunction: return "ASE_HWMalfunction";
-			case ASE_InvalidParameter: return "ASE_InvalidParameter";
-			case ASE_InvalidMode: return "ASE_InvalidMode";
-			case ASE_SPNotAdvancing: return "ASE_SPNotAdvancing";
-			case ASE_NoClock: return "ASE_NoClock";
-			case ASE_NoMemory: return "ASE_NoMemory";
-			default: return "(unknown ASE error code)";
+		template <typename EnumType> std::string EnumToString(EnumType value, std::initializer_list<std::pair<EnumType, std::string_view>> enum_strings) {
+			std::stringstream result;
+			result << value;
+			for (const auto& enum_string : enum_strings) {
+				if (enum_string.first == value) {
+					result << " [" << enum_string.second << "]";
+					break;
+				}
 			}
+			return result.str();
 		}
 
-		std::string_view GetASIOSampleTypeString(ASIOSampleType sampleType) {
-			switch (sampleType) {
-			case ASIOSTInt16MSB: return "ASIOSTInt16MSB";
-			case ASIOSTInt24MSB: return "ASIOSTInt24MSB";
-			case ASIOSTInt32MSB: return "ASIOSTInt32MSB";
-			case ASIOSTFloat32MSB: return "ASIOSTFloat32MSB";
-			case ASIOSTFloat64MSB: return "ASIOSTFloat64MSB";
-			case ASIOSTInt32MSB16: return "ASIOSTInt32MSB16";
-			case ASIOSTInt32MSB18: return "ASIOSTInt32MSB18";
-			case ASIOSTInt32MSB20: return "ASIOSTInt32MSB20";
-			case ASIOSTInt32MSB24: return "ASIOSTInt32MSB24";
-			case ASIOSTInt16LSB: return "ASIOSTInt16LSB";
-			case ASIOSTInt24LSB: return "ASIOSTInt24LSB";
-			case ASIOSTInt32LSB: return "ASIOSTInt32LSB";
-			case ASIOSTFloat32LSB: return "ASIOSTFloat32LSB";
-			case ASIOSTFloat64LSB: return "ASIOSTFloat64LSB";
-			case ASIOSTInt32LSB16: return "ASIOSTInt32LSB16";
-			case ASIOSTInt32LSB18: return "ASIOSTInt32LSB18";
-			case ASIOSTInt32LSB20: return "ASIOSTInt32LSB20";
-			case ASIOSTInt32LSB24: return "ASIOSTInt32LSB24";
-			case ASIOSTDSDInt8LSB1: return "ASIOSTDSDInt8LSB1";
-			case ASIOSTDSDInt8MSB1: return "ASIOSTDSDInt8MSB1";
-			case  ASIOSTDSDInt8NER8: return "ASIOSTDSDInt8NER8";
-			default: return "(unknown ASIO sample type)";
-			}
+		std::string GetASIOErrorString(ASIOError error) {
+			return EnumToString(error, {
+				{ASE_OK, "ASE_OK"},
+				{ASE_SUCCESS, "ASE_SUCCESS"},
+				{ASE_NotPresent, "ASE_NotPresent"},
+				{ASE_HWMalfunction, "ASE_HWMalfunction"},
+				{ASE_InvalidParameter, "ASE_InvalidParameter"},
+				{ASE_InvalidMode, "ASE_InvalidMode"},
+				{ASE_SPNotAdvancing, "ASE_SPNotAdvancing"},
+				{ASE_NoClock, "ASE_NoClock"},
+				{ASE_NoMemory, "ASE_NoMemory"},
+				});
+		}
+
+		std::string GetASIOSampleTypeString(ASIOSampleType sampleType) {
+			return EnumToString(sampleType, {
+				{ASIOSTInt16MSB, "ASIOSTInt16MSB"},
+				{ASIOSTInt24MSB, "ASIOSTInt24MSB"},
+				{ASIOSTInt32MSB, "ASIOSTInt32MSB"},
+				{ASIOSTFloat32MSB, "ASIOSTFloat32MSB"},
+				{ASIOSTFloat64MSB, "ASIOSTFloat64MSB"},
+				{ASIOSTInt32MSB16, "ASIOSTInt32MSB16"},
+				{ASIOSTInt32MSB18, "ASIOSTInt32MSB18"},
+				{ASIOSTInt32MSB20, "ASIOSTInt32MSB20"},
+				{ASIOSTInt32MSB24, "ASIOSTInt32MSB24"},
+				{ASIOSTInt16LSB, "ASIOSTInt16LSB"},
+				{ASIOSTInt24LSB, "ASIOSTInt24LSB"},
+				{ASIOSTInt32LSB, "ASIOSTInt32LSB"},
+				{ASIOSTFloat32LSB, "ASIOSTFloat32LSB"},
+				{ASIOSTFloat64LSB, "ASIOSTFloat64LSB"},
+				{ASIOSTInt32LSB16, "ASIOSTInt32LSB16"},
+				{ASIOSTInt32LSB18, "ASIOSTInt32LSB18"},
+				{ASIOSTInt32LSB20, "ASIOSTInt32LSB20"},
+				{ASIOSTInt32LSB24, "ASIOSTInt32LSB24"},
+				{ASIOSTDSDInt8LSB1, "ASIOSTDSDInt8LSB1"},
+				{ASIOSTDSDInt8MSB1, "ASIOSTDSDInt8MSB1"},
+				{ASIOSTDSDInt8NER8, "ASIOSTDSDInt8NER8"},
+				});
 		}
 
 		ASIOError PrintError(ASIOError error) {
