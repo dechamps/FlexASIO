@@ -23,15 +23,18 @@ namespace flexasio_test {
 			using function = std::function<ReturnValue(Args...)>;
 		};
 
-		template <typename EnumType> std::string EnumToString(EnumType value, std::initializer_list<std::pair<EnumType, std::string_view>> enum_strings) {
+		template <typename Key, typename KeyValues> auto Find(const Key& key, const KeyValues& keyValues) -> std::optional<decltype(begin(keyValues)->second)> {
+			for (const auto& keyValue : keyValues) {
+				if (keyValue.first == key) return keyValue.second;
+			}
+			return std::nullopt;
+		}
+
+		template <typename Enum> std::string EnumToString(Enum value, std::initializer_list<std::pair<Enum, std::string_view>> enumStrings) {
 			std::stringstream result;
 			result << value;
-			for (const auto& enum_string : enum_strings) {
-				if (enum_string.first == value) {
-					result << " [" << enum_string.second << "]";
-					break;
-				}
-			}
+			const auto string = Find(value, enumStrings);
+			if (string) result << " [" << *string << "]";
 			return result.str();
 		}
 
@@ -230,6 +233,28 @@ namespace flexasio_test {
 			return PrintError(ASIOStop()) == ASE_OK;
 		}
 
+		using ASIOMessageHandler = decltype(ASIOCallbacks::asioMessage);
+
+		long HandleSelectorSupportedMessage(long, long value, void*, double*);
+
+		long HandleSupportsTimeInfoMessage(long, long, void*, double*) { return 1; }
+
+		constexpr std::pair<long, ASIOMessageHandler> message_selector_handlers[] = {
+				{kAsioSelectorSupported, HandleSelectorSupportedMessage},
+				{kAsioSupportsTimeInfo, HandleSupportsTimeInfoMessage},
+		};
+
+		long HandleSelectorSupportedMessage(long, long value, void*, double*) {
+			std::cout << "Being queried for message selector " << GetASIOMessageSelectorString(value) << std::endl;
+			return Find(value, message_selector_handlers).has_value() ? 1 : 0;
+		}
+
+		long HandleASIOMessage(long selector, long value, void* message, double* opt) {
+			const auto handler = Find(selector, message_selector_handlers);
+			if (!handler.has_value()) return 0;
+			return (*handler)(selector, value, message, opt);
+		}
+
 		// Allows the use of capturing lambdas for ASIO callbacks, even though ASIO doesn't provide any mechanism to pass user context to callbacks.
 		// This works by assuming that we will only use one set of callbacks at a time, such that we can use global state as a side channel.
 		struct Callbacks {
@@ -325,8 +350,9 @@ namespace flexasio_test {
 			};
 			callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
 				std::cout << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")" << std::endl;
-				std::cout << "<- 0" << std::endl;
-				return 0;
+				const auto result = HandleASIOMessage(selector, value, message, opt);
+				std::cout << "<- " << result << std::endl;
+				return result;
 			};
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
