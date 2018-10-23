@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <condition_variable>
 #include <iostream>
 #include <functional>
@@ -30,12 +31,52 @@ namespace flexasio_test {
 			return std::nullopt;
 		}
 
+		// Ensures that chars are printed as numbers, not characters.
+		template <typename T, typename = std::enable_if_t<!std::is_arithmetic<std::decay_t<T>>::value>> auto Printable(T&& value) -> decltype(std::forward<T>(value)) { return std::forward<T>(value); }
+		template <typename T, typename = std::enable_if_t<std::is_arithmetic<std::decay_t<T>>::value>> auto Printable(T&& value) -> decltype(+std::forward<T>(value)) { return +std::forward<T>(value); }
+
+		template <typename Items> void Join(const Items& items, std::string_view delimiter, std::ostream& result) {
+			auto it = std::begin(items);
+			if (it == std::end(items)) return;
+			for (;;) {
+				result << Printable(*it);
+				if (++it == std::end(items)) break;
+				result << delimiter;
+			}
+		}
+		template <typename Items> std::string Join(const Items& items, std::string_view delimiter) {
+			std::stringstream result;
+			Join(items, delimiter, result);
+			return result.str();
+		}
+
 		template <typename Enum> std::string EnumToString(Enum value, std::initializer_list<std::pair<Enum, std::string_view>> enumStrings) {
 			std::stringstream result;
 			result << value;
 			const auto string = Find(value, enumStrings);
 			if (string) result << " [" << *string << "]";
 			return result.str();
+		}
+
+		template <typename Bitfield> std::string BitfieldToString(Bitfield bitfield, std::initializer_list<std::pair<Bitfield, std::string_view>> bitStrings) {
+			std::vector<std::string_view> bits;
+			std::stringstream result;
+			result << bitfield;
+			for (const auto& bitString : bitStrings) {
+				if (bitfield & bitString.first) bits.push_back(bitString.second);
+			}
+			if (!bits.empty()) {
+				result << " ";
+				Join(bits, " ", result);
+			}
+			return result.str();
+		}
+
+		template <typename ASIOInt64> int64_t ASIOToInt64(ASIOInt64 asioInt64) {
+			int64_t result;
+			static_assert(sizeof asioInt64 == sizeof result);
+			memcpy(&result, &asioInt64, sizeof result);
+			return result;
 		}
 
 		std::string GetASIOErrorString(ASIOError error) {
@@ -98,9 +139,39 @@ namespace flexasio_test {
 				});
 		}
 
+		std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags) {
+			return BitfieldToString(timeInfoFlags, {
+				{kSystemTimeValid, "kSystemTimeValid"},
+				{kSamplePositionValid, "kSamplePositionValid"},
+				{kSampleRateValid, "kSampleRateValid"},
+				{kSpeedValid, "kSpeedValid"},
+				{kSampleRateChanged, "kSampleRateChanged"},
+				{kClockSourceChanged, "kClockSourceChanged"},
+				});
+		}
+
+		std::string GetASIOTimeCodeFlagsString(unsigned long timeCodeFlags) {
+			return BitfieldToString(timeCodeFlags, {
+				{kTcValid, "kTcValid"},
+				{kTcRunning, "kTcRunning"},
+				{kTcReverse, "kTcReverse"},
+				{kTcOnspeed, "kTcOnspeed"},
+				{kTcStill, "kTcStill"},
+				{kTcSpeedValid, "kTcSpeedValid"},
+				});
+		}
+
 		ASIOError PrintError(ASIOError error) {
 			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
 			return error;
+		}
+
+		void PrintASIOTime(const ASIOTime& asioTime) {
+			std::cout << "ASIOTime::reserved = " << Join(asioTime.reserved, " ") << std::endl;
+			const auto& timeInfo = asioTime.timeInfo;
+			std::cout << "ASIOTime::timeInfo: speed = " << timeInfo.speed << " systemTime = " << ASIOToInt64(timeInfo.systemTime) << " samplePosition = " << ASIOToInt64(timeInfo.samplePosition) << " sampleRate = " << timeInfo.sampleRate << " flags = " << GetAsioTimeInfoFlagsString(timeInfo.flags) << " reserved = " << Join(timeInfo.reserved, " ") << std::endl;
+			const auto& timeCode = asioTime.timeCode;
+			std::cout << "ASIOTime::timeCode: speed = " << timeCode.speed << " timeCodeSamples = " << ASIOToInt64(timeCode.timeCodeSamples) << " flags = " << GetASIOTimeCodeFlagsString(timeCode.flags) << " future = " << Join(timeCode.future, " ") << std::endl;
 		}
 
 		std::optional<ASIODriverInfo> Init() {
@@ -356,6 +427,7 @@ namespace flexasio_test {
 			};
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				if (params != nullptr) PrintASIOTime(*params);
 				incrementBufferSwitchCount();
 				std::cout << "<- nullptr" << std::endl;
 				return nullptr;
