@@ -515,8 +515,8 @@ namespace flexasio {
 		{
 			Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
-			PaStreamParameters input_parameters;
-			PaWasapiStreamInfo input_wasapi_stream_info;
+			PaStreamParameters input_parameters = { 0 };
+			PaWasapiStreamInfo input_wasapi_stream_info = { 0 };
 			if (input_device_info)
 			{
 				input_parameters.device = pa_api_info->defaultInputDevice;
@@ -539,8 +539,8 @@ namespace flexasio {
 				}
 			}
 
-			PaStreamParameters output_parameters;
-			PaWasapiStreamInfo output_wasapi_stream_info;
+			PaStreamParameters output_parameters = { 0 };
+			PaWasapiStreamInfo output_wasapi_stream_info = { 0 };
 			if (output_device_info)
 			{
 				output_parameters.device = pa_api_info->defaultOutputDevice;
