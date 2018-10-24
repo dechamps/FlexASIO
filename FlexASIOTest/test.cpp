@@ -16,7 +16,7 @@
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
 
-namespace flexasio_test {
+namespace flexasio {
 	namespace {
 
 		template <typename FunctionPointer> struct function_pointer_traits;
@@ -498,6 +498,6 @@ namespace flexasio_test {
 }
 
 int main(int, char**) {
-	if (!::flexasio_test::InitAndRun()) return 1;
+	if (!::flexasio::InitAndRun()) return 1;
 	return 0;
 }
