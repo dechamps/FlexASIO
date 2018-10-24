@@ -304,6 +304,14 @@ namespace flexasio_test {
 			return PrintError(ASIOStop()) == ASE_OK;
 		}
 
+		void GetSamplePosition() {
+			std::cout << "ASIOGetSamplePosition()" << std::endl;
+			ASIOSamples samples;
+			ASIOTimeStamp timeStamp;
+			if (PrintError(ASIOGetSamplePosition(&samples, &timeStamp)) != ASE_OK) return;
+			std::cout << "Sample position: " << ASIOToInt64(samples) << " timestamp: " << ASIOToInt64(timeStamp) << std::endl;
+		}
+
 		using ASIOMessageHandler = decltype(ASIOCallbacks::asioMessage);
 
 		long HandleSelectorSupportedMessage(long, long value, void*, double*);
@@ -412,6 +420,7 @@ namespace flexasio_test {
 			Callbacks callbacks;
 			callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				GetSamplePosition();
 				incrementBufferSwitchCount();
 				std::cout << "<-" << std::endl;
 			};
@@ -428,6 +437,7 @@ namespace flexasio_test {
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
 				if (params != nullptr) PrintASIOTime(*params);
+				GetSamplePosition();
 				incrementBufferSwitchCount();
 				std::cout << "<- nullptr" << std::endl;
 				return nullptr;
