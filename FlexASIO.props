@@ -7,6 +7,7 @@
     <_PropertySheetDisplayName>FlexASIO Common</_PropertySheetDisplayName>
     <OutDir>$(SolutionDir)build\$(PlatformShortName)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)build\$(PlatformShortName)\$(Configuration)\$(ProjectName)\</IntDir>
+    <DisableFastUpToDateCheck>true</DisableFastUpToDateCheck>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -28,12 +29,6 @@
       <OutputDirectory>$(IntDir)</OutputDirectory>
       <TypeLibraryName>$(ProjectName).tlb</TypeLibraryName>
     </Midl>
-    <PreBuildEvent>
-      <Command>powershell -ExecutionPolicy Bypass -NoProfile -NonInteractive -File ..\version.ps1</Command>
-    </PreBuildEvent>
-    <PreBuildEvent>
-      <Message>Generating version information</Message>
-    </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup />
 </Project>

@@ -7,6 +7,12 @@
     <ProjectDescription>FlexASIO common utility library</ProjectDescription>
   </PropertyGroup>
   <PropertyGroup />
+  <ItemDefinitionGroup>
+    <PreBuildEvent>
+      <Command>powershell -ExecutionPolicy Bypass -NoProfile -NonInteractive -File ..\version.ps1</Command>
+      <Message>Generating version information</Message>
+    </PreBuildEvent>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="ProjectDescription">
       <Value>$(ProjectDescription)</Value>
