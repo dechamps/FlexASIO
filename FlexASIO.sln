@@ -12,6 +12,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FlexASIOTest", "FlexASIOTes
 		{10C0DB40-8F17-4EFD-ABC5-8DFDED9A6910} = {10C0DB40-8F17-4EFD-ABC5-8DFDED9A6910}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FlexASIOUtil", "FlexASIOUtil\FlexASIOUtil.vcxproj", "{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -44,6 +46,14 @@ Global
 		{84D0CD72-2EE0-4C89-AE29-615C021779BE}.Release|Win32.Build.0 = Release|Win32
 		{84D0CD72-2EE0-4C89-AE29-615C021779BE}.Release|x64.ActiveCfg = Release|x64
 		{84D0CD72-2EE0-4C89-AE29-615C021779BE}.Release|x64.Build.0 = Release|x64
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Debug|Win32.ActiveCfg = Debug|Win32
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Debug|Win32.Build.0 = Debug|Win32
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Debug|x64.ActiveCfg = Debug|x64
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Debug|x64.Build.0 = Debug|x64
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|Win32.ActiveCfg = Release|Win32
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|Win32.Build.0 = Release|Win32
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|x64.ActiveCfg = Release|x64
+		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

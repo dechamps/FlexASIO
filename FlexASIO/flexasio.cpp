@@ -42,7 +42,7 @@
 #include "flexasio.rc.h"
 #include "log.h"
 #include "flexasio_h.h"
-#include "../build/version.h"
+#include "../FlexASIOUtil/version.h"
 
 // From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
 extern "C" {
@@ -229,7 +229,7 @@ namespace flexasio {
 			sample_rate(0), buffers(nullptr), stream(NULL), started(false)
 		{
 			Log() << "CFlexASIO::CFlexASIO()";
-			Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << FLEXASIO_VERSION << " built on " << FLEXASIO_BUILD_TIMESTR;
+			Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
 			Log() << "Host process: " << GetModuleName();
 			// Note: we're supposed to use Pa_GetVersionInfo(), but sadly, it looks like it's not exported from the PortAudio DLL.
 			Log() << "PortAudio version: " << Pa_GetVersionText();
