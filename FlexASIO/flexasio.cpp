@@ -849,14 +849,12 @@ namespace flexasio {
 			}
 			else
 			{
-				ASIOTime time;
+				ASIOTime time = { 0 };
 				time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid | kSpeedValid;
 				time.timeInfo.speed = 1;
 				time.timeInfo.samplePosition = position;
 				time.timeInfo.systemTime = position_timestamp;
 				time.timeInfo.sampleRate = sample_rate;
-				time.timeCode.flags = 0;
-				time.timeCode.timeCodeSamples.lo = time.timeCode.timeCodeSamples.hi = 0;
 				time.timeCode.speed = 1;
 				Log() << "Firing ASIO bufferSwitchTimeInfo() callback with samplePosition " << ASIOToInt64(time.timeInfo.samplePosition) << ", systemTime " << ASIOToInt64(time.timeInfo.systemTime);
 				callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
