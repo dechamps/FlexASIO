@@ -842,9 +842,11 @@ namespace flexasio {
 					memcpy(output_samples[buffers_info_it->channelNum], buffer, frameCount * sizeof(Sample));
 			}
 
-			Log() << "Handing off the buffer to the ASIO host";
 			if (!host_supports_timeinfo)
+			{
+				Log() << "Firing ASIO bufferSwitch() callback";
 				callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
+			}
 			else
 			{
 				ASIOTime time;
@@ -856,6 +858,7 @@ namespace flexasio {
 				time.timeCode.flags = 0;
 				time.timeCode.timeCodeSamples.lo = time.timeCode.timeCodeSamples.hi = 0;
 				time.timeCode.speed = 1;
+				Log() << "Firing ASIO bufferSwitchTimeInfo() callback with samplePosition " << ASIOToInt64(time.timeInfo.samplePosition) << ", systemTime " << ASIOToInt64(time.timeInfo.systemTime);
 				callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 			}
 			std::swap(locked_buffer_index, our_buffer_index);
