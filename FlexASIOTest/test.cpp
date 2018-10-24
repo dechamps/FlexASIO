@@ -12,6 +12,7 @@
 #include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
 #include "..\FlexASIO\flexasio.h"
+#include "..\FlexASIOUtil\asio.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
@@ -70,13 +71,6 @@ namespace flexasio {
 				Join(bits, " ", result);
 			}
 			return result.str();
-		}
-
-		template <typename ASIOInt64> int64_t ASIOToInt64(ASIOInt64 asioInt64) {
-			int64_t result;
-			static_assert(sizeof asioInt64 == sizeof result);
-			memcpy(&result, &asioInt64, sizeof result);
-			return result;
 		}
 
 		std::string GetASIOErrorString(ASIOError error) {

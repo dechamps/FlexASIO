@@ -19,9 +19,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="asio.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="asio.cpp" />
     <ClCompile Include="version.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
