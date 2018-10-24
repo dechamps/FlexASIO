@@ -43,6 +43,7 @@
 #include "log.h"
 #include "flexasio_h.h"
 #include "../FlexASIOUtil/version.h"
+#include "../FlexASIOUtil/asio.h"
 
 // From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
 extern "C" {
@@ -113,18 +114,6 @@ namespace flexasio {
 			// [ input channel 0 buffer 1 ] [ input channel 1 buffer 1 ] ... [ input channel N buffer 1 ] [ output channel 0 buffer 1 ] [ output channel 1 buffer 1 ] .. [ output channel N buffer 1 ]
 			// The reason why this is a giant blob is to slightly improve performance by (theroretically) improving memory locality.
 			Sample* const buffers;
-		};
-
-		union ASIOSamplesUnion
-		{
-			ASIOSamples asio_samples;
-			long long int samples;
-		};
-
-		union ASIOTimeStampUnion
-		{
-			ASIOTimeStamp asio_timestamp;
-			long long int timestamp;
 		};
 
 		class CFlexASIO :
@@ -208,8 +197,8 @@ namespace flexasio {
 			bool host_supports_timeinfo;
 			// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 			size_t our_buffer_index;
-			ASIOSamplesUnion position;
-			ASIOTimeStampUnion position_timestamp;
+			ASIOSamples position;
+			ASIOTimeStamp position_timestamp;
 			bool started;
 		};
 
@@ -774,8 +763,8 @@ namespace flexasio {
 
 			Log() << "Starting stream";
 			our_buffer_index = 0;
-			position.samples = 0;
-			position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
+			position = Int64ToASIO<ASIOSamples>(0);
+			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) timeGetTime()) * 1000000);
 			started = true;
 			PaError error = Pa_StartStream(stream);
 			if (error != paNoError)
@@ -861,8 +850,8 @@ namespace flexasio {
 				ASIOTime time;
 				time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid | kSpeedValid;
 				time.timeInfo.speed = 1;
-				time.timeInfo.samplePosition = position.asio_samples;
-				time.timeInfo.systemTime = position_timestamp.asio_timestamp;
+				time.timeInfo.samplePosition = position;
+				time.timeInfo.systemTime = position_timestamp;
 				time.timeInfo.sampleRate = sample_rate;
 				time.timeCode.flags = 0;
 				time.timeCode.timeCodeSamples.lo = time.timeCode.timeCodeSamples.hi = 0;
@@ -870,8 +859,8 @@ namespace flexasio {
 				callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 			}
 			std::swap(locked_buffer_index, our_buffer_index);
-			position.samples += frameCount;
-			position_timestamp.timestamp = ((long long int) timeGetTime()) * 1000000;
+			position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
+			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) timeGetTime()) * 1000000);
 
 			Log() << "Returning from stream callback";
 			return paContinue;
@@ -886,9 +875,9 @@ namespace flexasio {
 				return ASE_SPNotAdvancing;
 			}
 
-			*sPos = position.asio_samples;
-			*tStamp = position_timestamp.asio_timestamp;
-			Log() << "Returning: sample position " << position.samples << ", timestamp " << position_timestamp.timestamp;
+			*sPos = position;
+			*tStamp = position_timestamp;
+			Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);
 			return ASE_OK;
 		}
 
