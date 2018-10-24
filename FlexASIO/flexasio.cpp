@@ -92,6 +92,22 @@ namespace flexasio {
 		std::mutex PortAudioLogger::mutex;
 		size_t PortAudioLogger::referenceCount = 0;
 
+		class Win32HighResolutionTimer {
+		public:
+			Win32HighResolutionTimer() {
+				Log() << "Starting high resolution timer";
+				timeBeginPeriod(1);
+			}
+			Win32HighResolutionTimer(const Win32HighResolutionTimer&) = delete;
+			Win32HighResolutionTimer(Win32HighResolutionTimer&&) = delete;
+			~Win32HighResolutionTimer() {
+				Log() << "Stopping high resolution timer";
+				timeEndPeriod(1);
+			}
+
+			DWORD GetTimeMilliseconds() const { return timeGetTime(); }
+		};
+
 		const PaSampleFormat portaudio_sample_format = paFloat32;
 		const ASIOSampleType asio_sample_type = ASIOSTFloat32LSB;
 		typedef float Sample;
@@ -200,6 +216,7 @@ namespace flexasio {
 			ASIOSamples position;
 			ASIOTimeStamp position_timestamp;
 			bool started;
+			std::optional<Win32HighResolutionTimer> win32HighResolutionTimer;
 		};
 
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
@@ -762,10 +779,11 @@ namespace flexasio {
 				Log() << "The host supports time info";
 
 			Log() << "Starting stream";
+			win32HighResolutionTimer.emplace();
+			started = true;
 			our_buffer_index = 0;
 			position = Int64ToASIO<ASIOSamples>(0);
-			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) timeGetTime()) * 1000000);
-			started = true;
+			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
 			PaError error = Pa_StartStream(stream);
 			if (error != paNoError)
 			{
@@ -798,6 +816,7 @@ namespace flexasio {
 			}
 
 			started = false;
+			win32HighResolutionTimer.reset();
 			Log() << "Stopped successfully";
 			return ASE_OK;
 		}
@@ -859,7 +878,7 @@ namespace flexasio {
 			}
 			std::swap(locked_buffer_index, our_buffer_index);
 			position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
-			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) timeGetTime()) * 1000000);
+			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
 
 			Log() << "Returning from stream callback";
 			return paContinue;
