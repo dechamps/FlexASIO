@@ -421,8 +421,8 @@ namespace flexasio_test {
 			callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
 				std::cout << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
 				GetSamplePosition();
-				incrementBufferSwitchCount();
 				std::cout << "<-" << std::endl;
+				incrementBufferSwitchCount();
 			};
 			callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
 				std::cout << "sampleRateDidChange(" << sampleRate << ")" << std::endl;
@@ -438,8 +438,8 @@ namespace flexasio_test {
 				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
 				if (params != nullptr) PrintASIOTime(*params);
 				GetSamplePosition();
-				incrementBufferSwitchCount();
 				std::cout << "<- nullptr" << std::endl;
+				incrementBufferSwitchCount();
 				return nullptr;
 			};
 
