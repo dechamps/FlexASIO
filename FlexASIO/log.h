@@ -37,6 +37,11 @@ namespace flexasio {
 		}
 
 	private:
+		class Output;
+
+		Log(Output*);
+
+		Output* const output;
 		std::optional<std::stringstream> stream;
 	};
 

@@ -79,21 +79,11 @@ namespace flexasio {
 			return userDirectoryString;
 		}
 
-		class LogOutput {
-		public:
-			LogOutput(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {}
+	}
 
-			void Write(const std::string& str) {
-				std::scoped_lock stream_lock(stream_mutex);
-				stream << str << std::flush;
-			}
-
-		private:
-			std::mutex stream_mutex;
-			std::ofstream stream;
-		};
-
-		std::unique_ptr<LogOutput> OpenLogOutput() {
+	class Log::Output {
+	public:
+		static std::unique_ptr<Output> Open() {
 			const auto userDirectory = GetUserDirectory();
 			if (!userDirectory.has_value()) return nullptr;
 
@@ -102,18 +92,38 @@ namespace flexasio {
 
 			if (!std::filesystem::exists(path)) return nullptr;
 
-			return std::make_unique<LogOutput>(path);
+			auto output = std::make_unique<Output>(path);
+
+			return output;
 		}
 
-		LogOutput* GetLogOutput() {
-			static const auto output = OpenLogOutput();
+		static Output* Get() {
+			static const auto output = Open();
 			return output.get();
 		}
 
-	}
+		Output(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
+			Log(this) << "Logfile opened";
+		}
 
-	Log::Log() {
-		if (GetLogOutput() == nullptr) return;
+		~Output() {
+			Log(this) << "Closing logfile";
+		}
+
+		void Write(const std::string& str) {
+			std::scoped_lock stream_lock(stream_mutex);
+			stream << str << std::flush;
+		}
+
+	private:
+		std::mutex stream_mutex;
+		std::ofstream stream;
+	};
+
+	Log::Log() : Log(Output::Get()) { }
+
+	Log::Log(Output* output) : output(output) {
+		if (output == nullptr) return;
 		stream.emplace();
 
 		FILETIME now;
@@ -124,7 +134,7 @@ namespace flexasio {
 	Log::~Log() {
 		if (!stream.has_value()) return;
 		*stream << std::endl;
-		GetLogOutput()->Write(stream->str());
+		output->Write(stream->str());
 	}
 
 }
