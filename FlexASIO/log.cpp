@@ -14,6 +14,29 @@ namespace flexasio {
 
 	namespace {
 
+		template <auto functionPointer> struct FunctionPointerFunctor {
+			template <typename... Args> auto operator()(Args&&... args) {
+				return functionPointer(std::forward<Args>(args)...);
+			}
+		};
+
+		using Library = std::unique_ptr<std::decay_t<decltype(*HMODULE())>, FunctionPointerFunctor<FreeLibrary>>;
+
+		// On systems that support GetSystemTimePreciseAsFileTime() (i.e. Windows 8 and greater), use that.
+		// Otherwise, fall back to GetSystemTimeAsFileTime().
+		// See https://github.com/dechamps/FlexASIO/issues/15
+		decltype(GetSystemTimeAsFileTime)* GetSystemTimeAsFileTimeFunction() {
+			static const auto function = [] {
+				static const Library library(LoadLibraryA("kernel32.dll"));
+				if (library != nullptr) {
+					const auto function = GetProcAddress(library.get(), "GetSystemTimePreciseAsFileTime");
+					if (function != nullptr) return reinterpret_cast<decltype(GetSystemTimePreciseAsFileTime)*>(function);
+				}
+				return GetSystemTimeAsFileTime;
+			}();
+			return function;
+		}
+
 		int64_t FileTimeToTenthsOfUs(const FILETIME filetime) {
 			ULARGE_INTEGER integer;
 			integer.LowPart = filetime.dwLowDateTime;
@@ -104,6 +127,7 @@ namespace flexasio {
 
 		Output(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
 			Log(this) << "Logfile opened";
+			Log(this) << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
 		}
 
 		~Output() {
@@ -127,7 +151,7 @@ namespace flexasio {
 		stream.emplace();
 
 		FILETIME now;
-		GetSystemTimePreciseAsFileTime(&now);
+		GetSystemTimeAsFileTimeFunction()(&now);
 		*stream << FormatFiletimeISO8601(now) << " " << GetCurrentProcessId() << " " << GetCurrentThreadId() << " ";
 	}
 
