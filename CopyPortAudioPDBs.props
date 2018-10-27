@@ -1,0 +1,14 @@
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <_PropertySheetDisplayName>Copy PortAudio PDBs</_PropertySheetDisplayName>
+  </PropertyGroup>
+  
+  <Target Name="CopyPortAudioPDBs" AfterTargets="CopyFilesToOutputDirectory" BeforeTargets="CopyLocalFilesOutputGroup;RegisterOutput" Condition="'$(VcpkgEnabled)' == 'true' and '$(VcpkgApplocalDeps)' == 'true'">
+    <ItemGroup Condition="$(VcpkgConfiguration.StartsWith('Debug'))">
+      <ReferenceCopyLocalPaths Include="$(VcpkgRoot)debug\bin\portaudio_$(PlatformShortName).pdb" />
+    </ItemGroup>
+    <ItemGroup Condition="$(VcpkgConfiguration.StartsWith('Release'))">
+      <ReferenceCopyLocalPaths Include="$(VcpkgRoot)bin\portaudio_$(PlatformShortName).pdb" />
+    </ItemGroup>
+  </Target>
+</Project>
