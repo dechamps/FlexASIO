@@ -201,6 +201,4 @@ You will also need to provide the ASIO SDK.
 and copy the ASIOSDK2.3.1 folder to the FlexASIO folder.
 
 The installer can be built using
-[Inno Setup](http://www.jrsoftware.org/isdl.php). You will need to put
-the PortAudio DLL and the MSVC 2017 runtime DLLs in the redist/ folder
-first.
+[Inno Setup](http://www.jrsoftware.org/isdl.php).
