@@ -180,15 +180,27 @@ also help.
 
 ## DEVELOPER INFORMATION
 
-FlexASIO currently uses the Microsoft Visual C++ 2017 toolchain,
-though it should work just fine with any later version. You will need
-the following dependencies:
- - ASIO SDK (copy the ASIOSDK2.3.1 folder into the FlexASIO folder):
-   http://www.steinberg.net/en/company/developer.html
- - PortAudio (add include and link directories):
-   http://www.portaudio.com/download.html
+FlexASIO is designed to use the Microsoft Visual C++ 2017 toolchain.
 
-The installer can be built using Inno Setup:
-http://www.jrsoftware.org/isdl.php You will need to put
+You will need to provide the PortAudio library dependency. The best way
+is to use [vcpkg](https://github.com/Microsoft/vcpkg):
+
+```
+vcpkg install portaudio:x64-windows portaudio:x86-windows
+```
+
+Note that, at the time of writing, the portaudio port in current vcpkg
+master has a couple of issues; make sure you have the following vcpkg
+patches before running the above command:
+
+ - [Add pa_win_waveformat.h to public includes](https://github.com/Microsoft/vcpkg/pull/4582)
+ - [Copy PDB files](https://github.com/Microsoft/vcpkg/pull/4583)
+ 
+You will also need to provide the ASIO SDK.
+[Download](http://www.steinberg.net/en/company/developer.html) the SDK
+and copy the ASIOSDK2.3.1 folder to the FlexASIO folder.
+
+The installer can be built using
+[Inno Setup](http://www.jrsoftware.org/isdl.php). You will need to put
 the PortAudio DLL and the MSVC 2017 runtime DLLs in the redist/ folder
 first.
