@@ -190,11 +190,12 @@ vcpkg install portaudio:x64-windows portaudio:x86-windows
 ```
 
 Note that, at the time of writing, the portaudio port in current vcpkg
-master has a couple of issues; make sure you have the following vcpkg
+master has a number of issues; make sure you have the following vcpkg
 patches before running the above command:
 
  - [Add pa_win_waveformat.h to public includes](https://github.com/Microsoft/vcpkg/pull/4582)
  - [Copy PDB files](https://github.com/Microsoft/vcpkg/pull/4583)
+ - [Enable debug output](https://github.com/Microsoft/vcpkg/pull/4592)
  
 You will also need to provide the ASIO SDK.
 [Download](http://www.steinberg.net/en/company/developer.html) the SDK
