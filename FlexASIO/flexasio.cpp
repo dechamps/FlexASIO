@@ -569,21 +569,25 @@ namespace flexasio {
 		{
 			Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
-			PaStreamParameters input_parameters = { 0 };
-			PaWasapiStreamInfo input_wasapi_stream_info = { 0 };
+			PaStreamParameters common_parameters = { 0 };
+			common_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
+			common_parameters.hostApiSpecificStreamInfo = NULL;
+
+			PaWasapiStreamInfo common_wasapi_stream_info = { 0 };
+			common_wasapi_stream_info.size = sizeof(common_wasapi_stream_info);
+			common_wasapi_stream_info.hostApiType = paWASAPI;
+			common_wasapi_stream_info.version = 1;
+			common_wasapi_stream_info.flags = 0;
+
+			PaStreamParameters input_parameters = common_parameters;
+			PaWasapiStreamInfo input_wasapi_stream_info = common_wasapi_stream_info;
 			if (input_device_info)
 			{
 				input_parameters.device = pa_api_info->defaultInputDevice;
 				input_parameters.channelCount = input_channel_count;
-				input_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 				input_parameters.suggestedLatency = input_device_info->defaultLowInputLatency;
-				input_parameters.hostApiSpecificStreamInfo = NULL;
 				if (pa_api_info->type == paWASAPI)
 				{
-					input_wasapi_stream_info.size = sizeof(input_wasapi_stream_info);
-					input_wasapi_stream_info.hostApiType = paWASAPI;
-					input_wasapi_stream_info.version = 1;
-					input_wasapi_stream_info.flags = 0;
 					if (input_channel_mask != 0)
 					{
 						input_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
@@ -593,21 +597,15 @@ namespace flexasio {
 				}
 			}
 
-			PaStreamParameters output_parameters = { 0 };
-			PaWasapiStreamInfo output_wasapi_stream_info = { 0 };
+			PaStreamParameters output_parameters = common_parameters;
+			PaWasapiStreamInfo output_wasapi_stream_info = common_wasapi_stream_info;
 			if (output_device_info)
 			{
 				output_parameters.device = pa_api_info->defaultOutputDevice;
 				output_parameters.channelCount = output_channel_count;
-				output_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 				output_parameters.suggestedLatency = output_device_info->defaultLowOutputLatency;
-				output_parameters.hostApiSpecificStreamInfo = NULL;
 				if (pa_api_info->type == paWASAPI)
 				{
-					output_wasapi_stream_info.size = sizeof(output_wasapi_stream_info);
-					output_wasapi_stream_info.hostApiType = paWASAPI;
-					output_wasapi_stream_info.version = 1;
-					output_wasapi_stream_info.flags = 0;
 					if (output_channel_mask != 0)
 					{
 						output_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
