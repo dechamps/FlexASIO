@@ -20,10 +20,12 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asio.h" />
+    <ClInclude Include="shell.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="asio.cpp" />
+    <ClCompile Include="shell.cpp" />
     <ClCompile Include="version.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

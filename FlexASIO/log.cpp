@@ -10,6 +10,8 @@
 #include <shlobj.h>
 #include <windows.h>
 
+#include "../FlexASIOUtil/shell.h"
+
 namespace flexasio {
 
 	namespace {
@@ -92,14 +94,6 @@ namespace flexasio {
 			stream << std::setw(2) << absoluteBias / 60 << ":" << std::setw(2) << absoluteBias % 60;
 
 			return stream.str();
-		}
-
-		std::optional<std::wstring> GetUserDirectory() {
-			PWSTR userDirectory = nullptr;
-			if (::SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &userDirectory) != S_OK) return std::nullopt;
-			const std::wstring userDirectoryString(userDirectory);
-			::CoTaskMemFree(userDirectory);
-			return userDirectoryString;
 		}
 
 	}
