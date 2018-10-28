@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asio.h" />
+    <ClInclude Include="find.h" />
     <ClInclude Include="shell.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>

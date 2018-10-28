@@ -13,6 +13,7 @@
 #include "..\ASIOSDK2.3.1\common\asio.h"
 #include "..\FlexASIO\flexasio.h"
 #include "..\FlexASIOUtil\asio.h"
+#include "..\FlexASIOUtil\find.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
@@ -24,13 +25,6 @@ namespace flexasio {
 		template <typename ReturnValue, typename... Args> struct function_pointer_traits<ReturnValue(*)(Args...)> {
 			using function = std::function<ReturnValue(Args...)>;
 		};
-
-		template <typename Key, typename KeyValues> auto Find(const Key& key, const KeyValues& keyValues) -> std::optional<decltype(begin(keyValues)->second)> {
-			for (const auto& keyValue : keyValues) {
-				if (keyValue.first == key) return keyValue.second;
-			}
-			return std::nullopt;
-		}
 
 		// Ensures that chars are printed as numbers, not characters.
 		template <typename T, typename = std::enable_if_t<!std::is_arithmetic<std::decay_t<T>>::value>> auto Printable(T&& value) -> decltype(std::forward<T>(value)) { return std::forward<T>(value); }
