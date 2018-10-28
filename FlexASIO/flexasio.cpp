@@ -579,10 +579,6 @@ namespace flexasio {
 				common_wasapi_stream_info.hostApiType = paWASAPI;
 				common_wasapi_stream_info.version = 1;
 				common_wasapi_stream_info.flags = 0;
-				Log() << "Opening WASAPI stream in " << (config->wasapiExclusiveMode ? "exclusive" : "shared") << " mode";
-				if (config->wasapiExclusiveMode) {
-					common_wasapi_stream_info.flags |= paWinWasapiExclusive;
-				}
 			}
 
 			PaStreamParameters input_parameters = common_parameters;
@@ -598,6 +594,10 @@ namespace flexasio {
 					{
 						input_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
 						input_wasapi_stream_info.channelMask = input_channel_mask;
+					}
+					Log() << "Using " << (config->input.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for input WASAPI stream";
+					if (config->input.wasapiExclusiveMode) {
+						input_wasapi_stream_info.flags |= paWinWasapiExclusive;
 					}
 					input_parameters.hostApiSpecificStreamInfo = &input_wasapi_stream_info;
 				}
@@ -616,6 +616,10 @@ namespace flexasio {
 					{
 						output_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
 						output_wasapi_stream_info.channelMask = output_channel_mask;
+					}
+					Log() << "Using " << (config->output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
+					if (config->output.wasapiExclusiveMode) {
+						output_wasapi_stream_info.flags |= paWinWasapiExclusive;
 					}
 					output_parameters.hostApiSpecificStreamInfo = &output_wasapi_stream_info;
 				}

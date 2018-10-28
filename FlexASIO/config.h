@@ -7,7 +7,12 @@ namespace flexasio {
 
 	struct Config {
 		std::optional<std::string> backend;
-		bool wasapiExclusiveMode = false;
+
+		struct Stream {
+			bool wasapiExclusiveMode = false;
+		};
+		Stream input;
+		Stream output;
 	};
 
 	std::optional<Config> LoadConfig();

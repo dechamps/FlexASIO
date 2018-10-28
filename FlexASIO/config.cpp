@@ -91,24 +91,47 @@ namespace flexasio {
 			{toml::Value::TABLE_TYPE, "TABLE"},
 		};
 
-		template <typename T> auto GetValue(const toml::Value& table, const std::string& key) -> std::optional<T> {
-			const auto option = table.find(key);
-			if (option == nullptr) return std::nullopt;
-			if (!option->is<T>()) {
+		template <typename T> auto GetValue(const toml::Value& value) -> decltype(value.as<T>()) {
+			if (!value.is<T>()) {
 				std::stringstream error;
-				error << "configuration option '" << key << "' is of type " << Find(option->type(), tomlTypes).value_or("(unknown)") << ", expected " << Find(TomlValueTraits<T>::type, tomlTypes).value_or("(unknown)");
+				error << "expected type " << Find(TomlValueTraits<T>::type, tomlTypes).value_or("(unknown)") << ", got " << Find(value.type(), tomlTypes).value_or("(unknown)");
 				throw std::runtime_error(error.str());
 			}
-			return option->as<T>();
+			return value.as<T>();
+		}
+
+		template <typename Functor> void ProcessOption(const toml::Table& table, const std::string& key, Functor functor) {
+			const auto value = table.find(key);
+			if (value == table.end()) return;
+			try {
+				return functor(value->second);
+			}
+			catch (const std::exception& exception) {
+				throw std::runtime_error(std::string("in option '") + key + "': " + exception.what());
+			}
+		}
+
+		template <typename T, typename Functor> void ProcessTypedOption(const toml::Table& table, const std::string& key, Functor functor) {
+			return ProcessOption(table, key, [&](const toml::Value& value) { return functor(GetValue<T>(value)); });
 		}
 
 		template <typename T> struct RemoveOptional { using Value = T; };
 		template <typename T> struct RemoveOptional<std::optional<T>> { using Value = T; };
 
-		template <typename T> void SetOption(const toml::Value& table, const std::string& key, T& option) {
-			const auto value = GetValue<RemoveOptional<T>::Value>(table, key);
-			if (!value.has_value()) return;
-			option = *value;
+		template <typename T> void SetOption(const toml::Table& table, const std::string& key, T& option) {
+			ProcessTypedOption<RemoveOptional<T>::Value>(table, key, [&](const RemoveOptional<T>::Value& value) {
+				option = value;
+			});
+		}
+
+		void SetStream(const toml::Table& table, Config::Stream& stream) {
+			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
+		}
+
+		void SetConfig(const toml::Table& table, Config& config) {
+			SetOption(table, "backend", config.backend);
+			ProcessTypedOption<toml::Table>(table, "input", [&](const toml::Table& table) { SetStream(table, config.input); });
+			ProcessTypedOption<toml::Table>(table, "output", [&](const toml::Table& table) { SetStream(table, config.output); });
 		}
 
 	}
@@ -117,18 +140,15 @@ namespace flexasio {
 		const auto tomlValue = LoadConfigToml();
 		if (!tomlValue.has_value()) return std::nullopt;
 
-		Config config;
-
 		try {
-			SetOption(*tomlValue, "backend", config.backend);
-			SetOption(*tomlValue, "wasapiExclusiveMode", config.wasapiExclusiveMode);
+			Config config;
+			SetConfig(tomlValue->as<toml::Table>(), config);
+			return config;
 		}
 		catch (const std::exception& exception) {
 			Log() << "Invalid configuration: " << exception.what();
 			return std::nullopt;
 		}
-
-		return config;
 	}
 
 }
