@@ -92,6 +92,9 @@ Note that it is possible (and relatively easy) to change these settings
 by manually editing the source code and recompiling FlexASIO. Not
 ideal, I know. Patches welcome.
 
+TODO: there is now a way to tune some FlexASIO options using a
+configuration file. This is not documented yet.
+
 If you are using different hardware devices for input and output, each
 with its own hardware clock, you are likely to end up with glitches
 sooner or later during playback. How soon depends on the amount of
@@ -196,6 +199,13 @@ patches before running the above command:
  - [Add pa_win_waveformat.h to public includes](https://github.com/Microsoft/vcpkg/pull/4582)
  - [Copy PDB files](https://github.com/Microsoft/vcpkg/pull/4583)
  - [Enable debug output](https://github.com/Microsoft/vcpkg/pull/4592)
+ 
+There is also a dependency on the
+[tinytoml](https://github.com/mayah/tinytoml) library:
+
+```
+vcpkg install tinytoml:x64-windows tinytoml:x86-windows
+```
  
 You will also need to provide the ASIO SDK.
 [Download](http://www.steinberg.net/en/company/developer.html) the SDK

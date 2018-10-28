@@ -40,10 +40,12 @@
 #include "..\ASIOSDK2.3.1\common\iasiodrv.h"
 
 #include "flexasio.rc.h"
+#include "config.h"
 #include "log.h"
 #include "flexasio_h.h"
 #include "../FlexASIOUtil/version.h"
 #include "../FlexASIOUtil/asio.h"
+#include "../FlexASIOUtil/string.h"
 
 // From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
 extern "C" {
@@ -188,6 +190,7 @@ namespace flexasio {
 
 			PortAudioLogger portAudioLogger;
 
+			std::optional<Config> config;
 			bool portaudio_initialized;
 			std::string init_error;
 
@@ -241,6 +244,57 @@ namespace flexasio {
 			Log() << "PortAudio version: " << Pa_GetVersionText();
 		}
 
+		void LogPortAudioApiList() {
+			const auto pa_api_count = Pa_GetHostApiCount();
+			for (PaHostApiIndex pa_api_index = 0; pa_api_index < pa_api_count; ++pa_api_index) {
+				const auto pa_api_info = Pa_GetHostApiInfo(pa_api_index);
+				Log() << "PortAudio host API backend at index " << pa_api_index << ": " << ((pa_api_info != nullptr) ? pa_api_info->name : "(null)");
+			}
+		}
+
+		const PaHostApiInfo* SelectDefaultPortAudioApi() {
+			Log() << "Selecting default PortAudio host API";
+			// The default API used by PortAudio is WinMME. It's also the worst one.
+			// The following attempts to get a better API (in order of preference).
+			auto pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paWASAPI);
+			if (pa_api_index == paHostApiNotFound)
+				pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
+			if (pa_api_index == paHostApiNotFound)
+				pa_api_index = Pa_GetDefaultHostApi();
+			if (pa_api_index < 0)
+			{
+				Log() << "Unable to select a default PortAudio host API backend: " << Pa_GetErrorText(pa_api_index);
+				return nullptr;
+			}
+			Log() << "Selecting PortAudio host API index " << pa_api_index;
+			return Pa_GetHostApiInfo(pa_api_index);
+		}
+
+		const PaHostApiInfo* SelectPortAudioApiByName(std::string_view name) {
+			Log() << "Searching for a PortAudio host API named '" << name << "'";
+			const auto pa_api_count = Pa_GetHostApiCount();
+			const PaHostApiInfo* pa_api_info = nullptr;
+
+			for (PaHostApiIndex pa_api_index = 0; pa_api_index < pa_api_count; ++pa_api_index) {
+				pa_api_info = Pa_GetHostApiInfo(pa_api_index);
+				if (pa_api_info == nullptr) {
+					Log() << "Unable to get PortAudio API info for API index " << pa_api_index;
+					continue;
+				}
+				// TODO: the comparison should be case insensitive.
+				if (pa_api_info->name == name) {
+					Log() << "Found host API at index " << pa_api_index;
+					break;
+				}
+				pa_api_info = nullptr;
+			}
+
+			if (pa_api_info == nullptr)
+				Log() << "Unable to find a PortAudio host API backend named '" << name << "'";
+
+			return pa_api_info;
+		}
+
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()
 		{
 			Log() << "CFlexASIO::init()";
@@ -248,6 +302,13 @@ namespace flexasio {
 			{
 				Log() << "Already initialized";
 				return ASE_NotPresent;
+			}
+
+			config = LoadConfig();
+			if (!config.has_value()) {
+				init_error = "Could not load FlexASIO configuration. See FlexASIO log for details.";
+				Log() << "Refusing to initialize due to configuration errors";
+				return ASIOFalse;
 			}
 
 			Log() << "Initializing PortAudio";
@@ -260,28 +321,15 @@ namespace flexasio {
 			}
 			portaudio_initialized = true;
 
-			// The default API used by PortAudio is WinMME. It's also the worst one.
-			// The following attempts to get a better API (in order of preference).
-			PaHostApiIndex pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paWASAPI);
-			if (pa_api_index == paHostApiNotFound)
-				pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
-			if (pa_api_index == paHostApiNotFound)
-				pa_api_index = Pa_GetDefaultHostApi();
-			if (pa_api_index < 0)
-			{
-				init_error = "Unable to get PortAudio API index";
+			LogPortAudioApiList();
+			pa_api_info = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
+			if (pa_api_info == nullptr) {
+				init_error = "Unable to select PortAudio host API backend";
 				Log() << init_error;
 				return ASIOFalse;
 			}
 
-			pa_api_info = Pa_GetHostApiInfo(pa_api_index);
-			if (!pa_api_info)
-			{
-				init_error = "Unable to get PortAudio API info";
-				Log() << init_error;
-				return ASIOFalse;
-			}
-			Log() << "Selected host API #" << pa_api_index << " (" << pa_api_info->name << ")";
+			Log() << "Selected PortAudio host API backend: " << pa_api_info->name;
 
 			sample_rate = 0;
 
