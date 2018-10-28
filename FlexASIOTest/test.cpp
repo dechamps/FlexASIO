@@ -14,6 +14,7 @@
 #include "..\FlexASIO\flexasio.h"
 #include "..\FlexASIOUtil\asio.h"
 #include "..\FlexASIOUtil\find.h"
+#include "..\FlexASIOUtil\string.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
@@ -26,24 +27,9 @@ namespace flexasio {
 			using function = std::function<ReturnValue(Args...)>;
 		};
 
-		// Ensures that chars are printed as numbers, not characters.
-		template <typename T, typename = std::enable_if_t<!std::is_arithmetic<std::decay_t<T>>::value>> auto Printable(T&& value) -> decltype(std::forward<T>(value)) { return std::forward<T>(value); }
-		template <typename T, typename = std::enable_if_t<std::is_arithmetic<std::decay_t<T>>::value>> auto Printable(T&& value) -> decltype(+std::forward<T>(value)) { return +std::forward<T>(value); }
-
-		template <typename Items> void Join(const Items& items, std::string_view delimiter, std::ostream& result) {
-			auto it = std::begin(items);
-			if (it == std::end(items)) return;
-			for (;;) {
-				result << Printable(*it);
-				if (++it == std::end(items)) break;
-				result << delimiter;
-			}
-		}
-		template <typename Items> std::string Join(const Items& items, std::string_view delimiter) {
-			std::stringstream result;
-			Join(items, delimiter, result);
-			return result.str();
-		}
+		struct CharAsNumber {
+			template <typename T> auto operator()(T&& value) { return +std::forward<T>(value); }
+		};
 
 		template <typename Enum> std::string EnumToString(Enum value, std::initializer_list<std::pair<Enum, std::string_view>> enumStrings) {
 			std::stringstream result;
@@ -62,7 +48,7 @@ namespace flexasio {
 			}
 			if (!bits.empty()) {
 				result << " ";
-				Join(bits, " ", result);
+				JoinStream(bits, " ", result);
 			}
 			return result.str();
 		}
@@ -157,9 +143,9 @@ namespace flexasio {
 		void PrintASIOTime(const ASIOTime& asioTime) {
 			std::cout << "ASIOTime::reserved = " << Join(asioTime.reserved, " ") << std::endl;
 			const auto& timeInfo = asioTime.timeInfo;
-			std::cout << "ASIOTime::timeInfo: speed = " << timeInfo.speed << " systemTime = " << ASIOToInt64(timeInfo.systemTime) << " samplePosition = " << ASIOToInt64(timeInfo.samplePosition) << " sampleRate = " << timeInfo.sampleRate << " flags = " << GetAsioTimeInfoFlagsString(timeInfo.flags) << " reserved = " << Join(timeInfo.reserved, " ") << std::endl;
+			std::cout << "ASIOTime::timeInfo: speed = " << timeInfo.speed << " systemTime = " << ASIOToInt64(timeInfo.systemTime) << " samplePosition = " << ASIOToInt64(timeInfo.samplePosition) << " sampleRate = " << timeInfo.sampleRate << " flags = " << GetAsioTimeInfoFlagsString(timeInfo.flags) << " reserved = " << Join(timeInfo.reserved, " ", CharAsNumber()) << std::endl;
 			const auto& timeCode = asioTime.timeCode;
-			std::cout << "ASIOTime::timeCode: speed = " << timeCode.speed << " timeCodeSamples = " << ASIOToInt64(timeCode.timeCodeSamples) << " flags = " << GetASIOTimeCodeFlagsString(timeCode.flags) << " future = " << Join(timeCode.future, " ") << std::endl;
+			std::cout << "ASIOTime::timeCode: speed = " << timeCode.speed << " timeCodeSamples = " << ASIOToInt64(timeCode.timeCodeSamples) << " flags = " << GetASIOTimeCodeFlagsString(timeCode.flags) << " future = " << Join(timeCode.future, " ", CharAsNumber()) << std::endl;
 		}
 
 		std::optional<ASIODriverInfo> Init() {

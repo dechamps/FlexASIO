@@ -22,6 +22,7 @@
     <ClInclude Include="asio.h" />
     <ClInclude Include="find.h" />
     <ClInclude Include="shell.h" />
+    <ClInclude Include="string.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
