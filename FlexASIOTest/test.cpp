@@ -482,8 +482,13 @@ namespace flexasio {
 
 			const bool result = Run();
 
-			ReleaseFlexASIO(theAsioDriver);
-			theAsioDriver = nullptr;
+			// There are cases in which the ASIO host library will nullify the driver pointer.
+			// For example, it does that if the driver fails to initialize.
+			// (Sadly the ASIO host library won't call Release() in that case, because memory leaks are fun!)
+			if (theAsioDriver != nullptr) {
+				ReleaseFlexASIO(theAsioDriver);
+				theAsioDriver = nullptr;
+			}
 
 			return result;
 		}
