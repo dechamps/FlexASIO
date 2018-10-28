@@ -70,6 +70,15 @@ namespace flexasio {
 			config.backend = backend->as<std::string>();
 		}
 
+		const auto wasapiExclusiveMode = tomlValue->find("wasapiExclusiveMode");
+		if (wasapiExclusiveMode != nullptr) {
+			if (!wasapiExclusiveMode->is<bool>()) {
+				Log() << "Configuration error: wasapiExclusiveMode value must be a bool";
+				return std::nullopt;
+			}
+			config.wasapiExclusiveMode = wasapiExclusiveMode->as<bool>();
+		}
+
 		return config;
 	}
 

@@ -574,10 +574,16 @@ namespace flexasio {
 			common_parameters.hostApiSpecificStreamInfo = NULL;
 
 			PaWasapiStreamInfo common_wasapi_stream_info = { 0 };
-			common_wasapi_stream_info.size = sizeof(common_wasapi_stream_info);
-			common_wasapi_stream_info.hostApiType = paWASAPI;
-			common_wasapi_stream_info.version = 1;
-			common_wasapi_stream_info.flags = 0;
+			if (pa_api_info->type == paWASAPI) {
+				common_wasapi_stream_info.size = sizeof(common_wasapi_stream_info);
+				common_wasapi_stream_info.hostApiType = paWASAPI;
+				common_wasapi_stream_info.version = 1;
+				common_wasapi_stream_info.flags = 0;
+				Log() << "Opening WASAPI stream in " << (config->wasapiExclusiveMode ? "exclusive" : "shared") << " mode";
+				if (config->wasapiExclusiveMode) {
+					common_wasapi_stream_info.flags |= paWinWasapiExclusive;
+				}
+			}
 
 			PaStreamParameters input_parameters = common_parameters;
 			PaWasapiStreamInfo input_wasapi_stream_info = common_wasapi_stream_info;
