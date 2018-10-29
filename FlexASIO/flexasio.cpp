@@ -809,7 +809,8 @@ namespace flexasio {
 				return ASE_NotPresent;
 			}
 
-			// TODO: should we add the buffer size?
+			// See https://github.com/dechamps/FlexASIO/issues/10.
+			// The latency that PortAudio reports appears to take the buffer size into account already.
 			*inputLatency = (long)(stream_info->inputLatency * sample_rate);
 			*outputLatency = (long)(stream_info->outputLatency * sample_rate);
 			Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
