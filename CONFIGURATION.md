@@ -64,10 +64,10 @@ In practice, PortAudio will recognize the following names: `MME`,
 Example:
 
 ```toml
-backend = "Windows DirectSound"
+backend = "Windows WASAPI"
 ```
 
-The default behaviour is to use WASAPI.
+The default behaviour is to use DirectSound.
 
 **TODO**: provide background information about the various kinds of backends
 

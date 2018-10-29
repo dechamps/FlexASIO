@@ -255,11 +255,10 @@ namespace flexasio {
 
 		const PaHostApiInfo* SelectDefaultPortAudioApi() {
 			Log() << "Selecting default PortAudio host API";
-			// The default API used by PortAudio is WinMME. It's also the worst one.
-			// The following attempts to get a better API (in order of preference).
-			auto pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paWASAPI);
-			if (pa_api_index == paHostApiNotFound)
-				pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
+			// The default API used by PortAudio is MME.
+			// It works, but DirectSound seems like the best default (it reports a more sensible number of channels, for example).
+			// So let's try that first, and fall back to whatever the PortAudio default is if DirectSound is not available somehow.
+			auto pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
 			if (pa_api_index == paHostApiNotFound)
 				pa_api_index = Pa_GetDefaultHostApi();
 			if (pa_api_index < 0)
