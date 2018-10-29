@@ -179,7 +179,7 @@ namespace flexasio {
 			ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw() final;
 
 			// Not implemented
-			ASIOError controlPanel() throw() final { Log() << "CFlexASIO::controlPanel()"; return ASE_NotPresent; }
+			ASIOError controlPanel() throw() final;
 			ASIOError future(long selector, void *opt) throw() final { Log() << "CFlexASIO::future()"; return ASE_InvalidParameter; }
 			ASIOError outputReady() throw() final { Log() << "CFlexASIO::outputReady()"; return ASE_NotPresent; }
 
@@ -190,6 +190,7 @@ namespace flexasio {
 
 			PortAudioLogger portAudioLogger;
 
+			HWND windowHandle = nullptr;
 			std::optional<Config> config;
 			bool portaudio_initialized;
 			std::string init_error;
@@ -297,12 +298,14 @@ namespace flexasio {
 
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()
 		{
-			Log() << "CFlexASIO::init()";
+			Log() << "CFlexASIO::init(sysHandle = " << sysHandle << ")";
 			if (input_device_info || output_device_info)
 			{
 				Log() << "Already initialized";
 				return ASE_NotPresent;
 			}
+
+			windowHandle = reinterpret_cast<decltype(windowHandle)>(sysHandle);
 
 			config = LoadConfig();
 			if (!config.has_value()) {
@@ -952,6 +955,15 @@ namespace flexasio {
 			*sPos = position;
 			*tStamp = position_timestamp;
 			Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);
+			return ASE_OK;
+		}
+
+		ASIOError CFlexASIO::controlPanel() throw() {
+			Log() << "CFlexASIO::controlPanel()";
+			const auto url = std::string("https://github.com/dechamps/FlexASIO/blob/") + gitstr + "/CONFIGURATION.md";
+			Log() << "Opening URL: " << url;
+			const auto result = ShellExecuteA(windowHandle, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
+			Log() << "ShellExecuteA() result: " << result;
 			return ASE_OK;
 		}
 
