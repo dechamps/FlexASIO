@@ -19,14 +19,14 @@ to make ASIO usable with audio hardware that doesn't come with its own
 ASIO drivers.
 
 While ASIO4ALL and ASIO2KS use a low-level Windows audio API known as
-"WDM-KS" (also called "DirectKS", "Kernel Streaming") to operate, and
+"Kernel Streaming" (also called "DirectKS", "WDM-KS") to operate, and
 ASIO2WASAPI uses WASAPI (in exclusive mode), FlexASIO uses an
 intermediate library called PortAudio that itself supports a large
 number of operating system sound APIs, including MME, DirectSound,
 WDM-KS, as well as the modern WASAPI interface that was released with
 Windows Vista (ironically, PortAudio can use ASIO as well, nicely
 closing the circle). Thus FlexASIO can be used to interface with any
-sound API available with your system.
+sound API available on your system. For more information, see [BACKENDS][].
 
 PortAudio: http://www.portaudio.com/
 
@@ -87,24 +87,12 @@ basically a fact of life and is a problem with all audio APIs and
 drivers; the only way around it is to compensate the clock dift on the
 fly using sample rate conversion, but that's much more complicated.
 
-WASAPI in "shared" mode (at least on my test system) seems to require that the
-sample rate used by the application matches the sample rate configured for the
-device (which is configurable in the Windows audio control panel).
-Corollary: if you use WASAPI Shared, your input device's sample rate need to
-match the output device's, else FlexASIO will not return any usable sample
-rates. In some ways this could be considered a feature since it guarantees that
-no unwanted sample rate conversions will take place.
-
 FlexASIO has not been designed with latency in mind. That being said,
 the current version should not add any latency on top of PortAudio
 itself. The thing is, due to the way ASIO works (static buffer sizes),
 PortAudio sometimes has no choice but to add additional buffering (which
 adds latency) in order to meet the requirements of both FlexASIO and
 the system API it's using.
-
-If you are using a backend other than WASAPI, FlexASIO will be unable to display
-the channel names (i.e. "Surround Left", etc.) in the channel list. That's
-a limitation of PortAudio.
 
 FlexASIO is Windows-only for now. That could change in the future, as
 PortAudio itself is cross-platform.
@@ -196,3 +184,5 @@ and copy the ASIOSDK2.3.1 folder to the FlexASIO folder.
 
 The installer can be built using
 [Inno Setup](http://www.jrsoftware.org/isdl.php).
+
+[BACKENDS]: BACKENDS.md

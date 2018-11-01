@@ -54,6 +54,10 @@ both input and output streams.
 to use. In PortAudio parlance, this is called the *host API*. FlexASIO uses the
 term "backend" to avoid potential confusion with the term "ASIO host".
 
+This is by far the most important option in FlexASIO. Changing the backend can
+have wide-ranging consequences on the operation of the entire audio pipeline.
+For more information, see [BACKENDS][].
+
 The value of the option is matched against PortAudio host API names. If
 the PortAudio library that FlexASIO is linked against doesn't provide an host
 API by that name, FlexASIO will fail to initialize.
@@ -69,8 +73,6 @@ backend = "Windows WASAPI"
 
 The default behaviour is to use DirectSound.
 
-**TODO**: provide background information about the various kinds of backends
-
 ### `[input]` and `[output]` sections
 
 Options in this section only apply to the *input* (capture, recording) audio
@@ -79,7 +81,8 @@ stream or to the *output* (rendering, playback) audio stream, respectively.
 #### Option `wasapiExclusiveMode`
 
 *Boolean*-typed option that determines if the stream should be opened in
-*WASAPI Shared* or in *WASAPI Exclusive* mode.
+*WASAPI Shared* or in *WASAPI Exclusive* mode. For more information, see
+[BACKENDS][].
 
 This option is ignored if the backend is not WASAPI. See the `backend` option,
 above.
@@ -95,6 +98,7 @@ wasapiExclusiveMode = true
 
 The default behaviour is to open the stream in *shared* mode.
 
+[BACKENDS]: BACKENDS.md
 [configuration file]: https://en.wikipedia.org/wiki/Configuration_file
 [GUI]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [INI files]: https://en.wikipedia.org/wiki/INI_file
