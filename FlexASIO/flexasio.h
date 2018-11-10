@@ -98,13 +98,11 @@ namespace flexasio {
 		PortAudioHandle portAudioHandle;
 
 		const HostApi hostApi;
+		const std::optional<Device> inputDevice;
+		const std::optional<Device> outputDevice;
 
-		PaDeviceIndex input_device_index = paNoDevice;
-		const PaDeviceInfo* input_device_info = nullptr;
-		PaDeviceIndex output_device_index = paNoDevice;
-		const PaDeviceInfo* output_device_info = nullptr;
-		long input_channel_count = 0;
-		long output_channel_count = 0;
+		long input_channel_count;
+		long output_channel_count;
 		// WAVEFORMATEXTENSIBLE channel masks. Not always available.
 		DWORD input_channel_mask = 0;
 		DWORD output_channel_mask = 0;

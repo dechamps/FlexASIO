@@ -77,4 +77,22 @@ namespace flexasio {
 		return *info;
 	}
 
+	std::ostream& operator<<(std::ostream& os, const Device& device) {
+		os << "PortAudio device index " << device.index
+			<< " (name: '" << device.info.name
+			<< "', host API: " << device.info.hostApi
+			<< ", default sample rate: " << device.info.defaultSampleRate
+			<< ", max input channels: " << device.info.maxInputChannels
+			<< ", max output channels: " << device.info.maxOutputChannels
+			<< ", input latency: " << device.info.defaultLowInputLatency << " (low) " << device.info.defaultHighInputLatency << " (high)"
+			<< ", output latency: " << device.info.defaultLowOutputLatency << " (low) " << device.info.defaultHighOutputLatency << " (high)" << ")";
+		return os;
+	}
+
+	const PaDeviceInfo& Device::GetInfo(PaDeviceIndex index) {
+		const auto info = Pa_GetDeviceInfo(index);
+		if (info == nullptr) throw std::runtime_error(std::string("Unable to get device info for device index ") + std::to_string(index));
+		return *info;
+	}
+
 }

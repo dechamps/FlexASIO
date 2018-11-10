@@ -26,4 +26,16 @@ namespace flexasio {
 		static const PaHostApiInfo& GetInfo(PaHostApiIndex index);
 	};
 
+	struct Device {
+		explicit Device(PaDeviceIndex index) : index(index), info(GetInfo(index)) {}
+
+		const PaDeviceIndex index;
+		const PaDeviceInfo& info;
+
+		friend std::ostream& operator<<(std::ostream&, const Device&);
+
+	private:
+		static const PaDeviceInfo& GetInfo(PaDeviceIndex index);
+	};
+
 }
