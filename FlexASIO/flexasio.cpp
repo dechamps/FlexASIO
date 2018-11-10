@@ -98,66 +98,45 @@ namespace flexasio {
 			Sample* const buffers;
 		};
 
-		class CFlexASIO :
-			public ::CFlexASIO,
-			public CComObjectRootEx<CComMultiThreadModel>,
-			public CComCoClass<CFlexASIO, &__uuidof(::CFlexASIO)>
-		{
-			BEGIN_COM_MAP(CFlexASIO)
-				COM_INTERFACE_ENTRY(IFlexASIO)
-
-				// To add insult to injury, ASIO mistakes the CLSID for an IID when calling CoCreateInstance(). Yuck.
-				COM_INTERFACE_ENTRY(::CFlexASIO)
-
-				// IASIO doesn't have an IID (see above), which is why it doesn't appear here.
-			END_COM_MAP()
-
-			DECLARE_REGISTRY_RESOURCEID(IDR_FLEXASIO)
-
+		class ASIOException : public std::runtime_error {
 		public:
-			CFlexASIO() throw();
-			~CFlexASIO() throw();
-
-			// IASIO implementation
-
-			ASIOBool init(void* sysHandle) throw() final;
-			void getDriverName(char* name) throw() final { Log() << "CFlexASIO::getDriverName()"; strcpy_s(name, 32, "FlexASIO"); }
-			long getDriverVersion() throw() final { Log() << "CFlexASIO::getDriverVersion()"; return 0; }
-			void getErrorMessage(char* string) throw() final { Log() << "CFlexASIO::getErrorMessage()"; strcpy_s(string, 124, init_error.c_str()); }
-
-			ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw() final;
-			ASIOError setClockSource(long reference) throw() final;
-			ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw() final;
-			ASIOError getChannelInfo(ASIOChannelInfo* info) throw() final;
-			ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw() final;
-			ASIOError canSampleRate(ASIOSampleRate sampleRate) throw() final;
-			ASIOError setSampleRate(ASIOSampleRate sampleRate) throw() final;
-			ASIOError getSampleRate(ASIOSampleRate* sampleRate) throw() final;
-
-			ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw() final;
-			ASIOError disposeBuffers() throw() final;
-			ASIOError getLatencies(long* inputLatency, long* outputLatency) throw() final;
-
-			ASIOError start() throw() final;
-			ASIOError stop() throw() final;
-			ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw() final;
-
-			// Not implemented
-			ASIOError controlPanel() throw() final;
-			ASIOError future(long selector, void *opt) throw() final { Log() << "CFlexASIO::future()"; return ASE_InvalidParameter; }
-			ASIOError outputReady() throw() final { Log() << "CFlexASIO::outputReady()"; return ASE_NotPresent; }
+			template <typename... Args> ASIOException(ASIOError asioError, Args&&... args) : asioError(asioError), std::runtime_error(std::forward<Args>(args)...) {}
+			ASIOError GetASIOError() const { return asioError; }
 
 		private:
-			PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer) throw();
-			static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<CFlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
+			ASIOError asioError;
+		};
+
+		class FlexASIO final {
+		public:
+			FlexASIO(void* sysHandle);
+			~FlexASIO();
+
+			void GetChannels(long* numInputChannels, long* numOutputChannels);
+			void GetChannelInfo(ASIOChannelInfo* info);
+			bool CanSampleRate(ASIOSampleRate sampleRate);
+			void SetSampleRate(ASIOSampleRate sampleRate);
+			void GetSampleRate(ASIOSampleRate* sampleRate);
+
+			void CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
+			void DisposeBuffers();
+			void GetLatencies(long* inputLatency, long* outputLatency);
+
+			void Start();
+			void Stop();
+			void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
+
+			void ControlPanel();
+
+		private:
+			PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer);
+			static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() { return static_cast<FlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags); }
 			int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw();
 
 			PortAudioLogger portAudioLogger;
 
-			HWND windowHandle = nullptr;
+			const HWND windowHandle = nullptr;
 			std::optional<Config> config;
-			bool portaudio_initialized = false;
-			std::string init_error;
 
 			const PaHostApiInfo* pa_api_info = nullptr;
 			PaDeviceIndex input_device_index = paNoDevice;
@@ -189,11 +168,151 @@ namespace flexasio {
 			std::optional<Win32HighResolutionTimer> win32HighResolutionTimer;
 		};
 
-		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
+		class CFlexASIO :
+			public ::CFlexASIO,
+			public CComObjectRootEx<CComMultiThreadModel>,
+			public CComCoClass<CFlexASIO, &__uuidof(::CFlexASIO)>
+		{
+			BEGIN_COM_MAP(CFlexASIO)
+				COM_INTERFACE_ENTRY(IFlexASIO)
 
-		CFlexASIO::CFlexASIO() throw() {
-			Log() << "CFlexASIO::CFlexASIO()";
-		}
+				// To add insult to injury, ASIO mistakes the CLSID for an IID when calling CoCreateInstance(). Yuck.
+				COM_INTERFACE_ENTRY(::CFlexASIO)
+
+				// IASIO doesn't have an IID (see above), which is why it doesn't appear here.
+			END_COM_MAP()
+
+			DECLARE_REGISTRY_RESOURCEID(IDR_FLEXASIO)
+
+		public:
+			CFlexASIO() throw() { Enter("CFlexASIO()", [] {}); }
+			~CFlexASIO() throw() { Enter("~CFlexASIO()", [] {}); }
+
+			// IASIO implementation
+
+			ASIOBool init(void* sysHandle) throw() final {
+				return (Enter("init()", [&] {
+					if (flexASIO.has_value()) throw ASIOException(ASE_InvalidMode, "init() called more than once");
+					flexASIO.emplace(sysHandle);
+				}) == ASE_OK) ? ASIOTrue : ASIOFalse;
+			}
+			void getDriverName(char* name) throw() final {
+				Enter("getDriverName()", [&] {
+					strcpy_s(name, 32, "FlexASIO");
+				});
+			}
+			long getDriverVersion() throw() final {
+				Enter("getDriverVersion()", [] {});
+				return 0;
+			}
+			void getErrorMessage(char* string) throw() final {
+				Enter("getErrorMessage()", [&] {
+					strcpy_s(string, 124, lastError.c_str());
+				});
+			}
+			ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw() final;
+			ASIOError setClockSource(long reference) throw() final;
+			ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw() final;
+
+			ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw() final {
+				return EnterWithMethod("getChannels()", &FlexASIO::GetChannels, numInputChannels, numOutputChannels);
+			}
+			ASIOError getChannelInfo(ASIOChannelInfo* info) throw() final {
+				return EnterWithMethod("getChannelInfo()", &FlexASIO::GetChannelInfo, info);
+			}
+			ASIOError canSampleRate(ASIOSampleRate sampleRate) throw() final {
+				bool result;
+				const auto error = EnterInitialized("canSampleRate()", [&] {
+					result = flexASIO->CanSampleRate(sampleRate);
+				});
+				if (error != ASE_OK) return error;
+				return result ? ASE_OK : ASE_NoClock;
+			}
+			ASIOError setSampleRate(ASIOSampleRate sampleRate) throw() final {
+				return EnterWithMethod("setSampleRate()", &FlexASIO::SetSampleRate, sampleRate);
+			}
+			ASIOError getSampleRate(ASIOSampleRate* sampleRate) throw() final {
+				return EnterWithMethod("getSampleRate()", &FlexASIO::GetSampleRate, sampleRate);
+			}
+
+			ASIOError createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw() final {
+				return EnterWithMethod("createBuffers()", &FlexASIO::CreateBuffers, bufferInfos, numChannels, bufferSize, callbacks);
+			}
+			ASIOError disposeBuffers() throw() final {
+				return EnterWithMethod("disposeBuffers()", &FlexASIO::DisposeBuffers);
+			}
+			ASIOError getLatencies(long* inputLatency, long* outputLatency) throw() final {
+				return EnterWithMethod("getLatencies()", &FlexASIO::GetLatencies, inputLatency, outputLatency);
+			}
+
+			ASIOError start() throw() final {
+				return EnterWithMethod("start()", &FlexASIO::Start);
+			}
+			ASIOError stop() throw() final {
+				return EnterWithMethod("stop()", &FlexASIO::Stop);
+			}
+			ASIOError getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw() final {
+				return EnterWithMethod("getSamplePosition()", &FlexASIO::GetSamplePosition, sPos, tStamp);
+			}
+
+			ASIOError controlPanel() throw() final {
+				return EnterWithMethod("controlPanel()", &FlexASIO::ControlPanel);
+			}
+			ASIOError future(long selector, void *opt) throw() final {
+				return Enter("future()", [] {
+					throw ASIOException(ASE_InvalidParameter, "future() is not supported");
+				});
+			}
+
+			ASIOError outputReady() throw() final {
+				return Enter("outputReady()", [] {
+					throw ASIOException(ASE_InvalidParameter, "outputReady() is not supported");
+				});
+			}
+
+		private:
+			std::string lastError;
+			std::optional<FlexASIO> flexASIO;
+
+			template <typename Functor> ASIOError Enter(std::string_view context, Functor functor) {
+				Log() << "--- ENTERING CONTEXT: " << context;
+				ASIOError result;
+				try {
+					functor();
+					result = ASE_OK;
+				}
+				catch (const ASIOException& exception) {
+					lastError = exception.what();
+					result = exception.GetASIOError();
+				}
+				catch (const std::exception& exception) {
+					lastError = exception.what();
+					result = ASE_HWMalfunction;
+				}
+				catch (...) {
+					lastError = "unknown exception";
+					result = ASE_HWMalfunction;
+				}
+				if (result == ASE_OK) {
+					Log() << "--- EXITING CONTEXT: " << context << " [OK]";
+				}
+				else {
+					Log() << "--- EXITING CONTEXT: " << context << " [" << result << " " << lastError << "]";
+				}
+				return result;
+			}
+			template <typename... Args> auto EnterInitialized(std::string_view context, Args&&... args) {
+				if (!flexASIO.has_value()) {
+					throw ASIOException(ASE_InvalidMode, std::string("entered ") + std::string(context) + " but uninitialized state");
+				}
+				return Enter(context, std::forward<Args>(args)...);
+			}
+			template <typename Method, typename... Args> auto EnterWithMethod(std::string_view context, Method method, Args&&... args) {
+				return EnterInitialized(context, [&] { return ((*flexASIO).*method)(std::forward<Args>(args)...); });
+			}
+		};
+
+		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
 		void LogPortAudioApiList() {
 			const auto pa_api_count = Pa_GetHostApiCount();
@@ -270,47 +389,25 @@ namespace flexasio {
 			return SelectPortAudioDeviceByName(hostApiIndex, *name);
 		}
 
-		ASIOBool CFlexASIO::init(void* sysHandle) throw()
+		FlexASIO::FlexASIO(void* sysHandle) : windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle))
 		{
-			Log() << "CFlexASIO::init(sysHandle = " << sysHandle << ")";
-			if (input_device_info || output_device_info)
-			{
-				Log() << "Already initialized";
-				return ASE_NotPresent;
-			}
-
-			windowHandle = reinterpret_cast<decltype(windowHandle)>(sysHandle);
+			Log() << "sysHandle = " << sysHandle;
 
 			config = LoadConfig();
-			if (!config.has_value()) {
-				init_error = "Could not load FlexASIO configuration. See FlexASIO log for details.";
-				Log() << "Refusing to initialize due to configuration errors";
-				return ASIOFalse;
-			}
+			if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
 
 			Log() << "Initializing PortAudio";
 			PaError error = Pa_Initialize();
 			if (error != paNoError)
-			{
-				init_error = std::string("Could not initialize PortAudio: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASIOFalse;
-			}
-			portaudio_initialized = true;
+				throw ASIOException(ASE_HWMalfunction, std::string("could not initialize PortAudio: ") + Pa_GetErrorText(error));
 
 			LogPortAudioApiList();
 			const auto pa_api_index = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
-			if (pa_api_index < 0) {
-				init_error = std::string("Unable to select PortAudio host API backend: ") + Pa_GetErrorText(pa_api_index);
-				Log() << init_error;
-				return ASIOFalse;
-			}
+			if (pa_api_index < 0)
+				throw ASIOException(ASE_HWMalfunction, std::string("Unable to select PortAudio host API backend: ") + Pa_GetErrorText(pa_api_index));
 			pa_api_info = Pa_GetHostApiInfo(pa_api_index);
-			if (pa_api_info == nullptr) {
-				init_error = "Unable to get PortAudio host API info";
-				Log() << init_error;
-				return ASIOFalse;
-			}
+			if (pa_api_info == nullptr)
+				throw ASIOException(ASE_HWMalfunction, "unable to select PortAudio host API info");
 
 			Log() << "Selected PortAudio host API backend: " << pa_api_info->name;
 
@@ -320,20 +417,12 @@ namespace flexasio {
 			Log() << "Selecting input device";
 			{
 				const auto optionalInputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultInputDevice, config->input.device);
-				if (!optionalInputDeviceIndex.has_value()) {
-					init_error = "Input device selection failed";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (!optionalInputDeviceIndex.has_value()) throw ASIOException(ASE_HWMalfunction, "unable to select input device");
 				input_device_index = *optionalInputDeviceIndex;
 			}
 			if (input_device_index != paNoDevice) {
 				input_device_info = Pa_GetDeviceInfo(input_device_index);
-				if (!input_device_info) {
-					init_error = "Unable to get input device info";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (!input_device_info) throw ASIOException(ASE_HWMalfunction, "unable to get input device info");
 			}
 
 			if (input_device_info == nullptr) {
@@ -342,31 +431,19 @@ namespace flexasio {
 			else {
 				Log() << "Selected input device: " << input_device_info->name;
 				input_channel_count = input_device_info->maxInputChannels;
-				if (input_channel_count <= 0) {
-					init_error = "Selected input device doesn't have any input channels (did you mean to select it as an output device?)";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (input_channel_count <= 0) throw ASIOException(ASE_HWMalfunction, "selected input device doesn't have any input channels (did you mean to select it as an output device?)");
 				sample_rate = (std::max)(input_device_info->defaultSampleRate, sample_rate);
 			}
 
 			Log() << "Selecting output device";
 			{
 				const auto optionalOutputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultOutputDevice, config->output.device);
-				if (!optionalOutputDeviceIndex.has_value()) {
-					init_error = "Output device selection failed";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (!optionalOutputDeviceIndex.has_value()) throw ASIOException(ASE_HWMalfunction, "unable to select output device");
 				output_device_index = *optionalOutputDeviceIndex;
 			}
 			if (output_device_index != paNoDevice) {
 				output_device_info = Pa_GetDeviceInfo(output_device_index);
-				if (!output_device_info) {
-					init_error = "Unable to get output device info";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (!output_device_info) throw ASIOException(ASE_HWMalfunction, "unable to get output device info");
 			}
 
 			if (output_device_info == nullptr) {
@@ -375,19 +452,11 @@ namespace flexasio {
 			else {
 				Log() << "Selected output device: " << output_device_info->name;
 				output_channel_count = output_device_info->maxOutputChannels;
-				if (output_channel_count <= 0) {
-					init_error = "Selected output device doesn't have any output channels (did you mean to select it as an input device?)";
-					Log() << init_error;
-					return ASIOFalse;
-				}
+				if (output_channel_count <= 0) throw ASIOException(ASE_HWMalfunction, "selected output device doesn't have any input channels (did you mean to select it as an input device?)");
 				sample_rate = (std::max)(output_device_info->defaultSampleRate, sample_rate);
 			}
 
-			if (input_device_info == nullptr && output_device_info == nullptr) {
-				init_error = "No usable input nor output devices";
-				Log() << init_error;
-				return ASIOFalse;
-			}
+			if (input_device_info == nullptr && output_device_info == nullptr) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
 
 			if (pa_api_info->type == paWASAPI)
 			{
@@ -421,70 +490,51 @@ namespace flexasio {
 				sample_rate = 44100;
 
 			Log() << "Initialized successfully";
-			return ASIOTrue;
 		}
 
-		CFlexASIO::~CFlexASIO() throw()
+		FlexASIO::~FlexASIO()
 		{
-			Log() << "CFlexASIO::~CFlexASIO()";
 			if (started)
-				stop();
+				Stop();
 			if (buffers)
-				disposeBuffers();
-			if (portaudio_initialized)
-			{
-				Log() << "Closing PortAudio";
-				PaError error = Pa_Terminate();
-				if (error != paNoError)
-					Log() << "Pa_Terminate() returned " << Pa_GetErrorText(error) << "!";
-				else
-					Log() << "PortAudio closed successfully";
-			}
+				DisposeBuffers();
+
+			Log() << "Closing PortAudio";
+			PaError error = Pa_Terminate();
+			if (error != paNoError)
+				Log() << "Pa_Terminate() returned " << Pa_GetErrorText(error) << "!";
+			else
+				Log() << "PortAudio closed successfully";
 		}
 
 		ASIOError CFlexASIO::getClockSources(ASIOClockSource* clocks, long* numSources) throw()
 		{
-			Log() << "CFlexASIO::getClockSources()";
-			if (!clocks || !numSources || *numSources < 1)
-			{
-				Log() << "Invalid parameters";
-				return ASE_NotPresent;
-			}
+			return Enter("getClockSources()", [&] {
+				if (!clocks || !numSources || *numSources < 1)
+					throw ASIOException(ASE_InvalidParameter, "invalid parameters to getClockSources()");
 
-			clocks->index = 0;
-			clocks->associatedChannel = -1;
-			clocks->associatedGroup = -1;
-			clocks->isCurrentSource = ASIOTrue;
-			strcpy_s(clocks->name, 32, "Internal");
-			*numSources = 1;
-			return ASE_OK;
+				clocks->index = 0;
+				clocks->associatedChannel = -1;
+				clocks->associatedGroup = -1;
+				clocks->isCurrentSource = ASIOTrue;
+				strcpy_s(clocks->name, 32, "Internal");
+				*numSources = 1;
+			});
 		}
 
 		ASIOError CFlexASIO::setClockSource(long reference) throw()
 		{
-			Log() << "CFlexASIO::setClockSource(" << reference << ")";
-			if (reference != 0)
-			{
-				Log() << "Parameter out of bounds";
-				return ASE_InvalidMode;
-			}
-			return ASE_OK;
+			return Enter("setClockSource()", [&] {
+				Log() << "reference = " << reference;
+				if (reference != 0) throw ASIOException(ASE_InvalidParameter, "setClockSource() parameter out of bounds");
+			});
 		}
 
-		ASIOError CFlexASIO::getChannels(long* numInputChannels, long* numOutputChannels) throw()
+		void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
 		{
-			Log() << "CFlexASIO::getChannels()";
-			if (!input_device_info && !output_device_info)
-			{
-				Log() << "getChannels() called in unitialized state";
-				return ASE_NotPresent;
-			}
-
 			*numInputChannels = input_channel_count;
 			*numOutputChannels = output_channel_count;
-
 			Log() << "Returning " << *numInputChannels << " input channels and " << *numOutputChannels << " output channels";
-			return ASE_OK;
 		}
 
 		namespace {
@@ -543,26 +593,18 @@ namespace flexasio {
 			}
 		}
 
-		ASIOError CFlexASIO::getChannelInfo(ASIOChannelInfo* info) throw()
+		void FlexASIO::GetChannelInfo(ASIOChannelInfo* info)
 		{
 			Log() << "CFlexASIO::getChannelInfo()";
 
 			Log() << "Channel info requested for " << (info->isInput ? "input" : "output") << " channel " << info->channel;
 			if (info->isInput)
 			{
-				if (info->channel < 0 || info->channel >= input_channel_count)
-				{
-					Log() << "No such input channel, returning error";
-					return ASE_NotPresent;
-				}
+				if (info->channel < 0 || info->channel >= input_channel_count) throw ASIOException(ASE_InvalidParameter, "no such input channel");
 			}
 			else
 			{
-				if (info->channel < 0 || info->channel >= output_channel_count)
-				{
-					Log() << "No such output channel, returning error";
-					return ASE_NotPresent;
-				}
+				if (info->channel < 0 || info->channel >= output_channel_count) throw ASIOException(ASE_InvalidParameter, "no such output channel");
 			}
 
 			info->isActive = false;
@@ -579,23 +621,22 @@ namespace flexasio {
 			channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? input_channel_mask : output_channel_mask);
 			strcpy_s(info->name, 32, channel_string.str().c_str());
 			Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
-			return ASE_OK;
 		}
 
 		ASIOError CFlexASIO::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw()
 		{
-			// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
-			// TODO: let the user should these values
-			Log() << "CFlexASIO::getBufferSize()";
-			*minSize = 48; // 1 ms at 48kHz, there's basically no chance we'll get glitch-free streaming below this
-			*maxSize = 48000; // 1 second at 48kHz, more would be silly
-			*preferredSize = 1024; // typical - 21.3 ms at 48kHz
-			*granularity = 1; // Don't care
-			Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
-			return ASE_OK;
+			return Enter("getBufferSize()", [&] {
+				// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
+				// TODO: let the user should these values
+				*minSize = 48; // 1 ms at 48kHz, there's basically no chance we'll get glitch-free streaming below this
+				*maxSize = 48000; // 1 second at 48kHz, more would be silly
+				*preferredSize = 1024; // typical - 21.3 ms at 48kHz
+				*granularity = 1; // Don't care
+				Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
+			});
 		}
 
-		PaError CFlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer) throw()
+		PaError FlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer)
 		{
 			Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
@@ -659,84 +700,52 @@ namespace flexasio {
 				stream,
 				input_device_info ? &input_parameters : NULL,
 				output_device_info ? &output_parameters : NULL,
-				sampleRate, framesPerBuffer, paNoFlag, &CFlexASIO::StaticStreamCallback, this);
+				sampleRate, framesPerBuffer, paNoFlag, &FlexASIO::StaticStreamCallback, this);
 		}
 
-		ASIOError CFlexASIO::canSampleRate(ASIOSampleRate sampleRate) throw()
+		bool FlexASIO::CanSampleRate(ASIOSampleRate sampleRate)
 		{
-			Log() << "CFlexASIO::canSampleRate(" << sampleRate << ")";
-			if (!input_device_info && !output_device_info)
-			{
-				Log() << "canSampleRate() called in unitialized state";
-				return ASE_NotPresent;
-			}
+			Log() << "Checking for sample rate: " << sampleRate;
 
 			PaStream* temp_stream;
 			PaError error = OpenStream(&temp_stream, sampleRate, paFramesPerBufferUnspecified);
 			if (error != paNoError)
 			{
-				init_error = std::string("Cannot do this sample rate: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASE_NoClock;
+				Log() << "Cannot do this sample rate: " << Pa_GetErrorText(error);
+				return false;
 			}
 
 			Log() << "Sample rate is available";
 			Pa_CloseStream(temp_stream);
-			return ASE_OK;
+			return true;
 		}
 
-		ASIOError CFlexASIO::getSampleRate(ASIOSampleRate* sampleRate) throw()
+		void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRate)
 		{
-			Log() << "CFlexASIO::getSampleRate()";
-			if (sample_rate == 0)
-			{
-				Log() << "getSampleRate() called in unitialized state";
-				return ASE_NoClock;
-			}
 			*sampleRate = sample_rate;
 			Log() << "Returning sample rate: " << *sampleRate;
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::setSampleRate(ASIOSampleRate sampleRate) throw()
+		void FlexASIO::SetSampleRate(ASIOSampleRate sampleRate)
 		{
-			Log() << "CFlexASIO::setSampleRate(" << sampleRate << ")";
+			Log() << "Request to set sample rate: " << sampleRate;
 			if (buffers)
 			{
-				if (callbacks.asioMessage)
-				{
-					Log() << "Sending a reset request to the host as it's not possible to change sample rate when streaming";
-					callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
-					return ASE_OK;
-				}
-				else
-				{
-					Log() << "Changing the sample rate after createBuffers() is not supported";
-					return ASE_NotPresent;
-				}
+				if (!callbacks.asioMessage)
+					throw ASIOException(ASE_InvalidMode, "changing the sample rate after createBuffers() is not supported");
+				Log() << "Sending a reset request to the host as it's not possible to change sample rate when streaming";
+				callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
 			}
 			sample_rate = sampleRate;
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::createBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) throw()
+		void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks)
 		{
-			Log() << "CFlexASIO::createBuffers(" << numChannels << ", " << bufferSize << ")";
+			Log() << "Request to create buffers for " << numChannels << ", size " << bufferSize << " bytes";
 			if (numChannels < 1 || bufferSize < 1 || !callbacks || !callbacks->bufferSwitch)
-			{
-				Log() << "Invalid invocation";
-				return ASE_InvalidMode;
-			}
-			if (!input_device_info && !output_device_info)
-			{
-				Log() << "createBuffers() called in unitialized state";
-				return ASE_InvalidMode;
-			}
-			if (buffers)
-			{
-				Log() << "createBuffers() called twice";
-				return ASE_InvalidMode;
-			}
+				throw ASIOException(ASE_InvalidParameter, "invalid parameters to createBuffers()");
+
+			if (buffers) throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
 
 			buffers_info.reserve(numChannels);
 			std::unique_ptr<Buffers> temp_buffers(new Buffers(2, numChannels, bufferSize));
@@ -747,18 +756,12 @@ namespace flexasio {
 				if (buffer_info.isInput)
 				{
 					if (buffer_info.channelNum < 0 || buffer_info.channelNum >= input_channel_count)
-					{
-						Log() << "out of bounds input channel";
-						return ASE_InvalidMode;
-					}
+						throw ASIOException(ASE_InvalidParameter, "out of bounds input channel in createBuffers() buffer info");
 				}
 				else
 				{
 					if (buffer_info.channelNum < 0 || buffer_info.channelNum >= output_channel_count)
-					{
-						Log() << "out of bounds output channel";
-						return ASE_InvalidMode;
-					}
+						throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 				}
 
 				Sample* first_half = temp_buffers->getBuffer(0, channel_index);
@@ -780,84 +783,46 @@ namespace flexasio {
 			PaStream* temp_stream;
 			PaError error = OpenStream(&temp_stream, sample_rate, unsigned long(temp_buffers->buffer_size));
 			if (error != paNoError)
-			{
-				init_error = std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASE_HWMalfunction;
-			}
+				throw ASIOException(ASE_HWMalfunction, std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error));
 
 			buffers = std::move(temp_buffers);
 			stream = temp_stream;
 			this->callbacks = *callbacks;
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::disposeBuffers() throw()
+		void FlexASIO::DisposeBuffers()
 		{
-			Log() << "CFlexASIO::disposeBuffers()";
-			if (!buffers)
-			{
-				Log() << "disposeBuffers() called before createBuffers()";
-				return ASE_InvalidMode;
-			}
-			if (started)
-			{
-				Log() << "disposeBuffers() called before stop()";
-				return ASE_InvalidMode;
-			}
+			if (!buffers) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
+			if (started) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before stop()");
 
 			Log() << "Closing PortAudio stream";
 			PaError error = Pa_CloseStream(stream);
 			if (error != paNoError)
-			{
-				init_error = std::string("Unable to close PortAudio stream: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASE_NotPresent;
-			}
-			stream = NULL;
+				throw ASIOException(ASE_HWMalfunction, std::string("unable to close PortAudio stream: ") + Pa_GetErrorText(error));
 
+			stream = NULL;
 			buffers.reset();
 			buffers_info.clear();
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::getLatencies(long* inputLatency, long* outputLatency) throw()
+		void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency)
 		{
-			Log() << "CFlexASIO::getLatencies()";
-			if (!stream)
-			{
-				Log() << "getLatencies() called before createBuffers()";
-				return ASE_NotPresent;
-			}
+			if (!stream) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
 
 			const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
-			if (!stream_info)
-			{
-				Log() << "Unable to get stream info";
-				return ASE_NotPresent;
-			}
+			if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 			// See https://github.com/dechamps/FlexASIO/issues/10.
 			// The latency that PortAudio reports appears to take the buffer size into account already.
 			*inputLatency = (long)(stream_info->inputLatency * sample_rate);
 			*outputLatency = (long)(stream_info->outputLatency * sample_rate);
 			Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::start() throw()
+		void FlexASIO::Start()
 		{
-			Log() << "CFlexASIO::start()";
-			if (!buffers)
-			{
-				Log() << "start() called before createBuffers()";
-				return ASE_NotPresent;
-			}
-			if (started)
-			{
-				Log() << "start() called twice";
-				return ASE_NotPresent;
-			}
+			if (!buffers) throw ASIOException(ASE_InvalidMode, "start() called before createBuffers()");
+			if (started) throw ASIOException(ASE_InvalidMode, "start() called twice");
 
 			host_supports_timeinfo = callbacks.asioMessage &&
 				callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
@@ -872,43 +837,25 @@ namespace flexasio {
 			position = Int64ToASIO<ASIOSamples>(0);
 			position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
 			PaError error = Pa_StartStream(stream);
-			if (error != paNoError)
-			{
-				started = false;
-				init_error = std::string("Unable to start PortAudio stream: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASE_HWMalfunction;
-			}
+			if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
 
 			Log() << "Started successfully";
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::stop() throw()
+		void FlexASIO::Stop()
 		{
-			Log() << "CFlexASIO::stop()";
-			if (!started)
-			{
-				Log() << "stop() called before start()";
-				return ASE_NotPresent;
-			}
+			if (!started) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
 
 			Log() << "Stopping stream";
 			PaError error = Pa_StopStream(stream);
-			if (error != paNoError)
-			{
-				init_error = std::string("Unable to stop PortAudio stream: ") + Pa_GetErrorText(error);
-				Log() << init_error;
-				return ASE_NotPresent;
-			}
+			if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to stop PortAudio stream: ") + Pa_GetErrorText(error));
 
 			started = false;
 			win32HighResolutionTimer.reset();
 			Log() << "Stopped successfully";
-			return ASE_OK;
 		}
 
-		int CFlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw()
+		int FlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw()
 		{
 			Log() << "CFlexASIO::StreamCallback(" << frameCount << ")";
 			if (!started)
@@ -971,28 +918,20 @@ namespace flexasio {
 			return paContinue;
 		}
 
-		ASIOError CFlexASIO::getSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) throw()
+		void FlexASIO::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 		{
-			Log() << "CFlexASIO::getSamplePosition()";
-			if (!started)
-			{
-				Log() << "getSamplePosition() called before start()";
-				return ASE_SPNotAdvancing;
-			}
+			if (!started) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
 
 			*sPos = position;
 			*tStamp = position_timestamp;
 			Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);
-			return ASE_OK;
 		}
 
-		ASIOError CFlexASIO::controlPanel() throw() {
-			Log() << "CFlexASIO::controlPanel()";
+		void FlexASIO::ControlPanel() {
 			const auto url = std::string("https://github.com/dechamps/FlexASIO/blob/") + gitstr + "/CONFIGURATION.md";
 			Log() << "Opening URL: " << url;
 			const auto result = ShellExecuteA(windowHandle, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 			Log() << "ShellExecuteA() result: " << result;
-			return ASE_OK;
 		}
 
 	}
