@@ -11,6 +11,7 @@
 #include <windows.h>
 
 #include "shell.h"
+#include "version.h"
 
 namespace flexasio {
 
@@ -96,6 +97,13 @@ namespace flexasio {
 			return stream.str();
 		}
 
+
+		std::string GetModuleName() {
+			std::string moduleName(MAX_PATH, 0);
+			moduleName.resize(GetModuleFileNameA(NULL, moduleName.data(), DWORD(moduleName.size())));
+			return moduleName;
+		}
+
 	}
 
 	class Log::Output {
@@ -122,6 +130,9 @@ namespace flexasio {
 		Output(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
 			Log(this) << "Logfile opened";
 			Log(this) << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
+
+			Log(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
+			Log(this) << "Host process: " << GetModuleName();
 		}
 
 		~Output() {

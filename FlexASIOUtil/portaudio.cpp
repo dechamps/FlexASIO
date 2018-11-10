@@ -6,6 +6,8 @@
 
 #include "log.h"
 
+#include <portaudio.h>
+
 // From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
 extern "C" {
 	typedef void(*PaUtilLogCallback) (const char *log);
@@ -26,6 +28,8 @@ namespace flexasio {
 	}
 
 	PortAudioLogger::PortAudioLogger() {
+		Log() << "PortAudio version: " << Pa_GetVersionText();
+
 		std::scoped_lock loggerLock(loggerMutex);
 		if (loggerReferenceCount++ > 0) return;
 		Log() << "Enabling PortAudio debug output redirection";
