@@ -124,6 +124,17 @@ it elsewhere). Indeed, logging slows down FlexASIO, which can lead to
 buffer underruns (audio glitches). The logfile can also grow to a very
 large size over time.
 
+### Device list program
+
+FlexASIO includes a program that can be used to get the list of all the audio
+devices that PortAudio (and therefore FlexASIO) knows about, as well as detailed
+information about each device.
+
+The program is called `PortAudioDevices.exe` and can be found in the `x64`
+(64-bit) or `x86` (32-bit) subfolder in the FlexASIO installation
+folder. It is a console program that should be run from the command line. It
+doesn't matter much which one you use.
+
 ### Test program
 
 FlexASIO includes a rudimentary self-test program that can help diagnose

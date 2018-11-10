@@ -42,10 +42,14 @@ Source:"build\x64\Release\FlexASIO_x64.dll"; DestDir: "{app}\x64"; Flags: ignore
 Source:"build\x64\Release\FlexASIO_x64.pdb"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
 Source:"build\x64\Release\FlexASIOTest_x64.exe"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
 Source:"build\x64\Release\FlexASIOTest_x64.pdb"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
+Source:"build\x64\Release\PortAudioDevices_x64.exe"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
+Source:"build\x64\Release\PortAudioDevices_x64.pdb"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
 Source:"build\x86\Release\FlexASIO_x86.dll"; DestDir: "{app}\x86"; Flags: ignoreversion regserver 32bit
 Source:"build\x86\Release\FlexASIO_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\FlexASIOTest_x86.exe"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\FlexASIOTest_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
+Source:"build\x86\Release\PortAudioDevices_x86.exe"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
+Source:"build\x86\Release\PortAudioDevices_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
 Source:"*.md"; DestDir:"{app}"; Flags: ignoreversion
 

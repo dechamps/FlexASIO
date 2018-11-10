@@ -58,9 +58,9 @@ This is by far the most important option in FlexASIO. Changing the backend can
 have wide-ranging consequences on the operation of the entire audio pipeline.
 For more information, see [BACKENDS][].
 
-The value of the option is matched against PortAudio host API names. If
-the PortAudio library that FlexASIO is linked against doesn't provide an host
-API by that name, FlexASIO will fail to initialize.
+The value of the option is matched against PortAudio host API names, as
+shown in the output of the `PortAudioDevices` program. If the specified name
+doesn't match any host API, FlexASIO will fail to initialize.
 
 In practice, PortAudio will recognize the following names: `MME`,
 `Windows DirectSound`, `Windows WASAPI` and `Windows WDM-KS`.
