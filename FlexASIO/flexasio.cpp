@@ -160,7 +160,9 @@ namespace flexasio {
 			std::string init_error;
 
 			const PaHostApiInfo* pa_api_info;
+			PaDeviceIndex input_device_index;
 			const PaDeviceInfo* input_device_info;
+			PaDeviceIndex output_device_index;
 			const PaDeviceInfo* output_device_info;
 			long input_channel_count;
 			long output_channel_count;
@@ -191,6 +193,7 @@ namespace flexasio {
 
 		CFlexASIO::CFlexASIO() throw() :
 			portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
+			input_device_index(paNoDevice), output_device_index(paNoDevice),
 			input_device_info(nullptr), output_device_info(nullptr),
 			input_channel_count(0), output_channel_count(0),
 			input_channel_mask(0), output_channel_mask(0),
@@ -206,8 +209,19 @@ namespace flexasio {
 				Log() << "PortAudio host API backend at index " << pa_api_index << ": " << ((pa_api_info != nullptr) ? pa_api_info->name : "(null)");
 			}
 		}
+		void LogPortAudioDeviceList() {
+			const auto deviceCount = Pa_GetDeviceCount();
+			for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+				const auto device = Pa_GetDeviceInfo(deviceIndex);
+				if (device == nullptr) {
+					Log() << "Unable to get info for PortAudio device at index " << deviceIndex;
+					continue;
+				}
+				Log() << "PortAudio device at index " << deviceIndex << ": '" << device->name << "', host API " << device->hostApi;
+			}
+		}
 
-		const PaHostApiInfo* SelectDefaultPortAudioApi() {
+		PaHostApiIndex SelectDefaultPortAudioApi() {
 			Log() << "Selecting default PortAudio host API";
 			// The default API used by PortAudio is MME.
 			// It works, but DirectSound seems like the best default (it reports a more sensible number of channels, for example).
@@ -215,38 +229,52 @@ namespace flexasio {
 			auto pa_api_index = Pa_HostApiTypeIdToHostApiIndex(paDirectSound);
 			if (pa_api_index == paHostApiNotFound)
 				pa_api_index = Pa_GetDefaultHostApi();
-			if (pa_api_index < 0)
-			{
-				Log() << "Unable to select a default PortAudio host API backend: " << Pa_GetErrorText(pa_api_index);
-				return nullptr;
-			}
-			Log() << "Selecting PortAudio host API index " << pa_api_index;
-			return Pa_GetHostApiInfo(pa_api_index);
+			return pa_api_index;
 		}
 
-		const PaHostApiInfo* SelectPortAudioApiByName(std::string_view name) {
+		PaHostApiIndex SelectPortAudioApiByName(std::string_view name) {
 			Log() << "Searching for a PortAudio host API named '" << name << "'";
 			const auto pa_api_count = Pa_GetHostApiCount();
-			const PaHostApiInfo* pa_api_info = nullptr;
 
 			for (PaHostApiIndex pa_api_index = 0; pa_api_index < pa_api_count; ++pa_api_index) {
-				pa_api_info = Pa_GetHostApiInfo(pa_api_index);
+				const auto pa_api_info = Pa_GetHostApiInfo(pa_api_index);
 				if (pa_api_info == nullptr) {
 					Log() << "Unable to get PortAudio API info for API index " << pa_api_index;
 					continue;
 				}
 				// TODO: the comparison should be case insensitive.
 				if (pa_api_info->name == name) {
-					Log() << "Found host API at index " << pa_api_index;
-					break;
+					return pa_api_index;
 				}
-				pa_api_info = nullptr;
 			}
 
-			if (pa_api_info == nullptr)
-				Log() << "Unable to find a PortAudio host API backend named '" << name << "'";
+			return paHostApiNotFound;
+		}
 
-			return pa_api_info;
+		const std::optional<PaDeviceIndex> SelectPortAudioDeviceByName(const PaHostApiIndex hostApiIndex, const std::string_view name) {
+			Log() << "Searching for a PortAudio device named '" << name << "' with host API index " << hostApiIndex;
+			const auto deviceCount = Pa_GetDeviceCount();
+
+			for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+				const auto device = Pa_GetDeviceInfo(deviceIndex);
+				if (device == nullptr) {
+					Log() << "Unable to get PortAudio device info for device index " << deviceIndex;
+					continue;
+				}
+				if (device->hostApi == hostApiIndex && device->name == name) return deviceIndex;
+			}
+			Log() << "Unable to find requested PortAudio device";
+			return std::nullopt;
+		}
+
+		const std::optional<PaDeviceIndex> SelectPortAudioDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDevice, std::optional<std::string_view> name) {
+			if (!name.has_value()) {
+				Log() << "Using default device with index " << defaultDevice;
+				return defaultDevice;
+			}
+			if (name->empty()) return paNoDevice;
+
+			return SelectPortAudioDeviceByName(hostApiIndex, *name);
 		}
 
 		ASIOBool CFlexASIO::init(void* sysHandle) throw()
@@ -278,68 +306,121 @@ namespace flexasio {
 			portaudio_initialized = true;
 
 			LogPortAudioApiList();
-			pa_api_info = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
+			const auto pa_api_index = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
+			if (pa_api_index < 0) {
+				init_error = std::string("Unable to select PortAudio host API backend: ") + Pa_GetErrorText(pa_api_index);
+				Log() << init_error;
+				return ASIOFalse;
+			}
+			pa_api_info = Pa_GetHostApiInfo(pa_api_index);
 			if (pa_api_info == nullptr) {
-				init_error = "Unable to select PortAudio host API backend";
+				init_error = "Unable to get PortAudio host API info";
 				Log() << init_error;
 				return ASIOFalse;
 			}
 
 			Log() << "Selected PortAudio host API backend: " << pa_api_info->name;
 
+			LogPortAudioDeviceList();
 			sample_rate = 0;
 
-			Log() << "Getting input device info";
-			if (pa_api_info->defaultInputDevice != paNoDevice)
+			Log() << "Selecting input device";
 			{
-				input_device_info = Pa_GetDeviceInfo(pa_api_info->defaultInputDevice);
-				if (!input_device_info)
-				{
-					init_error = std::string("Unable to get input device info");
+				const auto optionalInputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultInputDevice, config->input.device);
+				if (!optionalInputDeviceIndex.has_value()) {
+					init_error = "Input device selection failed";
 					Log() << init_error;
 					return ASIOFalse;
 				}
+				input_device_index = *optionalInputDeviceIndex;
+			}
+			if (input_device_index != paNoDevice) {
+				input_device_info = Pa_GetDeviceInfo(input_device_index);
+				if (!input_device_info) {
+					init_error = "Unable to get input device info";
+					Log() << init_error;
+					return ASIOFalse;
+				}
+			}
+
+			if (input_device_info == nullptr) {
+				Log() << "No input device, proceeding without input";
+			}
+			else {
 				Log() << "Selected input device: " << input_device_info->name;
 				input_channel_count = input_device_info->maxInputChannels;
+				if (input_channel_count <= 0) {
+					init_error = "Selected input device doesn't have any input channels (did you mean to select it as an output device?)";
+					Log() << init_error;
+					return ASIOFalse;
+				}
 				sample_rate = (std::max)(input_device_info->defaultSampleRate, sample_rate);
 			}
 
-			Log() << "Getting output device info";
-			if (pa_api_info->defaultOutputDevice != paNoDevice)
+			Log() << "Selecting output device";
 			{
-				output_device_info = Pa_GetDeviceInfo(pa_api_info->defaultOutputDevice);
-				if (!output_device_info)
-				{
-					init_error = std::string("Unable to get output device info");
+				const auto optionalOutputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultOutputDevice, config->output.device);
+				if (!optionalOutputDeviceIndex.has_value()) {
+					init_error = "Output device selection failed";
 					Log() << init_error;
 					return ASIOFalse;
 				}
+				output_device_index = *optionalOutputDeviceIndex;
+			}
+			if (output_device_index != paNoDevice) {
+				output_device_info = Pa_GetDeviceInfo(output_device_index);
+				if (!output_device_info) {
+					init_error = "Unable to get output device info";
+					Log() << init_error;
+					return ASIOFalse;
+				}
+			}
+
+			if (output_device_info == nullptr) {
+				Log() << "No output device, proceeding without output";
+			}
+			else {
 				Log() << "Selected output device: " << output_device_info->name;
 				output_channel_count = output_device_info->maxOutputChannels;
+				if (output_channel_count <= 0) {
+					init_error = "Selected output device doesn't have any output channels (did you mean to select it as an input device?)";
+					Log() << init_error;
+					return ASIOFalse;
+				}
 				sample_rate = (std::max)(output_device_info->defaultSampleRate, sample_rate);
+			}
+
+			if (input_device_info == nullptr && output_device_info == nullptr) {
+				init_error = "No usable input nor output devices";
+				Log() << init_error;
+				return ASIOFalse;
 			}
 
 			if (pa_api_info->type == paWASAPI)
 			{
 				// PortAudio has some WASAPI-specific goodies to make us smarter.
-				WAVEFORMATEXTENSIBLE input_waveformat;
-				PaError error = PaWasapi_GetDeviceDefaultFormat(&input_waveformat, sizeof(input_waveformat), pa_api_info->defaultInputDevice);
-				if (error <= 0)
-					Log() << "Unable to get WASAPI default format for input device";
-				else
-				{
-					input_channel_count = input_waveformat.Format.nChannels;
-					input_channel_mask = input_waveformat.dwChannelMask;
+				if (input_device_index != paNoDevice) {
+					WAVEFORMATEXTENSIBLE input_waveformat;
+					PaError error = PaWasapi_GetDeviceDefaultFormat(&input_waveformat, sizeof(input_waveformat), input_device_index);
+					if (error <= 0)
+						Log() << "Unable to get WASAPI default format for input device";
+					else
+					{
+						input_channel_count = input_waveformat.Format.nChannels;
+						input_channel_mask = input_waveformat.dwChannelMask;
+					}
 				}
 
-				WAVEFORMATEXTENSIBLE output_waveformat;
-				error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), pa_api_info->defaultOutputDevice);
-				if (error <= 0)
-					Log() << "Unable to get WASAPI default format for output device";
-				else
-				{
-					output_channel_count = output_waveformat.Format.nChannels;
-					output_channel_mask = output_waveformat.dwChannelMask;
+				if (output_device_index != paNoDevice) {
+					WAVEFORMATEXTENSIBLE output_waveformat;
+					error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), output_device_index);
+					if (error <= 0)
+						Log() << "Unable to get WASAPI default format for output device";
+					else
+					{
+						output_channel_count = output_waveformat.Format.nChannels;
+						output_channel_mask = output_waveformat.dwChannelMask;
+					}
 				}
 			}
 
@@ -541,7 +622,7 @@ namespace flexasio {
 			PaWasapiStreamInfo input_wasapi_stream_info = common_wasapi_stream_info;
 			if (input_device_info)
 			{
-				input_parameters.device = pa_api_info->defaultInputDevice;
+				input_parameters.device = input_device_index;
 				input_parameters.channelCount = input_channel_count;
 				input_parameters.suggestedLatency = input_device_info->defaultLowInputLatency;
 				if (pa_api_info->type == paWASAPI)
@@ -563,7 +644,7 @@ namespace flexasio {
 			PaWasapiStreamInfo output_wasapi_stream_info = common_wasapi_stream_info;
 			if (output_device_info)
 			{
-				output_parameters.device = pa_api_info->defaultOutputDevice;
+				output_parameters.device = output_device_index;
 				output_parameters.channelCount = output_channel_count;
 				output_parameters.suggestedLatency = output_device_info->defaultLowOutputLatency;
 				if (pa_api_info->type == paWASAPI)

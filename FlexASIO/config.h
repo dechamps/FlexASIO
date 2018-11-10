@@ -9,6 +9,7 @@ namespace flexasio {
 		std::optional<std::string> backend;
 
 		struct Stream {
+			std::optional<std::string> device;
 			bool wasapiExclusiveMode = false;
 		};
 		Stream input;

@@ -79,6 +79,7 @@ namespace flexasio {
 		}
 
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
+			SetOption(table, "device", stream.device);
 			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
 		}
 

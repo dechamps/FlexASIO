@@ -31,14 +31,17 @@ wrong.
 backend = "Windows WASAPI"
 
 [input]
-# Set the input to WASAPI Exclusive Mode.
-wasapiExclusiveMode = true
+# Disable the input. It is strongly recommended to do this if you only want to
+# stream audio in one direction.
+device = ""
 
 [output]
-# Set the output to WASAPI Shared Mode.
-# Note that this is already the default, so this doesn't actually do
-# anything.
-wasapiExclusiveMode = false
+# Select the output device. The name comes from the output of the
+# PortAudioDevices program.
+device = "Speakers (Realtek High Definition Audio)"
+
+# Set the output to WASAPI Exclusive Mode.
+wasapiExclusiveMode = true
 ```
 
 ## Options reference
@@ -77,6 +80,47 @@ The default behaviour is to use DirectSound.
 
 Options in this section only apply to the *input* (capture, recording) audio
 stream or to the *output* (rendering, playback) audio stream, respectively.
+
+#### Option `device`
+
+*String*-typed option that determines which hardware audio device FlexASIO will
+attempt to use.
+
+The value of the option is the *full name* of the device. The list of available
+device names is shown by the `PortAudioDevices` command line program which can
+be found in the FlexASIO installation folder. The value of this option must
+exactly match the "Device name" shown by `PortAudioDevices`, including any
+text in parentheses.
+
+**Note:** only devices that match the selected *backend* (see above) will be
+considered. In other words, the "Host API name" as shown in the output of
+`PortAudioDevices` has to match the value of the `backend` option. Beware that a
+given hardware device will not necessarily have the same name under different
+backends.
+
+If the specified name doesn't match any device under the selected backend,
+FlexASIO will fail to initialize.
+
+If the option is set to the empty string (`""`), no device will be used; that
+is, the input or output side of the stream will be disabled, and all other
+options in the section will be ignored. If you only need the input or the
+output, but not both, it is **strongly recommended** to disable what you don't
+need, because that relaxes constraints on the backend, especially when it comes
+to audio format and clock mismatch concerns.
+
+Example:
+
+```toml
+[input]
+device = ""
+
+[output]
+device = "Speakers (Realtek High Definition Audio)"
+```
+
+The default behaviour is to use the default device for the selected backend.
+`PortAudioDevices` will show which device that is. Typically, this would be the
+device set as default in the Windows audio control panel.
 
 #### Option `wasapiExclusiveMode`
 
