@@ -156,26 +156,15 @@ also help.
 
 FlexASIO is designed to use the Microsoft Visual C++ 2017 toolchain.
 
-You will need to provide the PortAudio library dependency. The best way
-is to use [vcpkg](https://github.com/Microsoft/vcpkg):
+For the build to work you will need to provide these dependencies:
+
+ - [PortAudio](http://www.portaudio.com/)
+ - [tinytoml](https://github.com/mayah/tinytoml)
+
+The best way to get these dependencies is to use [vcpkg](https://github.com/Microsoft/vcpkg):
 
 ```
-vcpkg install portaudio:x64-windows portaudio:x86-windows
-```
-
-Note that, at the time of writing, the portaudio port in current vcpkg
-master has a number of issues; make sure you have the following vcpkg
-patches before running the above command:
-
- - [Add pa_win_waveformat.h to public includes](https://github.com/Microsoft/vcpkg/pull/4582)
- - [Copy PDB files](https://github.com/Microsoft/vcpkg/pull/4583)
- - [Enable debug output](https://github.com/Microsoft/vcpkg/pull/4592)
-
-There is also a dependency on the
-[tinytoml](https://github.com/mayah/tinytoml) library:
-
-```
-vcpkg install tinytoml:x64-windows tinytoml:x86-windows
+vcpkg install portaudio:x64-windows portaudio:x86-windows tinytoml:x64-windows tinytoml:x86-windows
 ```
 
 You will also need to provide the ASIO SDK.
