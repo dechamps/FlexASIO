@@ -22,25 +22,6 @@ namespace flexasio {
 			throw std::runtime_error(std::string("PortAudio error ") + Pa_GetErrorText(result));
 		}
 
-		std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId) {
-			return EnumToString(hostApiTypeId, {
-				{ paInDevelopment, "In development" },
-				{ paDirectSound, "DirectSound" },
-				{ paMME, "MME" },
-				{ paASIO, "ASIO" },
-				{ paSoundManager, "SoundManager" },
-				{ paCoreAudio, "CoreAudio" },
-				{ paOSS, "OSS" },
-				{ paALSA, "ALSA" },
-				{ paAL, "AL" },
-				{ paBeOS, "BeOS" },
-				{ paWDMKS, "WDMKS" },
-				{ paJACK, "JACK" },
-				{ paWASAPI, "WASAPI" },
-				{ paAudioScienceHPI, "AudioScienceHPI" },
-				});
-		}
-
 		std::string GetWaveFormatTagString(WORD formatTag) {
 			return EnumToString(formatTag, {
 				{ WAVE_FORMAT_EXTENSIBLE, "EXTENSIBLE" },

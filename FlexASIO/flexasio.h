@@ -97,7 +97,8 @@ namespace flexasio {
 		PortAudioLogger portAudioLogger;
 		PortAudioHandle portAudioHandle;
 
-		const PaHostApiInfo* pa_api_info = nullptr;
+		const HostApi hostApi;
+
 		PaDeviceIndex input_device_index = paNoDevice;
 		const PaDeviceInfo* input_device_info = nullptr;
 		PaDeviceIndex output_device_index = paNoDevice;
