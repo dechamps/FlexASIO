@@ -31,14 +31,6 @@ namespace flexasio {
 			template <typename T> auto operator()(T&& value) { return +std::forward<T>(value); }
 		};
 
-		template <typename Enum> std::string EnumToString(Enum value, std::initializer_list<std::pair<Enum, std::string_view>> enumStrings) {
-			std::stringstream result;
-			result << value;
-			const auto string = Find(value, enumStrings);
-			if (string) result << " [" << *string << "]";
-			return result.str();
-		}
-
 		template <typename Bitfield> std::string BitfieldToString(Bitfield bitfield, std::initializer_list<std::pair<Bitfield, std::string_view>> bitStrings) {
 			std::vector<std::string_view> bits;
 			std::stringstream result;
