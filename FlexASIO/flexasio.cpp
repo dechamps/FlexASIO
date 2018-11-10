@@ -130,6 +130,15 @@ namespace flexasio {
 
 			return SelectPortAudioDeviceByName(hostApiIndex, *name);
 		}
+
+		std::string GetPaStreamCallbackResultString(PaStreamCallbackResult result) {
+			return EnumToString(result, {
+				{paContinue, "paContinue"},
+				{paComplete, "paComplete"},
+				{paAbort, "paAbort"},
+				});
+		}
+
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) : windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle))
@@ -562,9 +571,25 @@ namespace flexasio {
 		Log() << "Stopped successfully";
 	}
 
-	int FlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags) throw()
+	int FlexASIO::StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
+		Log() << "--- ENTERING STREAM CALLBACK";
+		PaStreamCallbackResult result = paContinue;
+		try {
+			result = static_cast<FlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
+		}
+		catch (const std::exception& exception) {
+			Log() << "Caught exception in stream callback: " << exception.what();
+		}
+		catch (...) {
+			Log() << "Caught unknown exception in stream callback";
+		}
+		Log() << "--- EXITING STREAM CALLBACK (" << GetPaStreamCallbackResultString(result) << ")";
+		return result;
+	}
+
+	PaStreamCallbackResult FlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
-		Log() << "CFlexASIO::StreamCallback(" << frameCount << ")";
+		Log() << "Running stream callback with " << frameCount << " frames";
 		if (!started)
 		{
 			Log() << "Ignoring callback as stream is not started";
@@ -621,7 +646,6 @@ namespace flexasio {
 		position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
 		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
 
-		Log() << "Returning from stream callback";
 		return paContinue;
 	}
 
