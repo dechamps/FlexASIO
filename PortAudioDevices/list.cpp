@@ -49,6 +49,29 @@ namespace flexasio {
 				});
 		}
 
+		std::string GetWaveFormatChannelMaskString(DWORD channelMask) {
+			return BitfieldToString(channelMask, {
+				{SPEAKER_FRONT_LEFT, "Front Left"},
+				{SPEAKER_FRONT_RIGHT, "Front Right"},
+				{SPEAKER_FRONT_CENTER, "Front Center"},
+				{SPEAKER_LOW_FREQUENCY, "Low Frequency"},
+				{SPEAKER_BACK_LEFT, "Back Left"},
+				{SPEAKER_BACK_RIGHT, "Back Right"},
+				{SPEAKER_FRONT_LEFT_OF_CENTER, "Front Left of Center"},
+				{SPEAKER_FRONT_RIGHT_OF_CENTER, "Front Right of Center"},
+				{SPEAKER_BACK_CENTER, "Back Center"},
+				{SPEAKER_SIDE_LEFT, "Side Left"},
+				{SPEAKER_SIDE_RIGHT, "Side Right"},
+				{SPEAKER_TOP_CENTER, "Top Center"},
+				{SPEAKER_TOP_FRONT_LEFT, "Top Front Left"},
+				{SPEAKER_TOP_FRONT_CENTER, "Top Front Center"},
+				{SPEAKER_TOP_FRONT_RIGHT, "Top Front Right"},
+				{SPEAKER_TOP_BACK_LEFT, "Top Back Left"},
+				{SPEAKER_TOP_BACK_CENTER, "Top Back Center"},
+				{SPEAKER_TOP_BACK_RIGHT, "Top Back Right"},
+				});
+		}
+
 		std::string GetWaveSubFormatString(const GUID& subFormat) {
 			return EnumToString(subFormat, {
 				{ KSDATAFORMAT_SUBTYPE_ADPCM, "ADPCM" },
@@ -76,14 +99,13 @@ namespace flexasio {
 				<< waveFormat.nChannels << " channels, "
 				<< waveFormat.nSamplesPerSec << " samples/second, "
 				<< waveFormat.nAvgBytesPerSec << " average bytes/second, "
-				<< waveFormat.nBlockAlign << " bytes block alignment, "
+				<< "block alignment " << waveFormat.nBlockAlign << " bytes, "
 				<< waveFormat.wBitsPerSample << " bits per sample";
 
 			if (waveFormat.wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
 				result << ", " << waveFormatExtensible.Samples.wValidBitsPerSample << " valid bits per sample, "
-					// TODO: pretty-print channel mask
-					<< waveFormatExtensible.dwChannelMask << " channel mask, "
-					<< GetWaveSubFormatString(waveFormatExtensible.SubFormat) << " format";
+					<< "channel mask " << GetWaveFormatChannelMaskString(waveFormatExtensible.dwChannelMask) << ", "
+					<< "format " << GetWaveSubFormatString(waveFormatExtensible.SubFormat);
 			}
 
 			return result.str();

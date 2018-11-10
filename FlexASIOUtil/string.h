@@ -6,6 +6,7 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace flexasio {
 
@@ -33,6 +34,21 @@ namespace flexasio {
 		result << renderValue(value);
 		const auto string = Find(value, enumStrings);
 		if (string) result << " [" << *string << "]";
+		return result.str();
+	}
+
+	template <typename Bitfield> std::string BitfieldToString(Bitfield bitfield, std::initializer_list<std::pair<Bitfield, std::string_view>> bitStrings) {
+		std::vector<std::string_view> bits;
+		std::stringstream result;
+		result << bitfield;
+		for (const auto& bitString : bitStrings) {
+			if (bitfield & bitString.first) bits.push_back(bitString.second);
+		}
+		if (!bits.empty()) {
+			result << " [";
+			JoinStream(bits, ", ", result);
+			result << "]";
+		}
 		return result.str();
 	}
 

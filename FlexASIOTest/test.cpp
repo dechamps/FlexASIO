@@ -31,20 +31,6 @@ namespace flexasio {
 			template <typename T> auto operator()(T&& value) { return +std::forward<T>(value); }
 		};
 
-		template <typename Bitfield> std::string BitfieldToString(Bitfield bitfield, std::initializer_list<std::pair<Bitfield, std::string_view>> bitStrings) {
-			std::vector<std::string_view> bits;
-			std::stringstream result;
-			result << bitfield;
-			for (const auto& bitString : bitStrings) {
-				if (bitfield & bitString.first) bits.push_back(bitString.second);
-			}
-			if (!bits.empty()) {
-				result << " ";
-				JoinStream(bits, " ", result);
-			}
-			return result.str();
-		}
-
 		std::string GetASIOErrorString(ASIOError error) {
 			return EnumToString(error, {
 				{ASE_OK, "ASE_OK"},
