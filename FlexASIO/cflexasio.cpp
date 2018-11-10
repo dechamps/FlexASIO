@@ -4,6 +4,7 @@
 #include "flexasio.rc.h"
 #include "flexasio_h.h"
 
+#include "../FlexASIOUtil/asio.h"
 #include "../FlexASIOUtil/log.h"
 
 #include "..\ASIOSDK2.3.1\common\iasiodrv.h"
@@ -161,7 +162,7 @@ namespace flexasio {
 				Log() << "--- EXITING CONTEXT: " << context << " [OK]";
 			}
 			else {
-				Log() << "--- EXITING CONTEXT: " << context << " [" << result << " " << lastError << "]";
+				Log() << "--- EXITING CONTEXT: " << context << " (" << GetASIOErrorString(result) << " " << lastError << ")";
 			}
 			return result;
 		}

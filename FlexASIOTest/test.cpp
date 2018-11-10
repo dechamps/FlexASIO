@@ -31,20 +31,6 @@ namespace flexasio {
 			template <typename T> auto operator()(T&& value) { return +std::forward<T>(value); }
 		};
 
-		std::string GetASIOErrorString(ASIOError error) {
-			return EnumToString(error, {
-				{ASE_OK, "ASE_OK"},
-				{ASE_SUCCESS, "ASE_SUCCESS"},
-				{ASE_NotPresent, "ASE_NotPresent"},
-				{ASE_HWMalfunction, "ASE_HWMalfunction"},
-				{ASE_InvalidParameter, "ASE_InvalidParameter"},
-				{ASE_InvalidMode, "ASE_InvalidMode"},
-				{ASE_SPNotAdvancing, "ASE_SPNotAdvancing"},
-				{ASE_NoClock, "ASE_NoClock"},
-				{ASE_NoMemory, "ASE_NoMemory"},
-				});
-		}
-
 		std::string GetASIOSampleTypeString(ASIOSampleType sampleType) {
 			return EnumToString(sampleType, {
 				{ASIOSTInt16MSB, "ASIOSTInt16MSB"},

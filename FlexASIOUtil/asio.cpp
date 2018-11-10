@@ -1,5 +1,7 @@
 #include "asio.h"
 
+#include "string.h"
+
 #include <cassert>
 #include <cstring>
 #include <utility>
@@ -45,4 +47,19 @@ namespace flexasio {
 	}
 	template ASIOTimeStamp Int64ToASIO<ASIOTimeStamp>(int64_t);
 	template ASIOSamples Int64ToASIO<ASIOSamples>(int64_t);
+
+	std::string GetASIOErrorString(ASIOError error) {
+		return EnumToString(error, {
+			{ASE_OK, "ASE_OK"},
+			{ASE_SUCCESS, "ASE_SUCCESS"},
+			{ASE_NotPresent, "ASE_NotPresent"},
+			{ASE_HWMalfunction, "ASE_HWMalfunction"},
+			{ASE_InvalidParameter, "ASE_InvalidParameter"},
+			{ASE_InvalidMode, "ASE_InvalidMode"},
+			{ASE_SPNotAdvancing, "ASE_SPNotAdvancing"},
+			{ASE_NoClock, "ASE_NoClock"},
+			{ASE_NoMemory, "ASE_NoMemory"},
+			});
+	}
+
 }
