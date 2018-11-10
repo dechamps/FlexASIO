@@ -11,7 +11,7 @@
 
 #include "..\ASIOSDK2.3.1\host\ginclude.h"
 #include "..\ASIOSDK2.3.1\common\asio.h"
-#include "..\FlexASIO\flexasio.h"
+#include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
 #include "..\FlexASIOUtil\find.h"
 #include "..\FlexASIOUtil\string.h"

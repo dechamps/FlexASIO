@@ -90,6 +90,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="cflexasio.cpp" />
     <ClCompile Include="config.cpp" />
     <ClCompile Include="flexasio.cpp" />
     <ClCompile Include="comdll.cpp" />
@@ -104,6 +105,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="config.h" />
+    <ClInclude Include="cflexasio.h" />
     <ClInclude Include="flexasio.h" />
     <ClInclude Include="flexasio.rc.h" />
   </ItemGroup>
