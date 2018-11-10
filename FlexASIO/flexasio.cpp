@@ -156,21 +156,21 @@ namespace flexasio {
 
 			HWND windowHandle = nullptr;
 			std::optional<Config> config;
-			bool portaudio_initialized;
+			bool portaudio_initialized = false;
 			std::string init_error;
 
-			const PaHostApiInfo* pa_api_info;
-			PaDeviceIndex input_device_index;
-			const PaDeviceInfo* input_device_info;
-			PaDeviceIndex output_device_index;
-			const PaDeviceInfo* output_device_info;
-			long input_channel_count;
-			long output_channel_count;
+			const PaHostApiInfo* pa_api_info = nullptr;
+			PaDeviceIndex input_device_index = paNoDevice;
+			const PaDeviceInfo* input_device_info = nullptr;
+			PaDeviceIndex output_device_index = paNoDevice;
+			const PaDeviceInfo* output_device_info = nullptr;
+			long input_channel_count = 0;
+			long output_channel_count = 0;
 			// WAVEFORMATEXTENSIBLE channel masks. Not always available.
-			DWORD input_channel_mask;
-			DWORD output_channel_mask;
+			DWORD input_channel_mask = 0;
+			DWORD output_channel_mask = 0;
 
-			ASIOSampleRate sample_rate;
+			ASIOSampleRate sample_rate = 0;
 
 			// PortAudio buffer addresses are dynamic and are only valid for the duration of the stream callback.
 			// In contrast, ASIO buffer addresses are static and are valid for as long as the stream is running.
@@ -179,26 +179,19 @@ namespace flexasio {
 			std::vector<ASIOBufferInfo> buffers_info;
 			ASIOCallbacks callbacks;
 
-			PaStream* stream;
+			PaStream* stream = nullptr;
 			bool host_supports_timeinfo;
 			// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 			size_t our_buffer_index;
 			ASIOSamples position;
 			ASIOTimeStamp position_timestamp;
-			bool started;
+			bool started = false;
 			std::optional<Win32HighResolutionTimer> win32HighResolutionTimer;
 		};
 
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
-		CFlexASIO::CFlexASIO() throw() :
-			portaudio_initialized(false), init_error(""), pa_api_info(nullptr),
-			input_device_index(paNoDevice), output_device_index(paNoDevice),
-			input_device_info(nullptr), output_device_info(nullptr),
-			input_channel_count(0), output_channel_count(0),
-			input_channel_mask(0), output_channel_mask(0),
-			sample_rate(0), buffers(nullptr), stream(NULL), started(false)
-		{
+		CFlexASIO::CFlexASIO() throw() {
 			Log() << "CFlexASIO::CFlexASIO()";
 		}
 
