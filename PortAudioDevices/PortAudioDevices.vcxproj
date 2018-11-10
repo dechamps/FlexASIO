@@ -87,6 +87,11 @@
   <ItemGroup>
     <ClCompile Include="list.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FlexASIOUtil\FlexASIOUtil.vcxproj">
+      <Project>{3ad680ca-2c4a-4324-8f93-ef3fe68d4dc9}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

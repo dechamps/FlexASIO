@@ -10,7 +10,7 @@
 #include <shlobj.h>
 #include <windows.h>
 
-#include "../FlexASIOUtil/shell.h"
+#include "shell.h"
 
 namespace flexasio {
 

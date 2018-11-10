@@ -21,12 +21,16 @@
   <ItemGroup>
     <ClInclude Include="asio.h" />
     <ClInclude Include="find.h" />
+    <ClInclude Include="log.h" />
+    <ClInclude Include="portaudio.h" />
     <ClInclude Include="shell.h" />
     <ClInclude Include="string.h" />
     <ClInclude Include="version.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="asio.cpp" />
+    <ClCompile Include="log.cpp" />
+    <ClCompile Include="portaudio.cpp" />
     <ClCompile Include="shell.cpp" />
     <ClCompile Include="version.cpp" />
   </ItemGroup>

@@ -93,7 +93,6 @@
     <ClCompile Include="config.cpp" />
     <ClCompile Include="flexasio.cpp" />
     <ClCompile Include="comdll.cpp" />
-    <ClCompile Include="log.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="dll.def" />
@@ -107,7 +106,6 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="flexasio.h" />
     <ClInclude Include="flexasio.rc.h" />
-    <ClInclude Include="log.h" />
   </ItemGroup>
   <ItemGroup>
     <Midl Include="flexasio.idl" />

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <string>
 
+#include "../FlexASIOUtil/log.h"
+#include "../FlexASIOUtil/portaudio.h"
 
 namespace flexasio {
 	namespace {
@@ -38,6 +40,8 @@ namespace flexasio {
 		}
 
 		void InitAndListDevices() {
+			PortAudioLogger portAudioLogger;
+
 			try {
 				ThrowOnPaError(Pa_Initialize());
 			}
