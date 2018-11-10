@@ -157,15 +157,18 @@ namespace flexasio {
 
 	}
 
-	FlexASIO::FlexASIO(void* sysHandle) : windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle))
+	FlexASIO::FlexASIO(void* sysHandle) :
+		windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle)),
+		config([] {
+		const auto config = LoadConfig();
+		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
+		return *config;
+	}())
 	{
 		Log() << "sysHandle = " << sysHandle;
 
-		config = LoadConfig();
-		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
-
 		LogPortAudioApiList();
-		const auto pa_api_index = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
+		const auto pa_api_index = config.backend.has_value() ? SelectPortAudioApiByName(*config.backend) : SelectDefaultPortAudioApi();
 		if (pa_api_index < 0)
 			throw ASIOException(ASE_HWMalfunction, std::string("Unable to select PortAudio host API backend: ") + Pa_GetErrorText(pa_api_index));
 		pa_api_info = Pa_GetHostApiInfo(pa_api_index);
@@ -179,7 +182,7 @@ namespace flexasio {
 
 		Log() << "Selecting input device";
 		{
-			const auto optionalInputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultInputDevice, config->input.device);
+			const auto optionalInputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultInputDevice, config.input.device);
 			if (!optionalInputDeviceIndex.has_value()) throw ASIOException(ASE_HWMalfunction, "unable to select input device");
 			input_device_index = *optionalInputDeviceIndex;
 		}
@@ -200,7 +203,7 @@ namespace flexasio {
 
 		Log() << "Selecting output device";
 		{
-			const auto optionalOutputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultOutputDevice, config->output.device);
+			const auto optionalOutputDeviceIndex = SelectPortAudioDevice(pa_api_index, pa_api_info->defaultOutputDevice, config.output.device);
 			if (!optionalOutputDeviceIndex.has_value()) throw ASIOException(ASE_HWMalfunction, "unable to select output device");
 			output_device_index = *optionalOutputDeviceIndex;
 		}
@@ -386,8 +389,8 @@ namespace flexasio {
 					input_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
 					input_wasapi_stream_info.channelMask = input_channel_mask;
 				}
-				Log() << "Using " << (config->input.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for input WASAPI stream";
-				if (config->input.wasapiExclusiveMode) {
+				Log() << "Using " << (config.input.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for input WASAPI stream";
+				if (config.input.wasapiExclusiveMode) {
 					input_wasapi_stream_info.flags |= paWinWasapiExclusive;
 				}
 				input_parameters.hostApiSpecificStreamInfo = &input_wasapi_stream_info;
@@ -408,8 +411,8 @@ namespace flexasio {
 					output_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
 					output_wasapi_stream_info.channelMask = output_channel_mask;
 				}
-				Log() << "Using " << (config->output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
-				if (config->output.wasapiExclusiveMode) {
+				Log() << "Using " << (config.output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
+				if (config.output.wasapiExclusiveMode) {
 					output_wasapi_stream_info.flags |= paWinWasapiExclusive;
 				}
 				output_parameters.hostApiSpecificStreamInfo = &output_wasapi_stream_info;

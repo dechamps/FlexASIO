@@ -91,11 +91,11 @@ namespace flexasio {
 		static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
 		PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
 
+		const HWND windowHandle = nullptr;
+		const Config config;
+
 		PortAudioLogger portAudioLogger;
 		PortAudioHandle portAudioHandle;
-
-		const HWND windowHandle = nullptr;
-		std::optional<Config> config;
 
 		const PaHostApiInfo* pa_api_info = nullptr;
 		PaDeviceIndex input_device_index = paNoDevice;
