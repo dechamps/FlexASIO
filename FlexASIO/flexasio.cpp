@@ -223,8 +223,6 @@ namespace flexasio {
 		}
 		if (sample_rate == 0)
 			sample_rate = 44100;
-
-		Log() << "Initialized successfully";
 	}
 
 	FlexASIO::~FlexASIO()
