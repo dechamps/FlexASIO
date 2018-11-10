@@ -14,6 +14,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FlexASIOTest", "FlexASIOTes
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FlexASIOUtil", "FlexASIOUtil\FlexASIOUtil.vcxproj", "{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PortAudioDevices", "PortAudioDevices\PortAudioDevices.vcxproj", "{D08F326F-1BD3-4916-9984-C712E0B19CC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -54,6 +56,14 @@ Global
 		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|Win32.Build.0 = Release|Win32
 		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|x64.ActiveCfg = Release|x64
 		{3AD680CA-2C4A-4324-8F93-EF3FE68D4DC9}.Release|x64.Build.0 = Release|x64
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Debug|Win32.Build.0 = Debug|Win32
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Debug|x64.ActiveCfg = Debug|x64
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Debug|x64.Build.0 = Debug|x64
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Release|Win32.ActiveCfg = Release|Win32
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Release|Win32.Build.0 = Release|Win32
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Release|x64.ActiveCfg = Release|x64
+		{D08F326F-1BD3-4916-9984-C712E0B19CC8}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
