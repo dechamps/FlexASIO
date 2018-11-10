@@ -1,4 +1,10 @@
-#include "portaudio.h"
+#include <portaudio.h>
+#include <pa_win_wasapi.h>
+
+#include <windows.h>
+#include <mmreg.h>
+#include <ks.h>
+#include <ksmedia.h>
 
 #include <iostream>
 #include <string>
@@ -35,6 +41,60 @@ namespace flexasio {
 				});
 		}
 
+		std::string GetWaveFormatTagString(WORD formatTag) {
+			return EnumToString(formatTag, {
+				{ WAVE_FORMAT_EXTENSIBLE, "EXTENSIBLE" },
+				{ WAVE_FORMAT_MPEG, "MPEG" },
+				{ WAVE_FORMAT_MPEGLAYER3, "MPEGLAYER3" },
+				});
+		}
+
+		std::string GetWaveSubFormatString(const GUID& subFormat) {
+			return EnumToString(subFormat, {
+				{ KSDATAFORMAT_SUBTYPE_ADPCM, "ADPCM" },
+				{ KSDATAFORMAT_SUBTYPE_ALAW, "A-law" },
+				{ KSDATAFORMAT_SUBTYPE_DRM, "DRM" },
+				{ KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_DIGITAL_PLUS, "IEC61937 Dolby Digital Plus" },
+				{ KSDATAFORMAT_SUBTYPE_IEC61937_DOLBY_DIGITAL, "IEC61937 Dolby Digital" },
+				{ KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, "IEEE Float" },
+				{ KSDATAFORMAT_SUBTYPE_MPEG, "MPEG-1" },
+				{ KSDATAFORMAT_SUBTYPE_MULAW, "Mu-law" },
+				{ KSDATAFORMAT_SUBTYPE_PCM, "PCM" },
+				}, [](const GUID& guid) {
+				char str[128];
+				// Shamelessly stolen from https://stackoverflow.com/a/18555932/172594
+				snprintf(str, sizeof(str), "{%08X-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}", guid.Data1, guid.Data2, guid.Data3, guid.Data4[0], guid.Data4[1], guid.Data4[2], guid.Data4[3], guid.Data4[4], guid.Data4[5], guid.Data4[6], guid.Data4[7]);
+				return std::string(str);
+			});
+		}
+
+		std::string DescribeWaveFormat(const WAVEFORMATEXTENSIBLE& waveFormatExtensible) {
+			const auto& waveFormat = waveFormatExtensible.Format;
+
+			std::stringstream result;
+			result << "format tag " << GetWaveFormatTagString(waveFormat.wFormatTag) << ", "
+				<< waveFormat.nChannels << " channels, "
+				<< waveFormat.nSamplesPerSec << " samples/second, "
+				<< waveFormat.nAvgBytesPerSec << " average bytes/second, "
+				<< waveFormat.nBlockAlign << " bytes block alignment, "
+				<< waveFormat.wBitsPerSample << " bits per sample";
+
+			if (waveFormat.wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
+				result << ", " << waveFormatExtensible.Samples.wValidBitsPerSample << " valid bits per sample, "
+					// TODO: pretty-print channel mask
+					<< waveFormatExtensible.dwChannelMask << " channel mask, "
+					<< GetWaveSubFormatString(waveFormatExtensible.SubFormat) << " format";
+			}
+
+			return result.str();
+		}
+
+		void PrintWASAPIDeviceInfo(PaDeviceIndex deviceIndex) {
+			WAVEFORMATEXTENSIBLE waveFormatExtensible = { 0 };
+			ThrowOnPaError(PaWasapi_GetDeviceDefaultFormat(&waveFormatExtensible, sizeof(waveFormatExtensible), deviceIndex));
+			std::cout << "WASAPI device default format: " << DescribeWaveFormat(waveFormatExtensible) << std::endl;
+		}
+
 		void PrintDevice(PaDeviceIndex deviceIndex) {
 			std::cout << "Device index: " << deviceIndex << std::endl;
 
@@ -57,6 +117,10 @@ namespace flexasio {
 			}
 			if (deviceIndex == hostApi->defaultOutputDevice) {
 				std::cout << "DEFAULT OUTPUT DEVICE for this host API" << std::endl;
+			}
+
+			switch (hostApi->type) {
+			case paWASAPI: PrintWASAPIDeviceInfo(deviceIndex);  break;
 			}
 		}
 

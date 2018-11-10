@@ -11,10 +11,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
     </Link>
-    <ClCompile>
-      <DisableLanguageExtensions>true</DisableLanguageExtensions>
-      <ConformanceMode>true</ConformanceMode>
-    </ClCompile>
+    <ClCompile />
   </ItemDefinitionGroup>
   <ItemGroup>
     <BuildMacro Include="ProjectDescription">
