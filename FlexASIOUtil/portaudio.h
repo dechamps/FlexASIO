@@ -2,6 +2,9 @@
 
 #include <portaudio.h>
 
+#include <windows.h>
+#include <MMReg.h>
+
 #include <string>
 
 namespace flexasio {
@@ -37,5 +40,9 @@ namespace flexasio {
 	private:
 		static const PaDeviceInfo& GetInfo(PaDeviceIndex index);
 	};
+
+	WAVEFORMATEXTENSIBLE GetWasapiDeviceDefaultFormat(PaDeviceIndex index);
+
+	std::string DescribeWaveFormat(const WAVEFORMATEXTENSIBLE& waveFormatExtensible);
 
 }

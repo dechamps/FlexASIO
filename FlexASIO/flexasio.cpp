@@ -188,30 +188,29 @@ namespace flexasio {
 
 		if (!inputDevice.has_value() && !outputDevice.has_value()) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
 
-		if (hostApi.info.type == paWASAPI)
-		{
+		if (hostApi.info.type == paWASAPI) {
 			// PortAudio has some WASAPI-specific goodies to make us smarter.
 			if (inputDevice.has_value()) {
-				WAVEFORMATEXTENSIBLE input_waveformat;
-				PaError error = PaWasapi_GetDeviceDefaultFormat(&input_waveformat, sizeof(input_waveformat), inputDevice->index);
-				if (error <= 0)
-					Log() << "Unable to get WASAPI default format for input device";
-				else
-				{
-					input_channel_count = input_waveformat.Format.nChannels;
-					input_channel_mask = input_waveformat.dwChannelMask;
+				try {
+					const auto inputFormat = GetWasapiDeviceDefaultFormat(inputDevice->index);
+					Log() << "Input WASAPI device default format: " << DescribeWaveFormat(inputFormat);
+					input_channel_count = inputFormat.Format.nChannels;
+					input_channel_mask = inputFormat.dwChannelMask;
+				}
+				catch (const std::exception& exception) {
+					Log() << "Error while trying to get input WASAPI device default format: " << exception.what();
 				}
 			}
 
 			if (outputDevice.has_value()) {
-				WAVEFORMATEXTENSIBLE output_waveformat;
-				const auto error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), outputDevice->index);
-				if (error <= 0)
-					Log() << "Unable to get WASAPI default format for output device";
-				else
-				{
-					output_channel_count = output_waveformat.Format.nChannels;
-					output_channel_mask = output_waveformat.dwChannelMask;
+				try {
+					const auto outputFormat = GetWasapiDeviceDefaultFormat(outputDevice->index);
+					Log() << "Output WASAPI device default format: " << DescribeWaveFormat(outputFormat);
+					output_channel_count = outputFormat.Format.nChannels;
+					output_channel_mask = outputFormat.dwChannelMask;
+				}
+				catch (const std::exception& exception) {
+					Log() << "Error while trying to get output WASAPI device default format: " << exception.what();
 				}
 			}
 		}
