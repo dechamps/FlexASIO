@@ -40,6 +40,22 @@
 
 namespace flexasio {
 
+	FlexASIO::PortAudioHandle::PortAudioHandle() {
+		Log() << "Initializing PortAudio";
+		PaError error = Pa_Initialize();
+		if (error != paNoError)
+			throw ASIOException(ASE_HWMalfunction, std::string("could not initialize PortAudio: ") + Pa_GetErrorText(error));
+		Log() << "PortAudio initialization successful";
+	}
+	FlexASIO::PortAudioHandle::~PortAudioHandle() {
+		Log() << "Terminating PortAudio";
+		PaError error = Pa_Terminate();
+		if (error != paNoError)
+			Log() << "PortAudio termination failed with " << Pa_GetErrorText(error);
+		else
+			Log() << "PortAudio terminated successfully";
+	}
+
 	FlexASIO::Win32HighResolutionTimer::Win32HighResolutionTimer() {
 		Log() << "Starting high resolution timer";
 		timeBeginPeriod(1);
@@ -148,11 +164,6 @@ namespace flexasio {
 		config = LoadConfig();
 		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
 
-		Log() << "Initializing PortAudio";
-		PaError error = Pa_Initialize();
-		if (error != paNoError)
-			throw ASIOException(ASE_HWMalfunction, std::string("could not initialize PortAudio: ") + Pa_GetErrorText(error));
-
 		LogPortAudioApiList();
 		const auto pa_api_index = config->backend.has_value() ? SelectPortAudioApiByName(*config->backend) : SelectDefaultPortAudioApi();
 		if (pa_api_index < 0)
@@ -227,7 +238,7 @@ namespace flexasio {
 
 			if (output_device_index != paNoDevice) {
 				WAVEFORMATEXTENSIBLE output_waveformat;
-				error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), output_device_index);
+				const auto error = PaWasapi_GetDeviceDefaultFormat(&output_waveformat, sizeof(output_waveformat), output_device_index);
 				if (error <= 0)
 					Log() << "Unable to get WASAPI default format for output device";
 				else
@@ -250,13 +261,6 @@ namespace flexasio {
 			Stop();
 		if (buffers)
 			DisposeBuffers();
-
-		Log() << "Closing PortAudio";
-		PaError error = Pa_Terminate();
-		if (error != paNoError)
-			Log() << "Pa_Terminate() returned " << Pa_GetErrorText(error) << "!";
-		else
-			Log() << "PortAudio closed successfully";
 	}
 
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)

@@ -50,6 +50,14 @@ namespace flexasio {
 	private:
 		using Sample = float;
 
+		class PortAudioHandle {
+		public:
+			PortAudioHandle();
+			PortAudioHandle(const PortAudioHandle&) = delete;
+			PortAudioHandle(const PortAudioHandle&&) = delete;
+			~PortAudioHandle();
+		};
+
 		class Win32HighResolutionTimer {
 		public:
 			Win32HighResolutionTimer();
@@ -84,6 +92,7 @@ namespace flexasio {
 		PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
 
 		PortAudioLogger portAudioLogger;
+		PortAudioHandle portAudioHandle;
 
 		const HWND windowHandle = nullptr;
 		std::optional<Config> config;
