@@ -131,45 +131,51 @@ namespace flexasio {
 			std::string lastError;
 			std::optional<FlexASIO> flexASIO;
 
-			template <typename Functor> ASIOError Enter(std::string_view context, Functor functor) {
-				Log() << "--- ENTERING CONTEXT: " << context;
-				ASIOError result;
-				try {
-					functor();
-					result = ASE_OK;
-				}
-				catch (const ASIOException& exception) {
-					lastError = exception.what();
-					result = exception.GetASIOError();
-				}
-				catch (const std::exception& exception) {
-					lastError = exception.what();
-					result = ASE_HWMalfunction;
-				}
-				catch (...) {
-					lastError = "unknown exception";
-					result = ASE_HWMalfunction;
-				}
-				if (result == ASE_OK) {
-					Log() << "--- EXITING CONTEXT: " << context << " [OK]";
-				}
-				else {
-					Log() << "--- EXITING CONTEXT: " << context << " [" << result << " " << lastError << "]";
-				}
-				return result;
-			}
-			template <typename... Args> auto EnterInitialized(std::string_view context, Args&&... args) {
-				if (!flexASIO.has_value()) {
-					throw ASIOException(ASE_InvalidMode, std::string("entered ") + std::string(context) + " but uninitialized state");
-				}
-				return Enter(context, std::forward<Args>(args)...);
-			}
-			template <typename Method, typename... Args> auto EnterWithMethod(std::string_view context, Method method, Args&&... args) {
-				return EnterInitialized(context, [&] { return ((*flexASIO).*method)(std::forward<Args>(args)...); });
-			}
+			template <typename Functor> ASIOError Enter(std::string_view context, Functor functor);
+			template <typename... Args> ASIOError EnterInitialized(std::string_view context, Args&&... args);
+			template <typename Method, typename... Args> ASIOError EnterWithMethod(std::string_view context, Method method, Args&&... args);
 		};
 
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
+
+		template <typename Functor> ASIOError CFlexASIO::Enter(std::string_view context, Functor functor) {
+			Log() << "--- ENTERING CONTEXT: " << context;
+			ASIOError result;
+			try {
+				functor();
+				result = ASE_OK;
+			}
+			catch (const ASIOException& exception) {
+				lastError = exception.what();
+				result = exception.GetASIOError();
+			}
+			catch (const std::exception& exception) {
+				lastError = exception.what();
+				result = ASE_HWMalfunction;
+			}
+			catch (...) {
+				lastError = "unknown exception";
+				result = ASE_HWMalfunction;
+			}
+			if (result == ASE_OK) {
+				Log() << "--- EXITING CONTEXT: " << context << " [OK]";
+			}
+			else {
+				Log() << "--- EXITING CONTEXT: " << context << " [" << result << " " << lastError << "]";
+			}
+			return result;
+		}
+
+		template <typename... Args> ASIOError CFlexASIO::EnterInitialized(std::string_view context, Args&&... args) {
+			if (!flexASIO.has_value()) {
+				throw ASIOException(ASE_InvalidMode, std::string("entered ") + std::string(context) + " but uninitialized state");
+			}
+			return Enter(context, std::forward<Args>(args)...);
+		}
+
+		template <typename Method, typename... Args> ASIOError CFlexASIO::EnterWithMethod(std::string_view context, Method method, Args&&... args) {
+			return EnterInitialized(context, [&] { return ((*flexASIO).*method)(std::forward<Args>(args)...); });
+		}
 
 		ASIOError CFlexASIO::getClockSources(ASIOClockSource* clocks, long* numSources) throw()
 		{
