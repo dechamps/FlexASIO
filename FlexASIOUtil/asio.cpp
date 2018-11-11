@@ -62,4 +62,54 @@ namespace flexasio {
 			});
 	}
 
+	std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags) {
+		return BitfieldToString(timeInfoFlags, {
+			{kSystemTimeValid, "kSystemTimeValid"},
+			{kSamplePositionValid, "kSamplePositionValid"},
+			{kSampleRateValid, "kSampleRateValid"},
+			{kSpeedValid, "kSpeedValid"},
+			{kSampleRateChanged, "kSampleRateChanged"},
+			{kClockSourceChanged, "kClockSourceChanged"},
+			});
+	}
+
+	std::string GetASIOTimeCodeFlagsString(unsigned long timeCodeFlags) {
+		return BitfieldToString(timeCodeFlags, {
+			{kTcValid, "kTcValid"},
+			{kTcRunning, "kTcRunning"},
+			{kTcReverse, "kTcReverse"},
+			{kTcOnspeed, "kTcOnspeed"},
+			{kTcStill, "kTcStill"},
+			{kTcSpeedValid, "kTcSpeedValid"},
+			});
+	}
+
+	std::string DescribeASIOTimeInfo(const AsioTimeInfo& asioTimeInfo) {
+		std::stringstream result;
+		result << "ASIO time info with speed " << asioTimeInfo.speed << ", system time "
+			<< ASIOToInt64(asioTimeInfo.systemTime) << ", sample position "
+			<< ASIOToInt64(asioTimeInfo.samplePosition) << ", sample rate "
+			<< asioTimeInfo.sampleRate << " Hz, flags "
+			<< GetAsioTimeInfoFlagsString(asioTimeInfo.flags) << ", reserved "
+			<< Join(asioTimeInfo.reserved, " ", CharAsNumber());
+		return result.str();
+	}
+
+	std::string DescribeASIOTimeCode(const ASIOTimeCode& asioTimeCode) {
+		std::stringstream result;
+		result << "ASIO time code with speed " << asioTimeCode.speed << ", samples "
+			<< ASIOToInt64(asioTimeCode.timeCodeSamples) << ", flags "
+			<< GetASIOTimeCodeFlagsString(asioTimeCode.flags) << ", future "
+			<< Join(asioTimeCode.future, " ", CharAsNumber());
+		return result.str();
+	}
+
+	std::string DescribeASIOTime(const ASIOTime& asioTime) {
+		std::stringstream result;
+		result << "ASIO time with reserved " << Join(asioTime.reserved, " ") << ", time info ("
+			<< DescribeASIOTimeInfo(asioTime.timeInfo) << "), time code ("
+			<< DescribeASIOTimeCode(asioTime.timeCode) << ")";
+		return result.str();
+	}
+
 }

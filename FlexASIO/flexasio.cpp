@@ -595,8 +595,9 @@ namespace flexasio {
 
 		if (!host_supports_timeinfo)
 		{
-			Log() << "Firing ASIO bufferSwitch() callback";
+			Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << our_buffer_index;
 			preparedState.callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
+			Log() << "bufferSwitch() complete";
 		}
 		else
 		{
@@ -605,8 +606,9 @@ namespace flexasio {
 			time.timeInfo.samplePosition = position;
 			time.timeInfo.systemTime = position_timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
-			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with samplePosition " << ASIOToInt64(time.timeInfo.samplePosition) << ", systemTime " << ASIOToInt64(time.timeInfo.systemTime);
-			preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
+			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << DescribeASIOTime(time) << ")";
+			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
+			Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : DescribeASIOTime(*timeResult));
 		}
 		std::swap(locked_buffer_index, our_buffer_index);
 		position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);

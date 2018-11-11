@@ -27,10 +27,6 @@ namespace flexasio {
 			using function = std::function<ReturnValue(Args...)>;
 		};
 
-		struct CharAsNumber {
-			template <typename T> auto operator()(T&& value) { return +std::forward<T>(value); }
-		};
-
 		std::string GetASIOSampleTypeString(ASIOSampleType sampleType) {
 			return EnumToString(sampleType, {
 				{ASIOSTInt16MSB, "ASIOSTInt16MSB"},
@@ -77,39 +73,9 @@ namespace flexasio {
 				});
 		}
 
-		std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags) {
-			return BitfieldToString(timeInfoFlags, {
-				{kSystemTimeValid, "kSystemTimeValid"},
-				{kSamplePositionValid, "kSamplePositionValid"},
-				{kSampleRateValid, "kSampleRateValid"},
-				{kSpeedValid, "kSpeedValid"},
-				{kSampleRateChanged, "kSampleRateChanged"},
-				{kClockSourceChanged, "kClockSourceChanged"},
-				});
-		}
-
-		std::string GetASIOTimeCodeFlagsString(unsigned long timeCodeFlags) {
-			return BitfieldToString(timeCodeFlags, {
-				{kTcValid, "kTcValid"},
-				{kTcRunning, "kTcRunning"},
-				{kTcReverse, "kTcReverse"},
-				{kTcOnspeed, "kTcOnspeed"},
-				{kTcStill, "kTcStill"},
-				{kTcSpeedValid, "kTcSpeedValid"},
-				});
-		}
-
 		ASIOError PrintError(ASIOError error) {
 			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
 			return error;
-		}
-
-		void PrintASIOTime(const ASIOTime& asioTime) {
-			std::cout << "ASIOTime::reserved = " << Join(asioTime.reserved, " ") << std::endl;
-			const auto& timeInfo = asioTime.timeInfo;
-			std::cout << "ASIOTime::timeInfo: speed = " << timeInfo.speed << " systemTime = " << ASIOToInt64(timeInfo.systemTime) << " samplePosition = " << ASIOToInt64(timeInfo.samplePosition) << " sampleRate = " << timeInfo.sampleRate << " flags = " << GetAsioTimeInfoFlagsString(timeInfo.flags) << " reserved = " << Join(timeInfo.reserved, " ", CharAsNumber()) << std::endl;
-			const auto& timeCode = asioTime.timeCode;
-			std::cout << "ASIOTime::timeCode: speed = " << timeCode.speed << " timeCodeSamples = " << ASIOToInt64(timeCode.timeCodeSamples) << " flags = " << GetASIOTimeCodeFlagsString(timeCode.flags) << " future = " << Join(timeCode.future, " ", CharAsNumber()) << std::endl;
 		}
 
 		std::optional<ASIODriverInfo> Init() {
@@ -373,8 +339,7 @@ namespace flexasio {
 				return result;
 			};
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
-				std::cout << "bufferSwitchTimeInfo(params = " << params << ", doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
-				if (params != nullptr) PrintASIOTime(*params);
+				std::cout << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
 				GetSamplePosition();
 				std::cout << "<- nullptr" << std::endl;
 				incrementBufferSwitchCount();

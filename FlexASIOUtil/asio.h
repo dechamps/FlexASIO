@@ -12,4 +12,11 @@ namespace flexasio {
 
 	std::string GetASIOErrorString(ASIOError error);
 
+	std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags);
+	std::string GetASIOTimeCodeFlagsString(unsigned long timeCodeFlags);
+
+	std::string DescribeASIOTimeInfo(const AsioTimeInfo& asioTimeInfo);
+	std::string DescribeASIOTimeCode(const ASIOTimeCode& asioTimeCode);
+	std::string DescribeASIOTime(const ASIOTime& asioTime);
+
 }
