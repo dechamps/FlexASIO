@@ -511,17 +511,16 @@ namespace flexasio {
 		preparedState(preparedState),
 		our_buffer_index(0),
 		position(Int64ToASIO<ASIOSamples>(0)),
-		position_timestamp(Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000)) {
-		host_supports_timeinfo = preparedState.callbacks.asioMessage &&
+		position_timestamp(Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000)),
+		host_supports_timeinfo([&] {
+		Log() << "Checking if the host supports time info";
+		const bool result = preparedState.callbacks.asioMessage &&
 			preparedState.callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
 			preparedState.callbacks.asioMessage(kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
-		if (host_supports_timeinfo)
-			Log() << "The host supports time info";
-
-		Log() << "Starting stream";
-		PaError error = Pa_StartStream(preparedState.stream.get());
-		if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
-	}
+		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
+		return result;
+	}()),
+		activeStream(StartStream(preparedState.stream.get())) {}
 
 	void FlexASIO::Stop() {
 		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
@@ -532,15 +531,6 @@ namespace flexasio {
 	{
 		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
 		runningState.reset();
-	}
-
-	FlexASIO::PreparedState::RunningState::~RunningState() throw()
-	{
-		Log() << "Stopping stream";
-		PaError error = Pa_StopStream(preparedState.stream.get());
-		if (error != paNoError) {
-			Log() << "Unable to stop PortAudio stream: " << Pa_GetErrorText(error);
-		}
 	}
 
 	int FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {

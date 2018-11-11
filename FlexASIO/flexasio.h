@@ -106,7 +106,6 @@ namespace flexasio {
 			class RunningState {
 			public:
 				RunningState(PreparedState& preparedState);
-				~RunningState() throw();
 
 				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
 
@@ -114,12 +113,13 @@ namespace flexasio {
 
 			private:
 				const PreparedState& preparedState;
-				bool host_supports_timeinfo;
+				const bool host_supports_timeinfo;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				size_t our_buffer_index;
 				ASIOSamples position;
 				ASIOTimeStamp position_timestamp;
 				Win32HighResolutionTimer win32HighResolutionTimer;
+				const ActiveStream activeStream;
 			};
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
