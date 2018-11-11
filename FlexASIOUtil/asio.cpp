@@ -62,6 +62,33 @@ namespace flexasio {
 			});
 	}
 
+	std::string GetASIOFutureSelectorString(long selector) {
+		return EnumToString(selector, {
+			{kAsioEnableTimeCodeRead, "EnableTimeCodeRead"},
+			{kAsioDisableTimeCodeRead, "DisableTimeCodeRead"},
+			{kAsioSetInputMonitor, "SetInputMonitor"},
+			{kAsioTransport, "Transport"},
+			{kAsioSetInputGain, "SetInputGain"},
+			{kAsioGetInputMeter, "GetInputMeter"},
+			{kAsioSetOutputGain, "SetOutputGain"},
+			{kAsioGetOutputMeter, "GetOutputMeter"},
+			{kAsioCanInputMonitor, "CanInputMonitor"},
+			{kAsioCanTimeInfo, "CanTimeInfo"},
+			{kAsioCanTimeCode, "CanTimeCode"},
+			{kAsioCanTransport, "CanTransport"},
+			{kAsioCanInputGain, "CanInputGain"},
+			{kAsioCanInputMeter, "CanInputMeter"},
+			{kAsioCanOutputGain, "CanOutputGain"},
+			{kAsioCanOutputMeter, "CanOutputMeter"},
+			{kAsioOptionalOne, "OptionalOne"},
+			{kAsioSetIoFormat, "SetIoFormat"},
+			{kAsioGetIoFormat, "GetIoFormat"},
+			{kAsioCanDoIoFormat, "CanDoIoFormat"},
+			{kAsioCanReportOverload, "CanReportOverload"},
+			{kAsioGetInternalBufferSamples, "GetInternalBufferSamples"},
+			});
+	}
+
 	std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags) {
 		return BitfieldToString(timeInfoFlags, {
 			{kSystemTimeValid, "kSystemTimeValid"},

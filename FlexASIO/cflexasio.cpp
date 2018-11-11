@@ -119,7 +119,8 @@ namespace flexasio {
 				return EnterWithMethod("controlPanel()", &FlexASIO::ControlPanel);
 			}
 			ASIOError future(long selector, void *opt) throw() final {
-				return Enter("future()", [] {
+				return Enter("future()", [&] {
+					Log() << "Requested future selector: " << GetASIOFutureSelectorString(selector);
 					throw ASIOException(ASE_InvalidParameter, "future() is not supported");
 				});
 			}
