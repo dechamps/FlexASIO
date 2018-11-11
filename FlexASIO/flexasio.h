@@ -33,8 +33,8 @@ namespace flexasio {
 		void GetChannels(long* numInputChannels, long* numOutputChannels);
 		void GetChannelInfo(ASIOChannelInfo* info);
 		bool CanSampleRate(ASIOSampleRate sampleRate);
-		void SetSampleRate(ASIOSampleRate sampleRate);
-		void GetSampleRate(ASIOSampleRate* sampleRate);
+		void SetSampleRate(ASIOSampleRate requestedSampleRate);
+		void GetSampleRate(ASIOSampleRate* sampleRateResult);
 
 		void CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
 		void DisposeBuffers();
@@ -158,7 +158,7 @@ namespace flexasio {
 		const std::optional<WAVEFORMATEXTENSIBLE> inputFormat;
 		const std::optional<WAVEFORMATEXTENSIBLE> outputFormat;
 
-		ASIOSampleRate sample_rate = 0;
+		ASIOSampleRate sampleRate = 0;
 
 		std::optional<PreparedState> bufferState;
 	};

@@ -156,6 +156,19 @@ namespace flexasio {
 			}
 		}
 
+		ASIOSampleRate GetDefaultSampleRate(const std::optional<Device>& inputDevice, const std::optional<Device>& outputDevice) {
+			ASIOSampleRate sampleRate = 0;
+			if (inputDevice.has_value()) {
+				sampleRate = (std::max)(sampleRate, inputDevice->info.defaultSampleRate);
+			}
+			if (outputDevice.has_value()) {
+				sampleRate = (std::max)(sampleRate, outputDevice->info.defaultSampleRate);
+			}
+			if (sampleRate == 0) sampleRate = 44100;
+			Log() << "Default sample rate: " << sampleRate;
+			return sampleRate;
+		}
+
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) :
@@ -194,22 +207,12 @@ namespace flexasio {
 		return device;
 	}()),
 		inputFormat(inputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, inputDevice->index) : std::nullopt),
-		outputFormat(outputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, outputDevice->index) : std::nullopt)
+		outputFormat(outputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, outputDevice->index) : std::nullopt),
+		sampleRate(GetDefaultSampleRate(inputDevice, outputDevice))
 	{
 		Log() << "sysHandle = " << sysHandle;
 
-		sample_rate = 0;
-
 		if (!inputDevice.has_value() && !outputDevice.has_value()) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
-
-		if (inputDevice.has_value()) {
-			sample_rate = (std::max)(sample_rate, inputDevice->info.defaultSampleRate);
-		}
-		if (outputDevice.has_value()) {
-			sample_rate = (std::max)(sample_rate, outputDevice->info.defaultSampleRate);
-		}
-		if (sample_rate == 0)
-			sample_rate = 44100;
 	}
 
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
@@ -382,21 +385,31 @@ namespace flexasio {
 		return true;
 	}
 
-	void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRate)
+	void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRateResult)
 	{
-		*sampleRate = sample_rate;
-		Log() << "Returning sample rate: " << *sampleRate;
+		*sampleRateResult = sampleRate;
+		Log() << "Returning sample rate: " << *sampleRateResult;
 	}
 
-	void FlexASIO::SetSampleRate(ASIOSampleRate sampleRate)
+	void FlexASIO::SetSampleRate(ASIOSampleRate requestedSampleRate)
 	{
-		Log() << "Request to set sample rate: " << sampleRate;
+		Log() << "Request to set sample rate: " << requestedSampleRate;
+
+		if (!(requestedSampleRate > 0 && requestedSampleRate < (std::numeric_limits<ASIOSampleRate>::max)())) {
+			throw ASIOException(ASE_InvalidParameter, "setSampleRate() called with an invalid sample rate");
+		}
+
+		if (requestedSampleRate == sampleRate) {
+			Log() << "Requested sampled rate is equal to current sample rate";
+			return;
+		}
+
 		if (bufferState.has_value())
 		{
 			Log() << "Sending a reset request to the host as it's not possible to change sample rate while streaming";
 			bufferState->RequestReset();
 		}
-		sample_rate = sampleRate;
+		sampleRate = requestedSampleRate;
 	}
 
 	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
@@ -408,11 +421,6 @@ namespace flexasio {
 			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
 		}
 
-		auto sampleRate = sample_rate;
-		if (sampleRate == 0) {
-			sampleRate = 44100;
-			Log() << "The sample rate was never specified, using " << sample_rate << " as fallback";
-		}
 		bufferState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
