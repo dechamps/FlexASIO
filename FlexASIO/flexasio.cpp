@@ -555,7 +555,12 @@ namespace flexasio {
 
 	PaStreamCallbackResult FlexASIO::PreparedState::RunningState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
-		Log() << "Running stream callback with " << frameCount << " frames";
+		Log() << "PortAudio stream callback with input " << input << ", output "
+			<< output << ", "
+			<< frameCount << " frames, time info ("
+			<< (timeInfo == nullptr ? "none" : DescribeStreamCallbackTimeInfo(*timeInfo)) << "), flags "
+			<< GetStreamCallbackFlagsString(statusFlags);
+
 		if (frameCount != preparedState.buffers.bufferSize)
 		{
 			Log() << "Expected " << preparedState.buffers.bufferSize << " frames, got " << frameCount << " instead, aborting";

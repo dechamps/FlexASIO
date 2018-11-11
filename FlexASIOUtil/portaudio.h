@@ -23,6 +23,7 @@ namespace flexasio {
 	std::string GetWasapiThreadPriorityString(PaWasapiThreadPriority threadPriority);
 	std::string GetWasapiStreamCategoryString(PaWasapiStreamCategory streamCategory);
 	std::string GetWasapiStreamOptionString(PaWasapiStreamOption streamOption);
+	std::string GetStreamCallbackFlagsString(PaStreamCallbackFlags streamCallbackFlags);
 
 	struct HostApi {
 		explicit HostApi(PaHostApiIndex index) : index(index), info(GetInfo(index)) {}
@@ -65,5 +66,7 @@ namespace flexasio {
 	};
 	using ActiveStream = std::unique_ptr<PaStream, StreamStopper>;
 	ActiveStream StartStream(PaStream*);
+
+	std::string DescribeStreamCallbackTimeInfo(const PaStreamCallbackTimeInfo& streamCallbackTimeInfo);
 
 }

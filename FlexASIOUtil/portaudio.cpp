@@ -154,6 +154,16 @@ namespace flexasio {
 			});
 	}
 
+	std::string GetStreamCallbackFlagsString(PaStreamCallbackFlags streamCallbackFlags) {
+		return BitfieldToString(streamCallbackFlags, {
+			{ paInputUnderflow, "InputUnderflow" },
+			{ paInputOverflow, "InputOverflow" },
+			{ paOutputUnderflow, "OutputUnderflow" },
+			{ paOutputOverflow, "OutputOverflow" },
+			{ paPrimingOutput, "PrimingOutput" },
+			});
+	}
+
 	std::ostream& operator<<(std::ostream& os, const HostApi& hostApi) {
 		os << "PortAudio host API index " << hostApi.index
 			<< " (name: '" << hostApi.info.name
@@ -332,6 +342,14 @@ namespace flexasio {
 		if (error != paNoError) throw std::runtime_error(std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
 		Log() << "PortAudio stream started";
 		return ActiveStream(stream);
+	}
+
+	std::string DescribeStreamCallbackTimeInfo(const PaStreamCallbackTimeInfo& streamCallbackTimeInfo) {
+		std::stringstream result;
+		result << "PortAudio stream callback time info with input buffer ADC time " << streamCallbackTimeInfo.inputBufferAdcTime << ", current time "
+			<< streamCallbackTimeInfo.currentTime << ", output buffer DAC time "
+			<< streamCallbackTimeInfo.outputBufferDacTime;
+		return result.str();
 	}
 
 }
