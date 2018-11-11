@@ -85,22 +85,22 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size) :
-					buffer_count(buffer_count), channel_count(channel_count), buffer_size(buffer_size),
-					buffers(new Sample[getSize()]()) { }
-				~Buffers() { delete[] buffers; }
-				Sample* getBuffer(size_t buffer, size_t channel) { return buffers + buffer * channel_count * buffer_size + channel * buffer_size; }
-				size_t getSize() { return buffer_count * channel_count * buffer_size; }
+				Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size);
+				Buffers(const Buffers&) = delete;
+				Buffers(Buffers&&) = delete;
+				~Buffers();
+				Sample* getBuffer(size_t buffer, size_t channel) const { return buffers + buffer * channelCount * bufferSize + channel * bufferSize; }
+				size_t getSize() const { return bufferCount * channelCount * bufferSize; }
 
-				const size_t buffer_count;
-				const size_t channel_count;
-				const size_t buffer_size;
+				const size_t bufferCount;
+				const size_t channelCount;
+				const size_t bufferSize;
 
 				// This is a giant buffer containing all ASIO buffers. It is organized as follows:
 				// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
 				// [ input channel 0 buffer 1 ] [ input channel 1 buffer 1 ] ... [ input channel N buffer 1 ] [ output channel 0 buffer 1 ] [ output channel 1 buffer 1 ] .. [ output channel N buffer 1 ]
 				// The reason why this is a giant blob is to slightly improve performance by (theroretically) improving memory locality.
-				Sample* const buffers;
+				Sample* buffers = nullptr;
 			};
 
 			static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
@@ -113,7 +113,7 @@ namespace flexasio {
 			// PortAudio buffer addresses are dynamic and are only valid for the duration of the stream callback.
 			// In contrast, ASIO buffer addresses are static and are valid for as long as the stream is running.
 			// Thus we need our own buffer on top of PortAudio's buffers. This doens't add any latency because buffers are copied immediately.
-			std::unique_ptr<Buffers> buffers;
+			const Buffers buffers;
 			std::vector<ASIOBufferInfo> buffers_info;
 
 			PaStream* stream = nullptr;

@@ -413,6 +413,8 @@ namespace flexasio {
 	}
 
 	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
+		Log() << "Request to create buffers for " << numChannels << " channels, size " << bufferSize << " bytes";
+
 		if (bufferState.has_value()) {
 			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
 		}
@@ -425,16 +427,28 @@ namespace flexasio {
 		bufferState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
+	FlexASIO::BufferState::Buffers::Buffers(size_t bufferCount, size_t channelCount, size_t bufferSize) :
+		bufferCount(bufferCount), channelCount(channelCount), bufferSize(bufferSize) {
+		Log() << "Allocating " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSize << " bytes per channel";
+		if (channelCount < 1 || bufferSize < 1)
+			throw ASIOException(ASE_InvalidParameter, "invalid buffer parameters");
+		buffers = new Sample[getSize()]();
+		Log() << "Buffer memory range : " << buffers << "-" << buffers + getSize();
+	}
+
+	FlexASIO::BufferState::Buffers::~Buffers() {
+		Log() << "Destroying buffers";
+		delete[] buffers;
+		buffers = nullptr;
+	}
+
 	FlexASIO::BufferState::BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) :
-		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks)
+		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks), buffers(2, numChannels, bufferSize)
 	{
-		Log() << "Request to create buffers for " << numChannels << ", size " << bufferSize << " bytes";
-		if (numChannels < 1 || bufferSize < 1 || !callbacks || !callbacks->bufferSwitch)
-			throw ASIOException(ASE_InvalidParameter, "invalid parameters to createBuffers()");
+		if (!callbacks || !callbacks->bufferSwitch)
+			throw ASIOException(ASE_InvalidParameter, "invalid createBuffers() callbacks");
 
 		buffers_info.reserve(numChannels);
-		std::unique_ptr<Buffers> temp_buffers(new Buffers(2, numChannels, bufferSize));
-		Log() << "Buffers instantiated, memory range : " << temp_buffers->buffers << "-" << temp_buffers->buffers + temp_buffers->getSize();
 		for (long channel_index = 0; channel_index < numChannels; ++channel_index)
 		{
 			ASIOBufferInfo& buffer_info = bufferInfos[channel_index];
@@ -449,8 +463,8 @@ namespace flexasio {
 					throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 			}
 
-			Sample* first_half = temp_buffers->getBuffer(0, channel_index);
-			Sample* second_half = temp_buffers->getBuffer(1, channel_index);
+			Sample* first_half = buffers.getBuffer(0, channel_index);
+			Sample* second_half = buffers.getBuffer(1, channel_index);
 			buffer_info.buffers[0] = static_cast<void*>(first_half);
 			buffer_info.buffers[1] = static_cast<void*>(second_half);
 			Log() << "ASIO buffer #" << channel_index << " is " << (buffer_info.isInput ? "input" : "output") << " channel " << buffer_info.channelNum
@@ -458,14 +472,12 @@ namespace flexasio {
 			buffers_info.push_back(buffer_info);
 		}
 
-
 		Log() << "Opening PortAudio stream";
 		PaStream* temp_stream;
-		PaError error = flexASIO.OpenStream(&temp_stream, sampleRate, unsigned long(temp_buffers->buffer_size), &BufferState::StaticStreamCallback, this);
+		PaError error = flexASIO.OpenStream(&temp_stream, sampleRate, unsigned long(buffers.bufferSize), &BufferState::StaticStreamCallback, this);
 		if (error != paNoError)
 			throw ASIOException(ASE_HWMalfunction, std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error));
 
-		buffers = std::move(temp_buffers);
 		stream = temp_stream;
 	}
 
@@ -498,7 +510,6 @@ namespace flexasio {
 		}
 
 		stream = NULL;
-		buffers.reset();
 		buffers_info.clear();
 	}
 
@@ -588,9 +599,9 @@ namespace flexasio {
 			Log() << "Ignoring callback as stream is not started";
 			return paContinue;
 		}
-		if (frameCount != buffers->buffer_size)
+		if (frameCount != buffers.bufferSize)
 		{
-			Log() << "Expected " << buffers->buffer_size << " frames, got " << frameCount << " instead, aborting";
+			Log() << "Expected " << buffers.bufferSize << " frames, got " << frameCount << " instead, aborting";
 			return paContinue;
 		}
 
