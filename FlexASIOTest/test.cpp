@@ -53,26 +53,6 @@ namespace flexasio {
 				});
 		}
 
-		std::string GetASIOMessageSelectorString(long selector) {
-			return EnumToString(selector, {
-				{kAsioSelectorSupported, "kAsioSelectorSupported"},
-				{kAsioEngineVersion, "kAsioEngineVersion"},
-				{kAsioResetRequest, "kAsioResetRequest"},
-				{kAsioBufferSizeChange, "kAsioBufferSizeChange"},
-				{kAsioResyncRequest, "kAsioResyncRequest"},
-				{kAsioLatenciesChanged, "kAsioLatenciesChanged"},
-				{kAsioSupportsTimeInfo, "kAsioSupportsTimeInfo"},
-				{kAsioSupportsTimeCode, "kAsioSupportsTimeCode"},
-				{kAsioMMCCommand, "kAsioMMCCommand"},
-				{kAsioSupportsInputMonitor, "kAsioSupportsInputMonitor"},
-				{kAsioSupportsInputGain, "kAsioSupportsInputGain"},
-				{kAsioSupportsInputMeter, "kAsioSupportsInputMeter"},
-				{kAsioSupportsOutputGain, "kAsioSupportsOutputGain"},
-				{kAsioSupportsOutputMeter, "kAsioSupportsOutputMeter"},
-				{kAsioOverload, "kAsioOverload"},
-				});
-		}
-
 		ASIOError PrintError(ASIOError error) {
 			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
 			return error;

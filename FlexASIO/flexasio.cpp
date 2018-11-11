@@ -150,6 +150,32 @@ namespace flexasio {
 			return sampleRate;
 		}
 
+		long Message(decltype(ASIOCallbacks::asioMessage) asioMessage, long selector, long value, void* message, double* opt) {
+			Log() << "Sending message: selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt;
+			const auto result = asioMessage(selector, value, message, opt);
+			Log() << "Result: " << result;
+			return result;
+		}
+
+		// This is purely for instrumentation - it makes it possible to see host capabilities in the log.
+		// Such information could be used to inform future development (there's no point in supporting more ASIO features if host applications don't support them).
+		void ProbeHostMessages(decltype(ASIOCallbacks::asioMessage) asioMessage) {
+			for (const auto selector : {
+				kAsioSelectorSupported, kAsioEngineVersion, kAsioResetRequest, kAsioBufferSizeChange,
+				kAsioResyncRequest, kAsioLatenciesChanged, kAsioSupportsTimeInfo, kAsioSupportsTimeCode,
+				kAsioMMCCommand, kAsioSupportsInputMonitor, kAsioSupportsInputGain, kAsioSupportsInputMeter,
+				kAsioSupportsOutputGain, kAsioSupportsOutputMeter, kAsioOverload }) {
+				Log() << "Probing for message selector: " << GetASIOMessageSelectorString(selector);
+				if (Message(asioMessage, kAsioSelectorSupported, selector, nullptr, nullptr) != 1) continue;
+
+				switch (selector) {
+				case kAsioEngineVersion:
+					Message(asioMessage, kAsioEngineVersion, 0, nullptr, nullptr);
+					break;
+				}
+			}
+		}
+
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) :
@@ -491,7 +517,9 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StreamCallback, this)) {}
+	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StreamCallback, this)) {
+		if (callbacks->asioMessage) ProbeHostMessages(callbacks->asioMessage);
+	}
 
 	bool FlexASIO::PreparedState::IsChannelActive(bool isInput, long channel) const {
 		for (const auto& buffersInfo : bufferInfos)
@@ -542,8 +570,8 @@ namespace flexasio {
 		host_supports_timeinfo([&] {
 		Log() << "Checking if the host supports time info";
 		const bool result = preparedState.callbacks.asioMessage &&
-			preparedState.callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
-			preparedState.callbacks.asioMessage(kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
+			Message(preparedState.callbacks.asioMessage, kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
+			Message(preparedState.callbacks.asioMessage, kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
 		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
 		return result;
 	}()),
@@ -667,7 +695,7 @@ namespace flexasio {
 	void FlexASIO::PreparedState::RequestReset() {
 		if (!callbacks.asioMessage)
 			throw ASIOException(ASE_InvalidMode, "reset requests are not supported");
-		callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
+		Message(callbacks.asioMessage, kAsioResetRequest, 0, NULL, NULL);
 	}
 
 	void FlexASIO::ControlPanel() {
