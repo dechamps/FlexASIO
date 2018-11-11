@@ -9,7 +9,7 @@ VS_VERSION_INFO VERSIONINFO
 		BLOCK "04090000" // US. English, ASCII
 		{
 			VALUE "FileDescription", PROJECT_DESCRIPTION " (" BUILD_CONFIGURATION " " BUILD_PLATFORM ")"
-			VALUE "LegalCopyright", "GNU General Public License, version 3"
+			VALUE "LegalCopyright", "MIT License, Copyright (c) 2018 Etienne Dechamps <etienne@edechamps.fr>"
 			VALUE "ProductName", "FlexASIO https://github.com/dechamps/FlexASIO"
 			VALUE "ProductVersion", FLEXASIO_VERSION " built on " FLEXASIO_BUILD_TIMESTR
 		}

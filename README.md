@@ -1,7 +1,7 @@
 # FlexASIO README
 Author: Etienne Dechamps <etienne@edechamps.fr>
 Website: https://github.com/dechamps/FlexASIO
-License: General Public License, version 3
+License: MIT
 
 **If you are looking for an installer, see the
 [GitHub releases page](https://github.com/dechamps/FlexASIO/releases).**
