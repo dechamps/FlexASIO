@@ -245,6 +245,17 @@ namespace flexasio {
 		return outputFormat->dwChannelMask;
 	}
 
+	void FlexASIO::GetBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
+	{
+		// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
+		// TODO: let the user should these values
+		*minSize = long(sampleRate * 0.001); // 1 ms, there's basically no chance we'll get glitch-free streaming below this
+		*maxSize = long(sampleRate); // 1 second, more would be silly
+		*preferredSize = long(sampleRate * 0.02); // typical - 20 ms
+		*granularity = 1; // Don't care
+		Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
+	}
+
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
 	{
 		*numInputChannels = GetInputChannelCount();

@@ -30,6 +30,7 @@ namespace flexasio {
 	public:
 		FlexASIO(void* sysHandle);
 
+		void GetBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity);
 		void GetChannels(long* numInputChannels, long* numOutputChannels);
 		void GetChannelInfo(ASIOChannelInfo* info);
 		bool CanSampleRate(ASIOSampleRate sampleRate);

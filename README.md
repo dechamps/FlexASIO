@@ -68,7 +68,7 @@ panel" in ASIO terminology). The main reason is because programming GUIs
 takes a lot of time that I don't have (especially since I have zero
 experience in GUI programming). This means that you are forced to use
 FlexASIO defaults when it comes to preferred buffer size for example, which is
-currently hardcoded to 1024 samples (21.3 ms at 48000Hz).
+currently hardcoded to 20 ms.
 
 However, FlexASIO does come with a [configuration file](CONFIGURATION.md) that
 can be used to customize a few basic settings, such as the audio backend used

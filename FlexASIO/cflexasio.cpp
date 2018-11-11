@@ -70,7 +70,9 @@ namespace flexasio {
 			}
 			ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw() final;
 			ASIOError setClockSource(long reference) throw() final;
-			ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw() final;
+			ASIOError getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw() final {
+				return EnterWithMethod("getBufferSize()", &FlexASIO::GetBufferSize, minSize, maxSize, preferredSize, granularity);
+			}
 
 			ASIOError getChannels(long* numInputChannels, long* numOutputChannels) throw() final {
 				return EnterWithMethod("getChannels()", &FlexASIO::GetChannels, numInputChannels, numOutputChannels);
@@ -198,19 +200,6 @@ namespace flexasio {
 			return Enter("setClockSource()", [&] {
 				Log() << "reference = " << reference;
 				if (reference != 0) throw ASIOException(ASE_InvalidParameter, "setClockSource() parameter out of bounds");
-			});
-		}
-
-		ASIOError CFlexASIO::getBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity) throw()
-		{
-			return Enter("getBufferSize()", [&] {
-				// These values are purely arbitrary, since PortAudio doesn't provide them. Feel free to change them if you'd like.
-				// TODO: let the user should these values
-				*minSize = 48; // 1 ms at 48kHz, there's basically no chance we'll get glitch-free streaming below this
-				*maxSize = 48000; // 1 second at 48kHz, more would be silly
-				*preferredSize = 1024; // typical - 21.3 ms at 48kHz
-				*granularity = 1; // Don't care
-				Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
 			});
 		}
 
