@@ -40,6 +40,10 @@ device = ""
 # PortAudioDevices program.
 device = "Speakers (Realtek High Definition Audio)"
 
+# Open the hardware output device with 6 channels. This is only required if you
+# are unhappy with the default channel count.
+channels = 6
+
 # Set the output to WASAPI Exclusive Mode.
 wasapiExclusiveMode = true
 ```
@@ -121,6 +125,44 @@ device = "Speakers (Realtek High Definition Audio)"
 The default behaviour is to use the default device for the selected backend.
 `PortAudioDevices` will show which device that is. Typically, this would be the
 device set as default in the Windows audio control panel.
+
+#### Option `channels`
+
+*Integer*-typed option that determines how many channels FlexASIO will open the
+hardware audio device with. This is the number of channels the ASIO Host
+Application will see.
+
+**Note:** even if the ASIO Host Application only decides to use a subset of the
+available channels, the hardware audio device will still be opened with the
+number of channels configured here. In other words, the host application has no
+control over the hardware channel configuration.
+
+If the requested channel count doesn't match what the audio device is configured
+for, the resulting behaviour depends on the backend. Some backends will accept
+any channel count, upmixing or downmixing as necessary. Other backends might
+refuse to initialize.
+
+The value of this option must be strictly positive. To completely disable the
+input or output, set the `device` option to the empty string (see above).
+
+**Note:** with the WASAPI backend, setting this option has the side effect of
+disabling channel masks. This means channel names will not be shown, and the
+backend might behave differently with regard to channel routing.
+
+Example:
+
+```toml
+[input]
+channels = 2
+
+[output]
+channels = 6
+```
+
+The default behaviour is to use the maximum channel count for the selected
+device as reported by PortAudio. This information is shown in the output of the
+`PortAudioDevice` program. Sadly, PortAudio often gets the channel count wrong,
+so setting this option explicitly might be necessary for correct operation.
 
 #### Option `wasapiExclusiveMode`
 

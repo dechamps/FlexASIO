@@ -139,10 +139,10 @@ namespace flexasio {
 			std::optional<RunningState> runningState;
 		};
 
-		int GetInputChannelCount() const { return inputDevice.has_value() ? inputDevice->info.maxInputChannels : 0; }
-		int GetOutputChannelCount() const { return outputDevice.has_value() ? outputDevice->info.maxOutputChannels : 0; }
-		DWORD GetInputChannelMask() const { return inputFormat.has_value() ? inputFormat->dwChannelMask : 0; }
-		DWORD GetOutputChannelMask() const { return outputFormat.has_value() ? outputFormat->dwChannelMask : 0; }
+		int GetInputChannelCount() const;
+		int GetOutputChannelCount() const;
+		DWORD GetInputChannelMask() const;
+		DWORD GetOutputChannelMask() const;
 
 		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 

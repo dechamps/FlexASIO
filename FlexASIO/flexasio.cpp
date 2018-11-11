@@ -214,7 +214,35 @@ namespace flexasio {
 
 		if (!inputDevice.has_value() && !outputDevice.has_value()) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
 
-		Log() << "Channel count: " << GetInputChannelCount() << " input, " << GetOutputChannelCount() << " output";
+		Log() << "Input channel count: " << GetInputChannelCount() << " mask: " << GetWaveFormatChannelMaskString(GetInputChannelMask());
+		if (inputDevice.has_value() && GetInputChannelCount() > inputDevice->info.maxInputChannels)
+			Log() << "WARNING: input channel count is higher than the max channel count for this device. Input device initialization might fail.";
+
+		Log() << "Output channel count: " << GetOutputChannelCount() << " mask: " << GetWaveFormatChannelMaskString(GetOutputChannelMask());
+		if (outputDevice.has_value() && GetOutputChannelCount() > outputDevice->info.maxOutputChannels)
+			Log() << "WARNING: output channel count is higher than the max channel count for this device. Output device initialization might fail.";
+	}
+
+	int FlexASIO::GetInputChannelCount() const {
+		if (!inputDevice.has_value()) return 0;
+		if (config.input.channels.has_value()) return *config.input.channels;
+		return inputDevice->info.maxInputChannels;
+	}
+	int FlexASIO::GetOutputChannelCount() const {
+		if (!outputDevice.has_value()) return 0;
+		if (config.output.channels.has_value()) return *config.output.channels;
+		return outputDevice->info.maxOutputChannels;
+	}
+
+	DWORD FlexASIO::GetInputChannelMask() const {
+		if (!inputFormat.has_value()) return 0;
+		if (config.input.channels.has_value()) return 0;
+		return inputFormat->dwChannelMask;
+	}
+	DWORD FlexASIO::GetOutputChannelMask() const {
+		if (!outputFormat.has_value()) return 0;
+		if (config.output.channels.has_value()) return 0;
+		return outputFormat->dwChannelMask;
 	}
 
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)

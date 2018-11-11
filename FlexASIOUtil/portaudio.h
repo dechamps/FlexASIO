@@ -51,6 +51,9 @@ namespace flexasio {
 
 	WAVEFORMATEXTENSIBLE GetWasapiDeviceDefaultFormat(PaDeviceIndex index);
 
+	std::string GetWaveFormatTagString(WORD formatTag);
+	std::string GetWaveFormatChannelMaskString(DWORD channelMask);
+	std::string GetWaveSubFormatString(const GUID& subFormat);
 	std::string DescribeWaveFormat(const WAVEFORMATEXTENSIBLE& waveFormatExtensible);
 
 	std::string DescribeStreamParameters(const PaStreamParameters& parameters);

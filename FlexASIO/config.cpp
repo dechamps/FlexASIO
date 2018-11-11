@@ -72,14 +72,23 @@ namespace flexasio {
 		template <typename T> struct RemoveOptional { using Value = T; };
 		template <typename T> struct RemoveOptional<std::optional<T>> { using Value = T; };
 
-		template <typename T> void SetOption(const toml::Table& table, const std::string& key, T& option) {
+		template <typename T, typename Validator> void SetOption(const toml::Table& table, const std::string& key, T& option, Validator validator) {
 			ProcessTypedOption<RemoveOptional<T>::Value>(table, key, [&](const RemoveOptional<T>::Value& value) {
+				validator(value);
 				option = value;
 			});
+		}
+		template <typename T> void SetOption(const toml::Table& table, const std::string& key, T& option) {
+			return SetOption(table, key, option, [](const T&) {});
+		}
+
+		void ValidateChannelCount(const int& channelCount) {
+			if (channelCount <= 0) throw std::runtime_error("channel count must be strictly positive - to disable a stream direction, set the 'device' option to the empty string \"\" instead");
 		}
 
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
 			SetOption(table, "device", stream.device);
+			SetOption(table, "channels", stream.channels, ValidateChannelCount);
 			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
 		}
 
