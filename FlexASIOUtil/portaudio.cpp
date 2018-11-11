@@ -68,6 +68,20 @@ namespace flexasio {
 			});
 	}
 
+	std::string GetSampleFormatString(PaSampleFormat sampleFormat) {
+		auto result = BitfieldToString(sampleFormat, {
+			{ paFloat32, "Float32" },
+			{ paInt32, "Int32" },
+			{ paInt24, "Int24" },
+			{ paInt16, "Int16" },
+			{ paInt8, "Int8" },
+			{ paUInt8, "UInt8" },
+			{ paCustomFormat, "CustomFormat" },
+			{ paNonInterleaved, "NonInterleaved" },
+			});
+		return result;
+	}
+
 	std::ostream& operator<<(std::ostream& os, const HostApi& hostApi) {
 		os << "PortAudio host API index " << hostApi.index
 			<< " (name: '" << hostApi.info.name
@@ -185,11 +199,10 @@ namespace flexasio {
 	std::string DescribeStreamParameters(const PaStreamParameters& parameters) {
 		std::stringstream result;
 
-		// TODO: pretty print sample format
 		// TODO: print host API specific info
 		result << "PortAudio stream parameters for device index " << parameters.device << ", "
 			<< parameters.channelCount << " channels, sample format "
-			<< parameters.sampleFormat << ", suggested latency "
+			<< GetSampleFormatString(parameters.sampleFormat) << ", suggested latency "
 			<< parameters.suggestedLatency << "s";
 
 		return result.str();
