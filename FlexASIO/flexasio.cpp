@@ -178,9 +178,7 @@ namespace flexasio {
 			Log() << "No output device, proceeding without output";
 		}
 		return device;
-	}()),
-		input_channel_count(inputDevice.has_value() ? inputDevice->info.maxInputChannels : 0),
-		output_channel_count(outputDevice.has_value() ? outputDevice->info.maxOutputChannels : 0)
+	}())
 	{
 		Log() << "sysHandle = " << sysHandle;
 
@@ -194,7 +192,6 @@ namespace flexasio {
 				try {
 					const auto inputFormat = GetWasapiDeviceDefaultFormat(inputDevice->index);
 					Log() << "Input WASAPI device default format: " << DescribeWaveFormat(inputFormat);
-					input_channel_count = inputFormat.Format.nChannels;
 					input_channel_mask = inputFormat.dwChannelMask;
 				}
 				catch (const std::exception& exception) {
@@ -206,7 +203,6 @@ namespace flexasio {
 				try {
 					const auto outputFormat = GetWasapiDeviceDefaultFormat(outputDevice->index);
 					Log() << "Output WASAPI device default format: " << DescribeWaveFormat(outputFormat);
-					output_channel_count = outputFormat.Format.nChannels;
 					output_channel_mask = outputFormat.dwChannelMask;
 				}
 				catch (const std::exception& exception) {
@@ -227,8 +223,8 @@ namespace flexasio {
 
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
 	{
-		*numInputChannels = input_channel_count;
-		*numOutputChannels = output_channel_count;
+		*numInputChannels = GetInputChannelCount();
+		*numOutputChannels = GetOutputChannelCount();
 		Log() << "Returning " << *numInputChannels << " input channels and " << *numOutputChannels << " output channels";
 	}
 
@@ -295,11 +291,11 @@ namespace flexasio {
 		Log() << "Channel info requested for " << (info->isInput ? "input" : "output") << " channel " << info->channel;
 		if (info->isInput)
 		{
-			if (info->channel < 0 || info->channel >= input_channel_count) throw ASIOException(ASE_InvalidParameter, "no such input channel");
+			if (info->channel < 0 || info->channel >= GetInputChannelCount()) throw ASIOException(ASE_InvalidParameter, "no such input channel");
 		}
 		else
 		{
-			if (info->channel < 0 || info->channel >= output_channel_count) throw ASIOException(ASE_InvalidParameter, "no such output channel");
+			if (info->channel < 0 || info->channel >= GetOutputChannelCount()) throw ASIOException(ASE_InvalidParameter, "no such output channel");
 		}
 
 		info->isActive = bufferState.has_value() && bufferState->IsChannelActive(info->isInput, info->channel);
@@ -332,7 +328,7 @@ namespace flexasio {
 		if (inputDevice.has_value())
 		{
 			input_parameters.device = inputDevice->index;
-			input_parameters.channelCount = input_channel_count;
+			input_parameters.channelCount = GetInputChannelCount();
 			input_parameters.suggestedLatency = inputDevice->info.defaultLowInputLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
@@ -354,7 +350,7 @@ namespace flexasio {
 		if (outputDevice.has_value())
 		{
 			output_parameters.device = outputDevice->index;
-			output_parameters.channelCount = output_channel_count;
+			output_parameters.channelCount = GetOutputChannelCount();
 			output_parameters.suggestedLatency = outputDevice->info.defaultLowOutputLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
@@ -446,12 +442,12 @@ namespace flexasio {
 			ASIOBufferInfo& asioBufferInfo = asioBufferInfos[channelIndex];
 			if (asioBufferInfo.isInput)
 			{
-				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.input_channel_count)
+				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.GetInputChannelCount())
 					throw ASIOException(ASE_InvalidParameter, "out of bounds input channel in createBuffers() buffer info");
 			}
 			else
 			{
-				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.output_channel_count)
+				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.GetOutputChannelCount())
 					throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 			}
 
@@ -579,7 +575,7 @@ namespace flexasio {
 		const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 		Sample* const* output_samples = static_cast<Sample* const*>(output);
 
-		for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.output_channel_count; ++output_channel_index)
+		for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
 			memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.

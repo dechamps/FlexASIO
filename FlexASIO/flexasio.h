@@ -139,6 +139,9 @@ namespace flexasio {
 			std::optional<RunningState> runningState;
 		};
 
+		int GetInputChannelCount() const { return inputDevice.has_value() ? inputDevice->info.maxInputChannels : 0; }
+		int GetOutputChannelCount() const { return outputDevice.has_value() ? outputDevice->info.maxOutputChannels : 0; }
+
 		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
 		const HWND windowHandle = nullptr;
@@ -151,8 +154,6 @@ namespace flexasio {
 		const std::optional<Device> inputDevice;
 		const std::optional<Device> outputDevice;
 
-		long input_channel_count;
-		long output_channel_count;
 		// WAVEFORMATEXTENSIBLE channel masks. Not always available.
 		DWORD input_channel_mask = 0;
 		DWORD output_channel_mask = 0;
