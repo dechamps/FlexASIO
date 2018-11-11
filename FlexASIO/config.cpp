@@ -86,6 +86,10 @@ namespace flexasio {
 			if (channelCount <= 0) throw std::runtime_error("channel count must be strictly positive - to disable a stream direction, set the 'device' option to the empty string \"\" instead");
 		}
 
+		void ValidateSuggestedLatency(const double& suggestedLatencySeconds) {
+			if (!(suggestedLatencySeconds >= 0 && suggestedLatencySeconds <= 3600)) throw std::runtime_error("suggested latency must be between 0 and 3600 seconds");
+		}
+
 		void ValidateBufferSize(const int64_t& bufferSizeSamples) {
 			if (bufferSizeSamples <= 0) throw std::runtime_error("buffer size must be strictly positive");
 			if (bufferSizeSamples >= (std::numeric_limits<long>::max)()) throw std::runtime_error("buffer size is too large");
@@ -94,6 +98,7 @@ namespace flexasio {
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
 			SetOption(table, "device", stream.device);
 			SetOption(table, "channels", stream.channels, ValidateChannelCount);
+			SetOption(table, "suggestedLatencySeconds", stream.suggestedLatencySeconds, ValidateSuggestedLatency);
 			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
 		}
 

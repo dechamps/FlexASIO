@@ -352,6 +352,8 @@ namespace flexasio {
 	{
 		Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
+		auto defaultSuggestedLatency = double(framesPerBuffer) / sampleRate;
+
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = portaudio_sample_format | paNonInterleaved;
 		common_parameters.hostApiSpecificStreamInfo = NULL;
@@ -370,7 +372,7 @@ namespace flexasio {
 		{
 			input_parameters.device = inputDevice->index;
 			input_parameters.channelCount = GetInputChannelCount();
-			input_parameters.suggestedLatency = inputDevice->info.defaultLowInputLatency;
+			input_parameters.suggestedLatency = config.input.suggestedLatencySeconds.has_value() ? *config.input.suggestedLatencySeconds : defaultSuggestedLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
 				const auto inputChannelMask = GetInputChannelMask();
@@ -393,7 +395,7 @@ namespace flexasio {
 		{
 			output_parameters.device = outputDevice->index;
 			output_parameters.channelCount = GetOutputChannelCount();
-			output_parameters.suggestedLatency = outputDevice->info.defaultLowOutputLatency;
+			output_parameters.suggestedLatency = config.output.suggestedLatencySeconds.has_value() ? *config.output.suggestedLatencySeconds : defaultSuggestedLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
 				const auto outputChannelMask = GetOutputChannelMask();

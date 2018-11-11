@@ -96,10 +96,11 @@ size.
 
 The ASIO buffer size is also used as the PortAudio buffer size, as FlexASIO
 bridges the two. Note that, for various technical reasons and depending on the
-backend and settings used, there are many scenarios where additional buffers
-will be inserted in the audio pipeline (either by PortAudio or by Windows
-itself), *in addition* to the ASIO buffer. This can result in overall latency
-being higher than what the ASIO buffer size alone would suggest.
+backend and settings used (especially the `suggestedLatencySeconds` option),
+there are many scenarios where additional buffers will be inserted in the audio
+pipeline (either by PortAudio or by Windows itself), *in addition* to the ASIO
+buffer. This can result in overall latency being higher than what the ASIO
+buffer size alone would suggest.
 
 Example:
 
@@ -195,6 +196,34 @@ The default behaviour is to use the maximum channel count for the selected
 device as reported by PortAudio. This information is shown in the output of the
 `PortAudioDevice` program. Sadly, PortAudio often gets the channel count wrong,
 so setting this option explicitly might be necessary for correct operation.
+
+#### Option `suggestedLatencySeconds`
+
+*Floating-point*-typed option that determines the amount of audio latency (in
+seconds) that FlexASIO will "suggest" to PortAudio. In some cases this can
+influence the amount of additional buffering that will be introduced in the
+audio pipeline in addition to the ASIO buffer itself (see also the
+`bufferSizeSamples` option). As a result, this option can have a major impact
+on reliability and latency.
+
+Note that this is only a hint; the resulting latency can be very different from
+the value of this option. PortAudio backends interpret this setting in
+complicated and confusing ways, so it is recommended to experiment with various
+values. For example, the WASAPI backend will interpret the value `0.0`
+specially, optimizing for low latency operation.
+
+**Note:** the TOML parser that FlexASIO uses require all floating point values
+to have a decimal point. So, for example, `1` will not work, but `1.0` will.
+
+Example:
+
+```toml
+[output]
+suggestedLatencySeconds = 0.01
+```
+
+The default value is the ASIO buffer size divided by the sample rate; that is,
+20 ms if using the default preferred ASIO buffer size.
 
 #### Option `wasapiExclusiveMode`
 

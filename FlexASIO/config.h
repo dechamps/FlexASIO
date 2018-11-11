@@ -12,6 +12,7 @@ namespace flexasio {
 		struct Stream {
 			std::optional<std::string> device;
 			std::optional<int> channels;
+			std::optional<double> suggestedLatencySeconds;
 			bool wasapiExclusiveMode = false;
 		};
 		Stream input;
