@@ -454,7 +454,7 @@ namespace flexasio {
 	}
 
 	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
-		Log() << "Request to create buffers for " << numChannels << " channels, size " << bufferSize << " bytes";
+		Log() << "Request to create buffers for " << numChannels << " channels, size " << bufferSize << " samples";
 		if (numChannels < 1 || bufferSize < 1 || callbacks == nullptr || callbacks->bufferSwitch == nullptr)
 			throw ASIOException(ASE_InvalidParameter, "invalid createBuffer() parameters");
 
@@ -467,7 +467,7 @@ namespace flexasio {
 
 	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferCount, size_t channelCount, size_t bufferSize) :
 		bufferCount(bufferCount), channelCount(channelCount), bufferSize(bufferSize), buffers(new Sample[getSize()]()) {
-		Log() << "Allocated " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSize << " bytes per channel, memory range: " << buffers << "-" << buffers + getSize();;
+		Log() << "Allocated " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSize << " samples per channel, memory range: " << buffers << "-" << buffers + getSize();;
 	}
 
 	FlexASIO::PreparedState::Buffers::~Buffers() {
