@@ -148,8 +148,11 @@ Compared to WASAPI Exclusive, Kernel Streaming is a much older API that is
 perceived as highly complex and less reliable. WASAPI Exclusive should be
 expected to provide better results in most cases.
 
-**Note:** it appears the WDM-KS backend is [currently not usable][WDM-KS issue]
-in FlexASIO.
+**Note:** typically, WDM-KS will fail to initialize if the audio device is
+currently opened by any other application, even if no sound is playing.
+Consequently, it is very likely to fail when used on the default device. This
+issue can be worked around by pointing FlexASIO to another, idle device using
+the `device` configuration option.
 
 The alternative [ASIO4ALL][] and [ASIO2KS][] universal ASIO drivers use Kernel
 Streaming.
