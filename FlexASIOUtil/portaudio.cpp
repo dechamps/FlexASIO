@@ -182,6 +182,19 @@ namespace flexasio {
 		return result.str();
 	}
 
+	std::string DescribeStreamParameters(const PaStreamParameters& parameters) {
+		std::stringstream result;
+
+		// TODO: pretty print sample format
+		// TODO: print host API specific info
+		result << "PortAudio stream parameters for device index " << parameters.device << ", "
+			<< parameters.channelCount << " channels, sample format "
+			<< parameters.sampleFormat << ", suggested latency "
+			<< parameters.suggestedLatency << "s";
+
+		return result.str();
+	}
+
 	void StreamDeleter::operator()(PaStream* stream) throw() {
 		Log() << "Closing PortAudio stream " << stream;
 		const auto error = Pa_CloseStream(stream);
@@ -190,8 +203,13 @@ namespace flexasio {
 	}
 
 	Stream OpenStream(const PaStreamParameters *inputParameters, const PaStreamParameters *outputParameters, double sampleRate, unsigned long framesPerBuffer, PaStreamFlags streamFlags, PaStreamCallback *streamCallback, void *userData) {
-		Log() << "Opening PortAudio stream";
-		// TODO: log all the parameters
+		Log() << "Opening PortAudio stream with input parameters (" << (inputParameters == nullptr ? "none" : DescribeStreamParameters(*inputParameters)) << "), output parameters ("
+			<< (outputParameters == nullptr ? "none" : DescribeStreamParameters(*outputParameters)) << ", sample rate "
+			<< sampleRate << " Hz, "
+			<< framesPerBuffer << " frames per buffer, stream flags "
+			<< streamFlags << ", stream callback "
+			<< streamCallback << ", user data "
+			<< userData;
 		PaStream* stream = nullptr;
 		const auto error = Pa_OpenStream(&stream, inputParameters, outputParameters, sampleRate, framesPerBuffer, streamFlags, streamCallback, userData);
 		if (error != paNoError) throw std::runtime_error(std::string("unable to open PortAudio stream: ") + Pa_GetErrorText(error));
