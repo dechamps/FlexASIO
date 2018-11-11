@@ -464,7 +464,7 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StaticStreamCallback, this)) {}
+	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StreamCallback, this)) {}
 
 	bool FlexASIO::PreparedState::IsChannelActive(bool isInput, long channel) const {
 		for (const auto& buffersInfo : bufferInfos)
@@ -477,16 +477,6 @@ namespace flexasio {
 	{
 		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
 		bufferState.reset();
-	}
-
-	FlexASIO::PreparedState::~PreparedState() throw()
-	{
-		try {
-			if (started) Stop();
-		}
-		catch (const std::exception& exception) {
-			Log() << "unable to stop stream: " << exception.what();
-		}
 	}
 
 	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
@@ -513,24 +503,24 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Start()
 	{
-		if (started) throw ASIOException(ASE_InvalidMode, "start() called twice");
+		if (runningState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called twice");
+		runningState.emplace(*this);
+	}
 
-		host_supports_timeinfo = callbacks.asioMessage &&
-			callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
-			callbacks.asioMessage(kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
+	FlexASIO::PreparedState::RunningState::RunningState(PreparedState& preparedState) :
+		preparedState(preparedState),
+		our_buffer_index(0),
+		position(Int64ToASIO<ASIOSamples>(0)),
+		position_timestamp(Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000)) {
+		host_supports_timeinfo = preparedState.callbacks.asioMessage &&
+			preparedState.callbacks.asioMessage(kAsioSelectorSupported, kAsioSupportsTimeInfo, NULL, NULL) == 1 &&
+			preparedState.callbacks.asioMessage(kAsioSupportsTimeInfo, 0, NULL, NULL) == 1;
 		if (host_supports_timeinfo)
 			Log() << "The host supports time info";
 
 		Log() << "Starting stream";
-		win32HighResolutionTimer.emplace();
-		started = true;
-		our_buffer_index = 0;
-		position = Int64ToASIO<ASIOSamples>(0);
-		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
-		PaError error = Pa_StartStream(stream.get());
+		PaError error = Pa_StartStream(preparedState.stream.get());
 		if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
-
-		Log() << "Started successfully";
 	}
 
 	void FlexASIO::Stop() {
@@ -540,22 +530,28 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Stop()
 	{
-		if (!started) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
-
-		Log() << "Stopping stream";
-		PaError error = Pa_StopStream(stream.get());
-		if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to stop PortAudio stream: ") + Pa_GetErrorText(error));
-
-		started = false;
-		win32HighResolutionTimer.reset();
-		Log() << "Stopped successfully";
+		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
+		runningState.reset();
 	}
 
-	int FlexASIO::PreparedState::StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
+	FlexASIO::PreparedState::RunningState::~RunningState() throw()
+	{
+		Log() << "Stopping stream";
+		PaError error = Pa_StopStream(preparedState.stream.get());
+		if (error != paNoError) {
+			Log() << "Unable to stop PortAudio stream: " << Pa_GetErrorText(error);
+		}
+	}
+
+	int FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
 		Log() << "--- ENTERING STREAM CALLBACK";
 		PaStreamCallbackResult result = paContinue;
 		try {
-			result = static_cast<PreparedState*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
+			auto& preparedState = *static_cast<PreparedState*>(userData);
+			if (!preparedState.runningState.has_value()) {
+				throw std::runtime_error("PortAudio stream callback fired in non-started state");
+			}
+			result = preparedState.runningState->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
 		}
 		catch (const std::exception& exception) {
 			Log() << "Caught exception in stream callback: " << exception.what();
@@ -567,17 +563,12 @@ namespace flexasio {
 		return result;
 	}
 
-	PaStreamCallbackResult FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
+	PaStreamCallbackResult FlexASIO::PreparedState::RunningState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
 		Log() << "Running stream callback with " << frameCount << " frames";
-		if (!started)
+		if (frameCount != preparedState.buffers.bufferSize)
 		{
-			Log() << "Ignoring callback as stream is not started";
-			return paContinue;
-		}
-		if (frameCount != buffers.bufferSize)
-		{
-			Log() << "Expected " << buffers.bufferSize << " frames, got " << frameCount << " instead, aborting";
+			Log() << "Expected " << preparedState.buffers.bufferSize << " frames, got " << frameCount << " instead, aborting";
 			return paContinue;
 		}
 
@@ -593,12 +584,12 @@ namespace flexasio {
 		const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 		Sample* const* output_samples = static_cast<Sample* const*>(output);
 
-		for (int output_channel_index = 0; output_channel_index < flexASIO.output_channel_count; ++output_channel_index)
+		for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.output_channel_count; ++output_channel_index)
 			memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
 		Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
-		for (const auto& bufferInfo : bufferInfos)
+		for (const auto& bufferInfo : preparedState.bufferInfos)
 		{
 			Sample* buffer = reinterpret_cast<Sample*>(bufferInfo.buffers[our_buffer_index]);
 			if (bufferInfo.isInput)
@@ -610,7 +601,7 @@ namespace flexasio {
 		if (!host_supports_timeinfo)
 		{
 			Log() << "Firing ASIO bufferSwitch() callback";
-			callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
+			preparedState.callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
 		}
 		else
 		{
@@ -618,13 +609,13 @@ namespace flexasio {
 			time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid;
 			time.timeInfo.samplePosition = position;
 			time.timeInfo.systemTime = position_timestamp;
-			time.timeInfo.sampleRate = sampleRate;
+			time.timeInfo.sampleRate = preparedState.sampleRate;
 			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with samplePosition " << ASIOToInt64(time.timeInfo.samplePosition) << ", systemTime " << ASIOToInt64(time.timeInfo.systemTime);
-			callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
+			preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 		}
 		std::swap(locked_buffer_index, our_buffer_index);
 		position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
-		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
+		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
 
 		return paContinue;
 	}
@@ -636,8 +627,12 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 	{
-		if (!started) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
+		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
+		return runningState->GetSamplePosition(sPos, tStamp);
+	}
 
+	void FlexASIO::PreparedState::RunningState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+	{
 		*sPos = position;
 		*tStamp = position_timestamp;
 		Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);

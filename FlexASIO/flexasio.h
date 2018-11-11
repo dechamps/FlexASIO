@@ -71,13 +71,13 @@ namespace flexasio {
 			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
 			PreparedState(const PreparedState&) = delete;
 			PreparedState(PreparedState&&) = delete;
-			~PreparedState() throw();
 
 			bool IsChannelActive(bool isInput, long channel) const;
 
 			void GetLatencies(long* inputLatency, long* outputLatency);
 			void Start();
 			void Stop();
+
 			void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
 
 			void RequestReset();
@@ -103,8 +103,26 @@ namespace flexasio {
 				Sample* const buffers;
 			};
 
-			static int StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
-			PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
+			class RunningState {
+			public:
+				RunningState(PreparedState& preparedState);
+				~RunningState() throw();
+
+				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
+
+				PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
+
+			private:
+				const PreparedState& preparedState;
+				bool host_supports_timeinfo;
+				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
+				size_t our_buffer_index;
+				ASIOSamples position;
+				ASIOTimeStamp position_timestamp;
+				Win32HighResolutionTimer win32HighResolutionTimer;
+			};
+
+			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
 
 			FlexASIO& flexASIO;
 			const ASIOSampleRate sampleRate;
@@ -117,13 +135,8 @@ namespace flexasio {
 			const std::vector<ASIOBufferInfo> bufferInfos;
 
 			const Stream stream;
-			bool host_supports_timeinfo;
-			// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
-			size_t our_buffer_index;
-			ASIOSamples position;
-			ASIOTimeStamp position_timestamp;
-			bool started = false;
-			std::optional<Win32HighResolutionTimer> win32HighResolutionTimer;
+
+			std::optional<RunningState> runningState;
 		};
 
 		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
