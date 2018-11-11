@@ -225,14 +225,6 @@ namespace flexasio {
 			sample_rate = 44100;
 	}
 
-	FlexASIO::~FlexASIO()
-	{
-		if (started)
-			Stop();
-		if (buffers)
-			DisposeBuffers();
-	}
-
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
 	{
 		*numInputChannels = input_channel_count;
@@ -310,14 +302,7 @@ namespace flexasio {
 			if (info->channel < 0 || info->channel >= output_channel_count) throw ASIOException(ASE_InvalidParameter, "no such output channel");
 		}
 
-		info->isActive = false;
-		for (std::vector<ASIOBufferInfo>::const_iterator buffers_info_it = buffers_info.begin(); buffers_info_it != buffers_info.end(); ++buffers_info_it)
-			if (buffers_info_it->isInput == info->isInput && buffers_info_it->channelNum == info->channel)
-			{
-				info->isActive = true;
-				break;
-			}
-
+		info->isActive = bufferState.has_value() && bufferState->IsChannelActive(info->isInput, info->channel);
 		info->channelGroup = 0;
 		info->type = asio_sample_type;
 		std::stringstream channel_string;
@@ -326,7 +311,7 @@ namespace flexasio {
 		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
 	}
 
-	PaError FlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer)
+	PaError FlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
 	{
 		Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
@@ -390,7 +375,7 @@ namespace flexasio {
 			stream,
 			inputDevice.has_value() ? &input_parameters : NULL,
 			outputDevice.has_value() ? &output_parameters : NULL,
-			sampleRate, framesPerBuffer, paNoFlag, &FlexASIO::StaticStreamCallback, this);
+			sampleRate, framesPerBuffer, paNoFlag, callback, callbackUserData);
 	}
 
 	bool FlexASIO::CanSampleRate(ASIOSampleRate sampleRate)
@@ -398,7 +383,7 @@ namespace flexasio {
 		Log() << "Checking for sample rate: " << sampleRate;
 
 		PaStream* temp_stream;
-		PaError error = OpenStream(&temp_stream, sampleRate, paFramesPerBufferUnspecified);
+		PaError error = OpenStream(&temp_stream, sampleRate, paFramesPerBufferUnspecified, nullptr, nullptr);
 		if (error != paNoError)
 		{
 			Log() << "Cannot do this sample rate: " << Pa_GetErrorText(error);
@@ -419,23 +404,33 @@ namespace flexasio {
 	void FlexASIO::SetSampleRate(ASIOSampleRate sampleRate)
 	{
 		Log() << "Request to set sample rate: " << sampleRate;
-		if (buffers)
+		if (bufferState.has_value())
 		{
-			if (!callbacks.asioMessage)
-				throw ASIOException(ASE_InvalidMode, "changing the sample rate after createBuffers() is not supported");
-			Log() << "Sending a reset request to the host as it's not possible to change sample rate when streaming";
-			callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
+			Log() << "Sending a reset request to the host as it's not possible to change sample rate while streaming";
+			bufferState->RequestReset();
 		}
 		sample_rate = sampleRate;
 	}
 
-	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks)
+	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
+		if (bufferState.has_value()) {
+			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
+		}
+
+		auto sampleRate = sample_rate;
+		if (sampleRate == 0) {
+			sampleRate = 44100;
+			Log() << "The sample rate was never specified, using " << sample_rate << " as fallback";
+		}
+		bufferState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
+	}
+
+	FlexASIO::BufferState::BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) :
+		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks)
 	{
 		Log() << "Request to create buffers for " << numChannels << ", size " << bufferSize << " bytes";
 		if (numChannels < 1 || bufferSize < 1 || !callbacks || !callbacks->bufferSwitch)
 			throw ASIOException(ASE_InvalidParameter, "invalid parameters to createBuffers()");
-
-		if (buffers) throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
 
 		buffers_info.reserve(numChannels);
 		std::unique_ptr<Buffers> temp_buffers(new Buffers(2, numChannels, bufferSize));
@@ -445,12 +440,12 @@ namespace flexasio {
 			ASIOBufferInfo& buffer_info = bufferInfos[channel_index];
 			if (buffer_info.isInput)
 			{
-				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= input_channel_count)
+				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= flexASIO.input_channel_count)
 					throw ASIOException(ASE_InvalidParameter, "out of bounds input channel in createBuffers() buffer info");
 			}
 			else
 			{
-				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= output_channel_count)
+				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= flexASIO.output_channel_count)
 					throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 			}
 
@@ -465,53 +460,72 @@ namespace flexasio {
 
 
 		Log() << "Opening PortAudio stream";
-		if (sample_rate == 0)
-		{
-			sample_rate = 44100;
-			Log() << "The sample rate was never specified, using " << sample_rate << " as fallback";
-		}
 		PaStream* temp_stream;
-		PaError error = OpenStream(&temp_stream, sample_rate, unsigned long(temp_buffers->buffer_size));
+		PaError error = flexASIO.OpenStream(&temp_stream, sampleRate, unsigned long(temp_buffers->buffer_size), &BufferState::StaticStreamCallback, this);
 		if (error != paNoError)
 			throw ASIOException(ASE_HWMalfunction, std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error));
 
 		buffers = std::move(temp_buffers);
 		stream = temp_stream;
-		this->callbacks = *callbacks;
+	}
+
+	bool FlexASIO::BufferState::IsChannelActive(bool isInput, long channel) const {
+		for (const auto& buffersInfo : buffers_info)
+			if (!!buffersInfo.isInput == !!isInput && buffersInfo.channelNum == channel)
+				return true;
+		return false;
 	}
 
 	void FlexASIO::DisposeBuffers()
 	{
-		if (!buffers) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
-		if (started) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before stop()");
+		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
+		bufferState.reset();
+	}
+
+	FlexASIO::BufferState::~BufferState() throw()
+	{
+		try {
+			if (started) Stop();
+		}
+		catch (const std::exception& exception) {
+			Log() << "unable to stop stream: " << exception.what();
+		}
 
 		Log() << "Closing PortAudio stream";
 		PaError error = Pa_CloseStream(stream);
-		if (error != paNoError)
-			throw ASIOException(ASE_HWMalfunction, std::string("unable to close PortAudio stream: ") + Pa_GetErrorText(error));
+		if (error != paNoError) {
+			Log() << "unable to close PortAudio stream: " << Pa_GetErrorText(error);
+		}
 
 		stream = NULL;
 		buffers.reset();
 		buffers_info.clear();
 	}
 
-	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency)
-	{
-		if (!stream) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
+	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
+		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
+		return bufferState->GetLatencies(inputLatency, outputLatency);
+	}
 
+	void FlexASIO::BufferState::GetLatencies(long* inputLatency, long* outputLatency)
+	{
 		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
 		if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 		// See https://github.com/dechamps/FlexASIO/issues/10.
 		// The latency that PortAudio reports appears to take the buffer size into account already.
-		*inputLatency = (long)(stream_info->inputLatency * sample_rate);
-		*outputLatency = (long)(stream_info->outputLatency * sample_rate);
+		*inputLatency = (long)(stream_info->inputLatency * sampleRate);
+		*outputLatency = (long)(stream_info->outputLatency * sampleRate);
 		Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
 	}
 
-	void FlexASIO::Start()
+	void FlexASIO::Start() {
+		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called before createBuffers()");
+		return bufferState->Start();
+	}
+
+	void FlexASIO::BufferState::Start()
 	{
-		if (!buffers) throw ASIOException(ASE_InvalidMode, "start() called before createBuffers()");
 		if (started) throw ASIOException(ASE_InvalidMode, "start() called twice");
 
 		host_supports_timeinfo = callbacks.asioMessage &&
@@ -532,7 +546,12 @@ namespace flexasio {
 		Log() << "Started successfully";
 	}
 
-	void FlexASIO::Stop()
+	void FlexASIO::Stop() {
+		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
+		return bufferState->Stop();
+	}
+
+	void FlexASIO::BufferState::Stop()
 	{
 		if (!started) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
 
@@ -545,11 +564,11 @@ namespace flexasio {
 		Log() << "Stopped successfully";
 	}
 
-	int FlexASIO::StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
+	int FlexASIO::BufferState::StaticStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
 		Log() << "--- ENTERING STREAM CALLBACK";
 		PaStreamCallbackResult result = paContinue;
 		try {
-			result = static_cast<FlexASIO*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
+			result = static_cast<BufferState*>(userData)->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
 		}
 		catch (const std::exception& exception) {
 			Log() << "Caught exception in stream callback: " << exception.what();
@@ -561,7 +580,7 @@ namespace flexasio {
 		return result;
 	}
 
-	PaStreamCallbackResult FlexASIO::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
+	PaStreamCallbackResult FlexASIO::BufferState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
 		Log() << "Running stream callback with " << frameCount << " frames";
 		if (!started)
@@ -587,7 +606,7 @@ namespace flexasio {
 		const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 		Sample* const* output_samples = static_cast<Sample* const*>(output);
 
-		for (int output_channel_index = 0; output_channel_index < output_channel_count; ++output_channel_index)
+		for (int output_channel_index = 0; output_channel_index < flexASIO.output_channel_count; ++output_channel_index)
 			memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
@@ -612,7 +631,7 @@ namespace flexasio {
 			time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid;
 			time.timeInfo.samplePosition = position;
 			time.timeInfo.systemTime = position_timestamp;
-			time.timeInfo.sampleRate = sample_rate;
+			time.timeInfo.sampleRate = sampleRate;
 			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with samplePosition " << ASIOToInt64(time.timeInfo.samplePosition) << ", systemTime " << ASIOToInt64(time.timeInfo.systemTime);
 			callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 		}
@@ -623,13 +642,24 @@ namespace flexasio {
 		return paContinue;
 	}
 
-	void FlexASIO::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+	void FlexASIO::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) {
+		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before createBuffers()");
+		return bufferState->GetSamplePosition(sPos, tStamp);
+	}
+
+	void FlexASIO::BufferState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 	{
 		if (!started) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
 
 		*sPos = position;
 		*tStamp = position_timestamp;
 		Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);
+	}
+
+	void FlexASIO::BufferState::RequestReset() {
+		if (!callbacks.asioMessage)
+			throw ASIOException(ASE_InvalidMode, "reset requests are not supported");
+		callbacks.asioMessage(kAsioResetRequest, 0, NULL, NULL);
 	}
 
 	void FlexASIO::ControlPanel() {
