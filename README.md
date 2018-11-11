@@ -66,14 +66,11 @@ and is certainly not free from bugs and crashes.
 FlexASIO doesn't come with a graphical configuration interface ("control
 panel" in ASIO terminology). The main reason is because programming GUIs
 takes a lot of time that I don't have (especially since I have zero
-experience in GUI programming). This means that you are forced to use
-FlexASIO defaults when it comes to preferred buffer size for example, which is
-currently hardcoded to 20 ms.
-
-However, FlexASIO does come with a [configuration file](CONFIGURATION.md) that
-can be used to customize a few basic settings, such as the audio backend used
-(WASAPI, DirectSound, etc.) and audio device selection. Like most of FlexASIO,
-this is very much a work in progress and more options will be added over time.
+experience in GUI programming). However, FlexASIO does come with a
+[configuration file](CONFIGURATION.md) that can be used to customize a number of
+settings, such as the audio backend used (WASAPI, DirectSound, etc.) and audio
+device selection. Like most of FlexASIO, this is very much a work in progress
+and more options will be added over time.
 
 If you are using different hardware devices for input and output, each
 with its own hardware clock, you are likely to end up with glitches

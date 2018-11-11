@@ -86,6 +86,11 @@ namespace flexasio {
 			if (channelCount <= 0) throw std::runtime_error("channel count must be strictly positive - to disable a stream direction, set the 'device' option to the empty string \"\" instead");
 		}
 
+		void ValidateBufferSize(const int64_t& bufferSizeSamples) {
+			if (bufferSizeSamples <= 0) throw std::runtime_error("buffer size must be strictly positive");
+			if (bufferSizeSamples >= (std::numeric_limits<long>::max)()) throw std::runtime_error("buffer size is too large");
+		}
+
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
 			SetOption(table, "device", stream.device);
 			SetOption(table, "channels", stream.channels, ValidateChannelCount);
@@ -94,6 +99,7 @@ namespace flexasio {
 
 		void SetConfig(const toml::Table& table, Config& config) {
 			SetOption(table, "backend", config.backend);
+			SetOption(table, "bufferSizeSamples", config.bufferSizeSamples, ValidateBufferSize);
 			ProcessTypedOption<toml::Table>(table, "input", [&](const toml::Table& table) { SetStream(table, config.input); });
 			ProcessTypedOption<toml::Table>(table, "output", [&](const toml::Table& table) { SetStream(table, config.output); });
 		}

@@ -80,6 +80,38 @@ backend = "Windows WASAPI"
 
 The default behaviour is to use DirectSound.
 
+#### Option `bufferSizeSamples`
+
+*Integer*-typed option that determines which ASIO buffer size (in samples)
+FlexASIO will suggest to the ASIO Host application.
+
+This option can have a major impact on reliability and latency. Smaller buffers
+will reduce latency but will increase the likelihood of glitches/discontinuities
+(buffer overflow/underrun) if the audio pipeline is not fast enough.
+
+Note that some host applications might already provide a user-controlled buffer
+size setting; in this case, there should be no need to use this option. It is
+useful only when the application does not provide a way to customize the buffer
+size.
+
+The ASIO buffer size is also used as the PortAudio buffer size, as FlexASIO
+bridges the two. Note that, for various technical reasons and depending on the
+backend and settings used, there are many scenarios where additional buffers
+will be inserted in the audio pipeline (either by PortAudio or by Windows
+itself), *in addition* to the ASIO buffer. This can result in overall latency
+being higher than what the ASIO buffer size alone would suggest.
+
+Example:
+
+```toml
+bufferSizeSamples = 480 # 10 ms at 48 kHz
+```
+
+The default behaviour is to advertise minimum, preferred and maximum buffer
+sizes of 1 ms, 20 ms and 1 s, respectively. The resulting sizes in samples are
+computed based on whatever sample rate the driver is set to when the application
+enquires.
+
 ### `[input]` and `[output]` sections
 
 Options in this section only apply to the *input* (capture, recording) audio
