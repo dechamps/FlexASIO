@@ -142,6 +142,20 @@ namespace flexasio {
 				});
 		}
 
+		std::optional<WAVEFORMATEXTENSIBLE> GetDeviceDefaultFormat(PaHostApiTypeId hostApiType, PaDeviceIndex deviceIndex) {
+			if (hostApiType != paWASAPI) return std::nullopt;
+			try {
+				Log() << "Getting WASAPI device default format for device index " << deviceIndex;
+				const auto format = GetWasapiDeviceDefaultFormat(deviceIndex);
+				Log() << "WASAPI device default format for device index " << deviceIndex << ": " << DescribeWaveFormat(format);
+				return format;
+			}
+			catch (const std::exception& exception) {
+				Log() << "Error while trying to get input WASAPI default format for device index " << deviceIndex << ": " << exception.what();
+				return std::nullopt;
+			}
+		}
+
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) :
@@ -178,38 +192,15 @@ namespace flexasio {
 			Log() << "No output device, proceeding without output";
 		}
 		return device;
-	}())
+	}()),
+		inputFormat(inputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, inputDevice->index) : std::nullopt),
+		outputFormat(outputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, outputDevice->index) : std::nullopt)
 	{
 		Log() << "sysHandle = " << sysHandle;
 
 		sample_rate = 0;
 
 		if (!inputDevice.has_value() && !outputDevice.has_value()) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
-
-		if (hostApi.info.type == paWASAPI) {
-			// PortAudio has some WASAPI-specific goodies to make us smarter.
-			if (inputDevice.has_value()) {
-				try {
-					const auto inputFormat = GetWasapiDeviceDefaultFormat(inputDevice->index);
-					Log() << "Input WASAPI device default format: " << DescribeWaveFormat(inputFormat);
-					input_channel_mask = inputFormat.dwChannelMask;
-				}
-				catch (const std::exception& exception) {
-					Log() << "Error while trying to get input WASAPI device default format: " << exception.what();
-				}
-			}
-
-			if (outputDevice.has_value()) {
-				try {
-					const auto outputFormat = GetWasapiDeviceDefaultFormat(outputDevice->index);
-					Log() << "Output WASAPI device default format: " << DescribeWaveFormat(outputFormat);
-					output_channel_mask = outputFormat.dwChannelMask;
-				}
-				catch (const std::exception& exception) {
-					Log() << "Error while trying to get output WASAPI device default format: " << exception.what();
-				}
-			}
-		}
 
 		if (inputDevice.has_value()) {
 			sample_rate = (std::max)(sample_rate, inputDevice->info.defaultSampleRate);
@@ -302,7 +293,7 @@ namespace flexasio {
 		info->channelGroup = 0;
 		info->type = asio_sample_type;
 		std::stringstream channel_string;
-		channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? input_channel_mask : output_channel_mask);
+		channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? GetInputChannelMask() : GetOutputChannelMask());
 		strcpy_s(info->name, 32, channel_string.str().c_str());
 		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
 	}
@@ -332,10 +323,11 @@ namespace flexasio {
 			input_parameters.suggestedLatency = inputDevice->info.defaultLowInputLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
-				if (input_channel_mask != 0)
+				const auto inputChannelMask = GetInputChannelMask();
+				if (inputChannelMask != 0)
 				{
 					input_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
-					input_wasapi_stream_info.channelMask = input_channel_mask;
+					input_wasapi_stream_info.channelMask = inputChannelMask;
 				}
 				Log() << "Using " << (config.input.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for input WASAPI stream";
 				if (config.input.wasapiExclusiveMode) {
@@ -354,10 +346,11 @@ namespace flexasio {
 			output_parameters.suggestedLatency = outputDevice->info.defaultLowOutputLatency;
 			if (hostApi.info.type == paWASAPI)
 			{
-				if (output_channel_mask != 0)
+				const auto outputChannelMask = GetOutputChannelMask();
+				if (outputChannelMask != 0)
 				{
 					output_wasapi_stream_info.flags |= paWinWasapiUseChannelMask;
-					output_wasapi_stream_info.channelMask = output_channel_mask;
+					output_wasapi_stream_info.channelMask = outputChannelMask;
 				}
 				Log() << "Using " << (config.output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
 				if (config.output.wasapiExclusiveMode) {

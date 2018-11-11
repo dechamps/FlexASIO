@@ -141,6 +141,8 @@ namespace flexasio {
 
 		int GetInputChannelCount() const { return inputDevice.has_value() ? inputDevice->info.maxInputChannels : 0; }
 		int GetOutputChannelCount() const { return outputDevice.has_value() ? outputDevice->info.maxOutputChannels : 0; }
+		DWORD GetInputChannelMask() const { return inputFormat.has_value() ? inputFormat->dwChannelMask : 0; }
+		DWORD GetOutputChannelMask() const { return outputFormat.has_value() ? outputFormat->dwChannelMask : 0; }
 
 		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
@@ -153,10 +155,8 @@ namespace flexasio {
 		const HostApi hostApi;
 		const std::optional<Device> inputDevice;
 		const std::optional<Device> outputDevice;
-
-		// WAVEFORMATEXTENSIBLE channel masks. Not always available.
-		DWORD input_channel_mask = 0;
-		DWORD output_channel_mask = 0;
+		const std::optional<WAVEFORMATEXTENSIBLE> inputFormat;
+		const std::optional<WAVEFORMATEXTENSIBLE> outputFormat;
 
 		ASIOSampleRate sample_rate = 0;
 
