@@ -82,6 +82,15 @@ namespace flexasio {
 		return result;
 	}
 
+	std::string GetStreamFlagsString(PaStreamFlags streamFlags) {
+		return BitfieldToString(streamFlags, {
+			{ paClipOff, "ClipOff" },
+			{ paDitherOff, "DitherOff" },
+			{ paNeverDropInput, "NeverDropInput" },
+			{ paPrimeOutputBuffersUsingStreamCallback, "PrimeOutputBuffersUsingStreamCallback" },
+			});
+	}
+
 	std::ostream& operator<<(std::ostream& os, const HostApi& hostApi) {
 		os << "PortAudio host API index " << hostApi.index
 			<< " (name: '" << hostApi.info.name
@@ -220,7 +229,7 @@ namespace flexasio {
 			<< (outputParameters == nullptr ? "none" : DescribeStreamParameters(*outputParameters)) << ", sample rate "
 			<< sampleRate << " Hz, "
 			<< framesPerBuffer << " frames per buffer, stream flags "
-			<< streamFlags << ", stream callback "
+			<< GetStreamFlagsString(streamFlags) << ", stream callback "
 			<< streamCallback << ", user data "
 			<< userData;
 		PaStream* stream = nullptr;

@@ -17,6 +17,7 @@ namespace flexasio {
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId);
 	std::string GetSampleFormatString(PaSampleFormat sampleFormat);
+	std::string GetStreamFlagsString(PaStreamFlags streamFlags);
 
 	struct HostApi {
 		explicit HostApi(PaHostApiIndex index) : index(index), info(GetInfo(index)) {}
