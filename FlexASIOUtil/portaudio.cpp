@@ -20,6 +20,23 @@ extern "C" {
 	extern void PaUtil_SetDebugPrintFunction(PaUtilLogCallback cb);
 }
 
+// From src/common/pa_hostapi.h, which is not exposed publicly but is nonetheless useful here.
+//
+/** The common header for all data structures whose pointers are passed through
+ the hostApiSpecificStreamInfo field of the PaStreamParameters structure.
+ Note that in order to keep the public PortAudio interface clean, this structure
+ is not used explicitly when declaring hostApiSpecificStreamInfo data structures.
+ However, some code in pa_front depends on the first 3 members being equivalent
+ with this structure.
+ @see PaStreamParameters
+*/
+typedef struct PaUtilHostApiSpecificStreamInfoHeader
+{
+	unsigned long size;             /**< size of whole structure including this header */
+	PaHostApiTypeId hostApiType;    /**< host API for which this data is intended */
+	unsigned long version;          /**< structure version */
+} PaUtilHostApiSpecificStreamInfoHeader;
+
 namespace flexasio {
 
 	namespace {
@@ -88,6 +105,52 @@ namespace flexasio {
 			{ paDitherOff, "DitherOff" },
 			{ paNeverDropInput, "NeverDropInput" },
 			{ paPrimeOutputBuffersUsingStreamCallback, "PrimeOutputBuffersUsingStreamCallback" },
+			});
+	}
+
+	std::string GetWasapiFlagsString(PaWasapiFlags wasapiFlags) {
+		return BitfieldToString(wasapiFlags, {
+			{ paWinWasapiExclusive, "Exclusive" },
+			{ paWinWasapiRedirectHostProcessor, "RedirectHostProcessor" },
+			{ paWinWasapiUseChannelMask, "UseChannelMask" },
+			{ paWinWasapiPolling, "Polling" },
+			{ paWinWasapiThreadPriority, "ThreadPriority" },
+			});
+	}
+
+	std::string GetWasapiThreadPriorityString(PaWasapiThreadPriority threadPriority) {
+		return EnumToString(threadPriority, {
+			{ eThreadPriorityNone, "None" },
+			{ eThreadPriorityAudio, "Audio" },
+			{ eThreadPriorityCapture, "Capture" },
+			{ eThreadPriorityDistribution, "Distribution" },
+			{ eThreadPriorityGames, "Games" },
+			{ eThreadPriorityPlayback, "Playback" },
+			{ eThreadPriorityProAudio, "ProAudio" },
+			{ eThreadPriorityWindowManager, "WindowManager" },
+			});
+	}
+
+	std::string GetWasapiStreamCategoryString(PaWasapiStreamCategory streamCategory) {
+		return EnumToString(streamCategory, {
+			{ eAudioCategoryOther, "Other" },
+			{ eAudioCategoryCommunications, "Communications" },
+			{ eAudioCategoryAlerts, "Alerts" },
+			{ eAudioCategorySoundEffects, "SoundEffects" },
+			{ eAudioCategoryGameEffects, "GameEffects" },
+			{ eAudioCategoryGameMedia, "GameMedia" },
+			{ eAudioCategoryGameChat, "GameChat" },
+			{ eAudioCategorySpeech, "Speech" },
+			{ eAudioCategoryMovie, "Movie" },
+			{ eAudioCategoryMedia, "Media" },
+			});
+	}
+
+	std::string GetWasapiStreamOptionString(PaWasapiStreamOption streamOption) {
+		return EnumToString(streamOption, {
+			{ eStreamOptionNone, "None" },
+			{ eStreamOptionRaw, "Raw" },
+			{ eStreamOptionMatchFormat, "MatchFormat" },
 			});
 	}
 
@@ -208,11 +271,27 @@ namespace flexasio {
 	std::string DescribeStreamParameters(const PaStreamParameters& parameters) {
 		std::stringstream result;
 
-		// TODO: print host API specific info
 		result << "PortAudio stream parameters for device index " << parameters.device << ", "
 			<< parameters.channelCount << " channels, sample format "
 			<< GetSampleFormatString(parameters.sampleFormat) << ", suggested latency "
 			<< parameters.suggestedLatency << "s";
+
+		if (parameters.hostApiSpecificStreamInfo != nullptr) {
+			const auto hostApiSpecificHeader = static_cast<const PaUtilHostApiSpecificStreamInfoHeader*>(parameters.hostApiSpecificStreamInfo);
+			result << ", host API specific: " << hostApiSpecificHeader->size << " bytes structure, type "
+				<< GetHostApiTypeIdString(hostApiSpecificHeader->hostApiType) << ", version "
+				<< hostApiSpecificHeader->version;
+			if (hostApiSpecificHeader->hostApiType == paWASAPI) {
+				const auto wasapiSpecific = static_cast<const PaWasapiStreamInfo*>(parameters.hostApiSpecificStreamInfo);
+				result << ", WASAPI specific: flags " << GetWasapiFlagsString(PaWasapiFlags(wasapiSpecific->flags)) << ", channel mask "
+					<< GetWaveFormatChannelMaskString(wasapiSpecific->channelMask) << ", host processor output "
+					<< wasapiSpecific->hostProcessorOutput << ", host processor input "
+					<< wasapiSpecific->hostProcessorInput << ", thread priority "
+					<< GetWasapiThreadPriorityString(wasapiSpecific->threadPriority) << ", stream category "
+					<< GetWasapiStreamCategoryString(wasapiSpecific->streamCategory) << ", stream option "
+					<< GetWasapiStreamOptionString(wasapiSpecific->streamOption);
+			}
+		}
 
 		return result.str();
 	}

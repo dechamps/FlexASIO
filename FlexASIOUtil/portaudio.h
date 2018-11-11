@@ -1,6 +1,7 @@
 #pragma once
 
 #include <portaudio.h>
+#include <pa_win_wasapi.h>
 
 #include <windows.h>
 #include <MMReg.h>
@@ -18,6 +19,10 @@ namespace flexasio {
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId);
 	std::string GetSampleFormatString(PaSampleFormat sampleFormat);
 	std::string GetStreamFlagsString(PaStreamFlags streamFlags);
+	std::string GetWasapiFlagsString(PaWasapiFlags wasapiFlags);
+	std::string GetWasapiThreadPriorityString(PaWasapiThreadPriority threadPriority);
+	std::string GetWasapiStreamCategoryString(PaWasapiStreamCategory streamCategory);
+	std::string GetWasapiStreamOptionString(PaWasapiStreamOption streamOption);
 
 	struct HostApi {
 		explicit HostApi(PaHostApiIndex index) : index(index), info(GetInfo(index)) {}
