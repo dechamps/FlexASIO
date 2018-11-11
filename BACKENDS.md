@@ -124,11 +124,11 @@ PortAudio.
 
 In *exclusive* mode, WASAPI behaves completely differently and bypasses the
 entirety of the Windows audio pipeline, including mixing and APOs. As a result,
-PortAudio has a direct path to the audio hardware driver, which can lead to
-significantly improved latency. The lack of APOs in the signal path can also be
-helpful in applications where fidelity to the original signal is of the utmost
-importance. However, since mixing is bypassed, other applications cannot use the
-audio device at the same time.
+PortAudio has a direct path to the audio hardware driver, which makes for an
+ideal setup for low latency operation. The lack of APOs in the signal path can
+also be helpful in applications where fidelity to the original signal is of the
+utmost importance. However, since mixing is bypassed, other applications cannot
+use the audio device at the same time.
 
 **Note:** FlexASIO will show channel names (e.g. "Front left") when the WASAPI
 backend is used. Channel names are not shown when using other backends due to

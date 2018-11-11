@@ -48,6 +48,23 @@ channels = 6
 wasapiExclusiveMode = true
 ```
 
+Experimentally, the following set of options have been shown to be a good
+starting point for low latency operation:
+
+```toml
+backend = "Windows WASAPI"
+
+[input]
+wasapiExclusiveMode = true
+bufferSizeSamples = 480
+suggestedLatencySeconds = 0.0
+
+[output]
+wasapiExclusiveMode = true
+bufferSizeSamples = 480
+suggestedLatencySeconds = 0.0
+```
+
 ## Options reference
 
 ### Global section
