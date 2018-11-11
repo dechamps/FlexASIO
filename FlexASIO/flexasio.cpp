@@ -414,6 +414,8 @@ namespace flexasio {
 
 	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
 		Log() << "Request to create buffers for " << numChannels << " channels, size " << bufferSize << " bytes";
+		if (numChannels < 1 || bufferSize < 1 || callbacks == nullptr || callbacks->bufferSwitch == nullptr)
+			throw ASIOException(ASE_InvalidParameter, "invalid createBuffer() parameters");
 
 		if (bufferState.has_value()) {
 			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
@@ -428,18 +430,13 @@ namespace flexasio {
 	}
 
 	FlexASIO::BufferState::Buffers::Buffers(size_t bufferCount, size_t channelCount, size_t bufferSize) :
-		bufferCount(bufferCount), channelCount(channelCount), bufferSize(bufferSize) {
-		Log() << "Allocating " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSize << " bytes per channel";
-		if (channelCount < 1 || bufferSize < 1)
-			throw ASIOException(ASE_InvalidParameter, "invalid buffer parameters");
-		buffers = new Sample[getSize()]();
-		Log() << "Buffer memory range : " << buffers << "-" << buffers + getSize();
+		bufferCount(bufferCount), channelCount(channelCount), bufferSize(bufferSize), buffers(new Sample[getSize()]()) {
+		Log() << "Allocated " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSize << " bytes per channel, memory range: " << buffers << "-" << buffers + getSize();;
 	}
 
 	FlexASIO::BufferState::Buffers::~Buffers() {
 		Log() << "Destroying buffers";
 		delete[] buffers;
-		buffers = nullptr;
 	}
 
 	FlexASIO::BufferState::BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) :
@@ -471,9 +468,6 @@ namespace flexasio {
 		return bufferInfos;
 	}())
 	{
-		if (!callbacks || !callbacks->bufferSwitch)
-			throw ASIOException(ASE_InvalidParameter, "invalid createBuffers() callbacks");
-
 		Log() << "Opening PortAudio stream";
 		PaStream* temp_stream;
 		PaError error = flexASIO.OpenStream(&temp_stream, sampleRate, unsigned long(buffers.bufferSize), &BufferState::StaticStreamCallback, this);
