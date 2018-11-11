@@ -693,7 +693,7 @@ namespace flexasio {
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
-		if (!callbacks.asioMessage)
+		if (!callbacks.asioMessage || Message(callbacks.asioMessage, kAsioSelectorSupported, kAsioResetRequest, nullptr, nullptr) != 1)
 			throw ASIOException(ASE_InvalidMode, "reset requests are not supported");
 		Message(callbacks.asioMessage, kAsioResetRequest, 0, NULL, NULL);
 	}
