@@ -213,6 +213,8 @@ namespace flexasio {
 		Log() << "sysHandle = " << sysHandle;
 
 		if (!inputDevice.has_value() && !outputDevice.has_value()) throw ASIOException(ASE_HWMalfunction, "No usable input nor output devices");
+
+		Log() << "Channel count: " << GetInputChannelCount() << " input, " << GetOutputChannelCount() << " output";
 	}
 
 	void FlexASIO::GetChannels(long* numInputChannels, long* numOutputChannels)
