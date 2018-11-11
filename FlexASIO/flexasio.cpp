@@ -311,7 +311,7 @@ namespace flexasio {
 		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
 	}
 
-	PaError FlexASIO::OpenStream(PaStream** stream, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
+	Stream FlexASIO::OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
 	{
 		Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
 
@@ -371,8 +371,7 @@ namespace flexasio {
 			}
 		}
 
-		return Pa_OpenStream(
-			stream,
+		return flexasio::OpenStream(
 			inputDevice.has_value() ? &input_parameters : NULL,
 			outputDevice.has_value() ? &output_parameters : NULL,
 			sampleRate, framesPerBuffer, paNoFlag, callback, callbackUserData);
@@ -382,16 +381,15 @@ namespace flexasio {
 	{
 		Log() << "Checking for sample rate: " << sampleRate;
 
-		PaStream* temp_stream;
-		PaError error = OpenStream(&temp_stream, sampleRate, paFramesPerBufferUnspecified, nullptr, nullptr);
-		if (error != paNoError)
-		{
-			Log() << "Cannot do this sample rate: " << Pa_GetErrorText(error);
+		try {
+			OpenStream(sampleRate, paFramesPerBufferUnspecified, nullptr, nullptr);
+		}
+		catch (const std::exception& exception) {
+			Log() << "Cannot do this sample rate: " << exception.what();
 			return false;
 		}
 
 		Log() << "Sample rate is available";
-		Pa_CloseStream(temp_stream);
 		return true;
 	}
 
@@ -466,16 +464,7 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}())
-	{
-		Log() << "Opening PortAudio stream";
-		PaStream* temp_stream;
-		PaError error = flexASIO.OpenStream(&temp_stream, sampleRate, unsigned long(buffers.bufferSize), &BufferState::StaticStreamCallback, this);
-		if (error != paNoError)
-			throw ASIOException(ASE_HWMalfunction, std::string("Unable to open PortAudio stream: ") + Pa_GetErrorText(error));
-
-		stream = temp_stream;
-	}
+	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &BufferState::StaticStreamCallback, this)) {}
 
 	bool FlexASIO::BufferState::IsChannelActive(bool isInput, long channel) const {
 		for (const auto& buffersInfo : bufferInfos)
@@ -498,14 +487,6 @@ namespace flexasio {
 		catch (const std::exception& exception) {
 			Log() << "unable to stop stream: " << exception.what();
 		}
-
-		Log() << "Closing PortAudio stream";
-		PaError error = Pa_CloseStream(stream);
-		if (error != paNoError) {
-			Log() << "unable to close PortAudio stream: " << Pa_GetErrorText(error);
-		}
-
-		stream = NULL;
 	}
 
 	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
@@ -515,7 +496,7 @@ namespace flexasio {
 
 	void FlexASIO::BufferState::GetLatencies(long* inputLatency, long* outputLatency)
 	{
-		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
+		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream.get());
 		if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 		// See https://github.com/dechamps/FlexASIO/issues/10.
@@ -546,7 +527,7 @@ namespace flexasio {
 		our_buffer_index = 0;
 		position = Int64ToASIO<ASIOSamples>(0);
 		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer->GetTimeMilliseconds()) * 1000000);
-		PaError error = Pa_StartStream(stream);
+		PaError error = Pa_StartStream(stream.get());
 		if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
 
 		Log() << "Started successfully";
@@ -562,7 +543,7 @@ namespace flexasio {
 		if (!started) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
 
 		Log() << "Stopping stream";
-		PaError error = Pa_StopStream(stream);
+		PaError error = Pa_StopStream(stream.get());
 		if (error != paNoError) throw ASIOException(ASE_HWMalfunction, std::string("unable to stop PortAudio stream: ") + Pa_GetErrorText(error));
 
 		started = false;

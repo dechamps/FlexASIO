@@ -116,7 +116,7 @@ namespace flexasio {
 			const Buffers buffers;
 			const std::vector<ASIOBufferInfo> bufferInfos;
 
-			PaStream* stream = nullptr;
+			const Stream stream;
 			bool host_supports_timeinfo;
 			// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 			size_t our_buffer_index;
@@ -126,7 +126,7 @@ namespace flexasio {
 			std::optional<Win32HighResolutionTimer> win32HighResolutionTimer;
 		};
 
-		PaError OpenStream(PaStream**, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
+		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
 		const HWND windowHandle = nullptr;
 		const Config config;
