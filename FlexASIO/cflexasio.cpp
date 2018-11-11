@@ -126,7 +126,7 @@ namespace flexasio {
 
 			ASIOError outputReady() throw() final {
 				return Enter("outputReady()", [] {
-					throw ASIOException(ASE_InvalidParameter, "outputReady() is not supported");
+					throw ASIOException(ASE_NotPresent, "outputReady() is not supported");
 				});
 			}
 
