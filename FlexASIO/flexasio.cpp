@@ -610,9 +610,11 @@ namespace flexasio {
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
 			Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : DescribeASIOTime(*timeResult));
 		}
+
 		std::swap(locked_buffer_index, our_buffer_index);
 		position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
 		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
+		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ASIOToInt64(position) << ", timestamp: " << ASIOToInt64(position_timestamp);
 
 		return paContinue;
 	}
