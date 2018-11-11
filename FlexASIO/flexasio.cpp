@@ -442,35 +442,37 @@ namespace flexasio {
 		buffers = nullptr;
 	}
 
-	FlexASIO::BufferState::BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) :
-		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks), buffers(2, numChannels, bufferSize)
-	{
-		if (!callbacks || !callbacks->bufferSwitch)
-			throw ASIOException(ASE_InvalidParameter, "invalid createBuffers() callbacks");
-
-		buffers_info.reserve(numChannels);
-		for (long channel_index = 0; channel_index < numChannels; ++channel_index)
+	FlexASIO::BufferState::BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) :
+		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks), buffers(2, numChannels, bufferSize), bufferInfos([&] {
+		std::vector<ASIOBufferInfo> bufferInfos;
+		bufferInfos.reserve(numChannels);
+		for (long channelIndex = 0; channelIndex < numChannels; ++channelIndex)
 		{
-			ASIOBufferInfo& buffer_info = bufferInfos[channel_index];
-			if (buffer_info.isInput)
+			ASIOBufferInfo& asioBufferInfo = asioBufferInfos[channelIndex];
+			if (asioBufferInfo.isInput)
 			{
-				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= flexASIO.input_channel_count)
+				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.input_channel_count)
 					throw ASIOException(ASE_InvalidParameter, "out of bounds input channel in createBuffers() buffer info");
 			}
 			else
 			{
-				if (buffer_info.channelNum < 0 || buffer_info.channelNum >= flexASIO.output_channel_count)
+				if (asioBufferInfo.channelNum < 0 || asioBufferInfo.channelNum >= flexASIO.output_channel_count)
 					throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 			}
 
-			Sample* first_half = buffers.getBuffer(0, channel_index);
-			Sample* second_half = buffers.getBuffer(1, channel_index);
-			buffer_info.buffers[0] = static_cast<void*>(first_half);
-			buffer_info.buffers[1] = static_cast<void*>(second_half);
-			Log() << "ASIO buffer #" << channel_index << " is " << (buffer_info.isInput ? "input" : "output") << " channel " << buffer_info.channelNum
+			Sample* first_half = buffers.getBuffer(0, channelIndex);
+			Sample* second_half = buffers.getBuffer(1, channelIndex);
+			asioBufferInfo.buffers[0] = static_cast<void*>(first_half);
+			asioBufferInfo.buffers[1] = static_cast<void*>(second_half);
+			Log() << "ASIO buffer #" << channelIndex << " is " << (asioBufferInfo.isInput ? "input" : "output") << " channel " << asioBufferInfo.channelNum
 				<< " - first half: " << first_half << "-" << first_half + bufferSize << " - second half: " << second_half << "-" << second_half + bufferSize;
-			buffers_info.push_back(buffer_info);
+			bufferInfos.push_back(asioBufferInfo);
 		}
+		return bufferInfos;
+	}())
+	{
+		if (!callbacks || !callbacks->bufferSwitch)
+			throw ASIOException(ASE_InvalidParameter, "invalid createBuffers() callbacks");
 
 		Log() << "Opening PortAudio stream";
 		PaStream* temp_stream;
@@ -482,7 +484,7 @@ namespace flexasio {
 	}
 
 	bool FlexASIO::BufferState::IsChannelActive(bool isInput, long channel) const {
-		for (const auto& buffersInfo : buffers_info)
+		for (const auto& buffersInfo : bufferInfos)
 			if (!!buffersInfo.isInput == !!isInput && buffersInfo.channelNum == channel)
 				return true;
 		return false;
@@ -510,7 +512,6 @@ namespace flexasio {
 		}
 
 		stream = NULL;
-		buffers_info.clear();
 	}
 
 	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
@@ -622,13 +623,13 @@ namespace flexasio {
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
 		Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
-		for (std::vector<ASIOBufferInfo>::const_iterator buffers_info_it = buffers_info.begin(); buffers_info_it != buffers_info.end(); ++buffers_info_it)
+		for (const auto& bufferInfo : bufferInfos)
 		{
-			Sample* buffer = reinterpret_cast<Sample*>(buffers_info_it->buffers[our_buffer_index]);
-			if (buffers_info_it->isInput)
-				memcpy(buffer, input_samples[buffers_info_it->channelNum], frameCount * sizeof(Sample));
+			Sample* buffer = reinterpret_cast<Sample*>(bufferInfo.buffers[our_buffer_index]);
+			if (bufferInfo.isInput)
+				memcpy(buffer, input_samples[bufferInfo.channelNum], frameCount * sizeof(Sample));
 			else
-				memcpy(output_samples[buffers_info_it->channelNum], buffer, frameCount * sizeof(Sample));
+				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * sizeof(Sample));
 		}
 
 		if (!host_supports_timeinfo)

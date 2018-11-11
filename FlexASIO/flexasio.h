@@ -68,7 +68,7 @@ namespace flexasio {
 
 		class BufferState {
 		public:
-			BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
+			BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
 			BufferState(const BufferState&) = delete;
 			BufferState(BufferState&&) = delete;
 			~BufferState() throw();
@@ -114,7 +114,7 @@ namespace flexasio {
 			// In contrast, ASIO buffer addresses are static and are valid for as long as the stream is running.
 			// Thus we need our own buffer on top of PortAudio's buffers. This doens't add any latency because buffers are copied immediately.
 			const Buffers buffers;
-			std::vector<ASIOBufferInfo> buffers_info;
+			const std::vector<ASIOBufferInfo> bufferInfos;
 
 			PaStream* stream = nullptr;
 			bool host_supports_timeinfo;
