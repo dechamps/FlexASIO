@@ -292,7 +292,7 @@ namespace flexasio {
 			if (info->channel < 0 || info->channel >= GetOutputChannelCount()) throw ASIOException(ASE_InvalidParameter, "no such output channel");
 		}
 
-		info->isActive = bufferState.has_value() && bufferState->IsChannelActive(info->isInput, info->channel);
+		info->isActive = preparedState.has_value() && preparedState->IsChannelActive(info->isInput, info->channel);
 		info->channelGroup = 0;
 		info->type = asio_sample_type;
 		std::stringstream channel_string;
@@ -404,10 +404,10 @@ namespace flexasio {
 			return;
 		}
 
-		if (bufferState.has_value())
+		if (preparedState.has_value())
 		{
 			Log() << "Sending a reset request to the host as it's not possible to change sample rate while streaming";
-			bufferState->RequestReset();
+			preparedState->RequestReset();
 		}
 		sampleRate = requestedSampleRate;
 	}
@@ -417,11 +417,11 @@ namespace flexasio {
 		if (numChannels < 1 || bufferSize < 1 || callbacks == nullptr || callbacks->bufferSwitch == nullptr)
 			throw ASIOException(ASE_InvalidParameter, "invalid createBuffer() parameters");
 
-		if (bufferState.has_value()) {
+		if (preparedState.has_value()) {
 			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
 		}
 
-		bufferState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
+		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
 	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferCount, size_t channelCount, size_t bufferSize) :
@@ -472,13 +472,13 @@ namespace flexasio {
 
 	void FlexASIO::DisposeBuffers()
 	{
-		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
-		bufferState.reset();
+		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
+		preparedState.reset();
 	}
 
 	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
-		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
-		return bufferState->GetLatencies(inputLatency, outputLatency);
+		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
+		return preparedState->GetLatencies(inputLatency, outputLatency);
 	}
 
 	void FlexASIO::PreparedState::GetLatencies(long* inputLatency, long* outputLatency)
@@ -494,8 +494,8 @@ namespace flexasio {
 	}
 
 	void FlexASIO::Start() {
-		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called before createBuffers()");
-		return bufferState->Start();
+		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called before createBuffers()");
+		return preparedState->Start();
 	}
 
 	void FlexASIO::PreparedState::Start()
@@ -520,8 +520,8 @@ namespace flexasio {
 		activeStream(StartStream(preparedState.stream.get())) {}
 
 	void FlexASIO::Stop() {
-		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
-		return bufferState->Stop();
+		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
+		return preparedState->Stop();
 	}
 
 	void FlexASIO::PreparedState::Stop()
@@ -617,8 +617,8 @@ namespace flexasio {
 	}
 
 	void FlexASIO::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) {
-		if (!bufferState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before createBuffers()");
-		return bufferState->GetSamplePosition(sPos, tStamp);
+		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before createBuffers()");
+		return preparedState->GetSamplePosition(sPos, tStamp);
 	}
 
 	void FlexASIO::PreparedState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)

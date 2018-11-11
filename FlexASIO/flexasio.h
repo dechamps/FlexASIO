@@ -160,7 +160,7 @@ namespace flexasio {
 
 		ASIOSampleRate sampleRate = 0;
 
-		std::optional<PreparedState> bufferState;
+		std::optional<PreparedState> preparedState;
 	};
 
 }
