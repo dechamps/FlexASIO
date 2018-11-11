@@ -176,6 +176,12 @@ namespace flexasio {
 			}
 		}
 
+		// No-op PortAudio stream callback. Useful for backends that fail to initialize without a callback, such as WDM-KS.
+		int NoOpStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
+			Log() << "In no-op stream callback";
+			return paContinue;
+		}
+
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) :
@@ -430,7 +436,7 @@ namespace flexasio {
 		Log() << "Checking for sample rate: " << sampleRate;
 
 		try {
-			OpenStream(sampleRate, paFramesPerBufferUnspecified, nullptr, nullptr);
+			OpenStream(sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
 		}
 		catch (const std::exception& exception) {
 			Log() << "Cannot do this sample rate: " << exception.what();
