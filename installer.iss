@@ -35,8 +35,6 @@ DefaultDirName={pf}\FlexASIO
 AppendDefaultDirName=no
 ArchitecturesInstallIn64BitMode=x64
 
-LicenseFile=LICENSE.txt
-
 [Files]
 Source:"build\x64\Release\FlexASIO_x64.dll"; DestDir: "{app}\x64"; Flags: ignoreversion regserver 64bit; Check: Is64BitInstallMode
 Source:"build\x64\Release\FlexASIO_x64.pdb"; DestDir: "{app}\x64"; Flags: ignoreversion 64bit; Check: Is64BitInstallMode
