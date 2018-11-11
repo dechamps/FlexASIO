@@ -66,12 +66,12 @@ namespace flexasio {
 			DWORD GetTimeMilliseconds() const;
 		};
 
-		class BufferState {
+		class PreparedState {
 		public:
-			BufferState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
-			BufferState(const BufferState&) = delete;
-			BufferState(BufferState&&) = delete;
-			~BufferState() throw();
+			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
+			PreparedState(const PreparedState&) = delete;
+			PreparedState(PreparedState&&) = delete;
+			~PreparedState() throw();
 
 			bool IsChannelActive(bool isInput, long channel) const;
 
@@ -146,7 +146,7 @@ namespace flexasio {
 
 		ASIOSampleRate sample_rate = 0;
 
-		std::optional<BufferState> bufferState;
+		std::optional<PreparedState> bufferState;
 	};
 
 }
