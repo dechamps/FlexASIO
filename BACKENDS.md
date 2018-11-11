@@ -118,9 +118,9 @@ limitation of this mode is that there is no sample rate conversion. Therefore,
 initialization will fail if the application sample rate is different from the
 sample rate of the input or output devices, as configured in the Windows sound
 settings. (Corollary: if the input and output devices are configured with
-different sample rates in Windows, WASAPI Shared won't work, period.) It is not
-clear if this is an inherent limitation of WASAPI itself or an issue with
-PortAudio.
+different sample rates in Windows, WASAPI Shared won't work, period.) There is
+also no support for upmixing nor downmixing; the channel counts must match
+exactly. These limitations [are inherent to WASAPI itself][wasapisr].
 
 In *exclusive* mode, WASAPI behaves completely differently and bypasses the
 entirety of the Windows audio pipeline, including mixing and APOs. As a result,
@@ -166,6 +166,7 @@ Streaming.
 [portaudio]: http://www.portaudio.com/
 [Windows Audio Session API]: https://docs.microsoft.com/en-us/windows/desktop/coreaudio/wasapi
 [Windows Driver Model]: https://en.wikipedia.org/wiki/Windows_Driver_Model
+[wasapisr]: https://docs.microsoft.com/windows/desktop/CoreAudio/device-formats
 [WDM-KS issue]: https://github.com/dechamps/FlexASIO/issues/21
 
 <!-- Use the converter at http://http://gravizo.com/ to recover the source code
