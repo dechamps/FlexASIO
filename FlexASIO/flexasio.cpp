@@ -438,16 +438,30 @@ namespace flexasio {
 	{
 		Log() << "Checking for sample rate: " << sampleRate;
 
+		// We do not know whether the host application intends to use only input channels, only output channels, or both.
+		// This logic ensures the driver is usable for all three use cases.
+		bool available = false;
 		try {
-			OpenStream(sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+			Log() << "Checking if input supports this sample rate";
+			OpenStream(true, false, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+			Log() << "Input supports this sample rate";
+			available = true;
 		}
 		catch (const std::exception& exception) {
-			Log() << "Cannot do this sample rate: " << exception.what();
-			return false;
+			Log() << "Input does not support this sample rate: " << exception.what();
+		}
+		try {
+			Log() << "Checking if output supports this sample rate";
+			OpenStream(false, true, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+			Log() << "Output supports this sample rate";
+			available = true;
+		}
+		catch (const std::exception& exception) {
+			Log() << "Output does not support this sample rate: " << exception.what();
 		}
 
-		Log() << "Sample rate is available";
-		return true;
+		Log() << "Sample rate " << sampleRate << " is " << (available ? "available" : "unavailable");
+		return available;
 	}
 
 	void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRateResult)

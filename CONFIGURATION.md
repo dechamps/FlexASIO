@@ -157,10 +157,9 @@ FlexASIO will fail to initialize.
 
 If the option is set to the empty string (`""`), no device will be used; that
 is, the input or output side of the stream will be disabled, and all other
-options in the section will be ignored. If you only need the input or the
-output, but not both, it is **strongly recommended** to disable what you don't
-need, because that relaxes constraints on the backend, especially when it comes
-to audio format concerns.
+options in the section will be ignored. Note that making your ASIO Host
+Application unselect all input channels or all output channels will achieve the
+same result.
 
 Example:
 
