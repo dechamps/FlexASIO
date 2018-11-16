@@ -160,7 +160,7 @@ is, the input or output side of the stream will be disabled, and all other
 options in the section will be ignored. If you only need the input or the
 output, but not both, it is **strongly recommended** to disable what you don't
 need, because that relaxes constraints on the backend, especially when it comes
-to audio format and clock mismatch concerns.
+to audio format concerns.
 
 Example:
 
@@ -185,7 +185,9 @@ Application will see.
 **Note:** even if the ASIO Host Application only decides to use a subset of the
 available channels, the hardware audio device will still be opened with the
 number of channels configured here. In other words, the host application has no
-control over the hardware channel configuration.
+control over the hardware channel configuration. The only exception is if the
+application does not request any input channels, or any output channels; in this
+case the input or output device (respectively) won't be opened at all.
 
 If the requested channel count doesn't match what the audio device is configured
 for, the resulting behaviour depends on the backend. Some backends will accept

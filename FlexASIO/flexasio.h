@@ -125,6 +125,9 @@ namespace flexasio {
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
 
+			bool IsInputEnabled() const;
+			bool IsOutputEnabled() const;
+
 			FlexASIO& flexASIO;
 			const ASIOSampleRate sampleRate;
 			const ASIOCallbacks callbacks;
@@ -145,7 +148,7 @@ namespace flexasio {
 		DWORD GetInputChannelMask() const;
 		DWORD GetOutputChannelMask() const;
 
-		Stream OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
+		Stream OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
 		const HWND windowHandle = nullptr;
 		const Config config;

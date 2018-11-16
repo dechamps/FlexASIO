@@ -361,9 +361,12 @@ namespace flexasio {
 		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
 	}
 
-	Stream FlexASIO::OpenStream(double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
+	Stream FlexASIO::OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
 	{
-		Log() << "CFlexASIO::OpenStream(" << sampleRate << ", " << framesPerBuffer << ")";
+		Log() << "CFlexASIO::OpenStream(inputEnabled = " << inputEnabled << ", outputEnabled = " << outputEnabled << ", sampleRate = " << sampleRate << ", framesPerBuffer = " << framesPerBuffer << ", callback = " << callback << ", callbackUserData = " << callbackUserData;
+
+		inputEnabled = inputEnabled && inputDevice.has_value();
+		outputEnabled = outputEnabled && outputDevice.has_value();
 
 		auto defaultSuggestedLatency = double(framesPerBuffer) / sampleRate;
 
@@ -381,7 +384,7 @@ namespace flexasio {
 
 		PaStreamParameters input_parameters = common_parameters;
 		PaWasapiStreamInfo input_wasapi_stream_info = common_wasapi_stream_info;
-		if (inputDevice.has_value())
+		if (inputEnabled)
 		{
 			input_parameters.device = inputDevice->index;
 			input_parameters.channelCount = GetInputChannelCount();
@@ -404,7 +407,7 @@ namespace flexasio {
 
 		PaStreamParameters output_parameters = common_parameters;
 		PaWasapiStreamInfo output_wasapi_stream_info = common_wasapi_stream_info;
-		if (outputDevice.has_value())
+		if (outputEnabled)
 		{
 			output_parameters.device = outputDevice->index;
 			output_parameters.channelCount = GetOutputChannelCount();
@@ -426,8 +429,8 @@ namespace flexasio {
 		}
 
 		return flexasio::OpenStream(
-			inputDevice.has_value() ? &input_parameters : NULL,
-			outputDevice.has_value() ? &output_parameters : NULL,
+			inputEnabled ? &input_parameters : NULL,
+			outputEnabled ? &output_parameters : NULL,
 			sampleRate, framesPerBuffer, paNoFlag, callback, callbackUserData);
 	}
 
@@ -523,13 +526,26 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), stream(flexASIO.OpenStream(sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StreamCallback, this)) {
+	}()), stream(flexASIO.OpenStream(IsInputEnabled(), IsOutputEnabled(), sampleRate, unsigned long(buffers.bufferSize), &PreparedState::StreamCallback, this)) {
 		if (callbacks->asioMessage) ProbeHostMessages(callbacks->asioMessage);
 	}
 
 	bool FlexASIO::PreparedState::IsChannelActive(bool isInput, long channel) const {
 		for (const auto& buffersInfo : bufferInfos)
 			if (!!buffersInfo.isInput == !!isInput && buffersInfo.channelNum == channel)
+				return true;
+		return false;
+	}
+
+	bool FlexASIO::PreparedState::IsInputEnabled() const {
+		for (const auto& buffersInfo : bufferInfos)
+			if (buffersInfo.isInput)
+				return true;
+		return false;
+	}
+	bool FlexASIO::PreparedState::IsOutputEnabled() const {
+		for (const auto& buffersInfo : bufferInfos)
+			if (!buffersInfo.isInput)
 				return true;
 		return false;
 	}
@@ -640,8 +656,10 @@ namespace flexasio {
 		const Sample* const* input_samples = static_cast<const Sample* const*>(input);
 		Sample* const* output_samples = static_cast<Sample* const*>(output);
 
-		for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
-			memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
+		if (output_samples) {
+			for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
+				memset(output_samples[output_channel_index], 0, frameCount * sizeof(Sample));
+		}
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
 		Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
