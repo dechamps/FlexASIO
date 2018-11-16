@@ -44,7 +44,7 @@ namespace flexasio {
 					return std::nullopt;
 				}
 
-				Log() << "Configuration file successfully parsed as valid TOML";
+				Log() << "Configuration file successfully parsed as valid TOML: " << parseResult.value;
 
 				return parseResult.value;
 			}
