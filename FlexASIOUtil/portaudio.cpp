@@ -302,6 +302,15 @@ namespace flexasio {
 		return result.str();
 	}
 
+	std::string DescribeStreamInfo(const PaStreamInfo& info) {
+		std::stringstream result;
+		result << "PortAudio stream info version " << info.structVersion << ", input latency "
+			<< info.inputLatency << "s, output latency "
+			<< info.outputLatency << "s, sample rate "
+			<< info.sampleRate << " Hz";
+		return result.str();
+	}
+
 	void StreamDeleter::operator()(PaStream* stream) throw() {
 		Log() << "Closing PortAudio stream " << stream;
 		const auto error = Pa_CloseStream(stream);

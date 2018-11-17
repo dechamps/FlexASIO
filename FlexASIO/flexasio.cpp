@@ -514,10 +514,20 @@ namespace flexasio {
 			}
 		}
 
-		return flexasio::OpenStream(
+		auto stream = flexasio::OpenStream(
 			inputEnabled ? &input_parameters : NULL,
 			outputEnabled ? &output_parameters : NULL,
 			sampleRate, framesPerBuffer, paNoFlag, callback, callbackUserData);
+		if (stream != nullptr) {
+			const auto streamInfo = Pa_GetStreamInfo(stream.get());
+			if (streamInfo == nullptr) {
+				Log() << "Unable to get stream info";
+			}
+			else {
+				Log() << "Stream info: " << DescribeStreamInfo(*streamInfo);
+			}
+		}
+		return stream;
 	}
 
 	bool FlexASIO::CanSampleRate(ASIOSampleRate sampleRate)

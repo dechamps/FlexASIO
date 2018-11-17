@@ -57,6 +57,7 @@ namespace flexasio {
 	std::string DescribeWaveFormat(const WAVEFORMATEXTENSIBLE& waveFormatExtensible);
 
 	std::string DescribeStreamParameters(const PaStreamParameters& parameters);
+	std::string DescribeStreamInfo(const PaStreamInfo& info);
 
 	struct StreamDeleter {
 		void operator()(PaStream*) throw();
