@@ -11,6 +11,7 @@
 
 #include <windows.h>
 
+#include <atomic>
 #include <optional>
 #include <stdexcept>
 #include <vector>
@@ -116,17 +117,21 @@ namespace flexasio {
 			public:
 				RunningState(PreparedState& preparedState);
 
-				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
+				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) const;
 
 				PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
 
 			private:
+				struct SamplePosition {
+					ASIOSamples samples = { 0 };
+					ASIOTimeStamp timestamp = { 0 };
+				};
+
 				const PreparedState& preparedState;
 				const bool host_supports_timeinfo;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				size_t our_buffer_index;
-				ASIOSamples position;
-				ASIOTimeStamp position_timestamp;
+				std::atomic<SamplePosition> samplePosition;
 				Win32HighResolutionTimer win32HighResolutionTimer;
 				const ActiveStream activeStream;
 			};

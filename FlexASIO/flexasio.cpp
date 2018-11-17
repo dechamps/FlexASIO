@@ -692,8 +692,6 @@ namespace flexasio {
 	FlexASIO::PreparedState::RunningState::RunningState(PreparedState& preparedState) :
 		preparedState(preparedState),
 		our_buffer_index(0),
-		position(Int64ToASIO<ASIOSamples>(0)),
-		position_timestamp(Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000)),
 		host_supports_timeinfo([&] {
 		Log() << "Checking if the host supports time info";
 		const bool result = preparedState.callbacks.asioMessage &&
@@ -779,6 +777,8 @@ namespace flexasio {
 				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * outputSampleSize);
 		}
 
+		auto currentSamplePosition = samplePosition.load();
+
 		if (!host_supports_timeinfo)
 		{
 			Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << our_buffer_index;
@@ -789,8 +789,8 @@ namespace flexasio {
 		{
 			ASIOTime time = { 0 };
 			time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid;
-			time.timeInfo.samplePosition = position;
-			time.timeInfo.systemTime = position_timestamp;
+			time.timeInfo.samplePosition = currentSamplePosition.samples;
+			time.timeInfo.systemTime = currentSamplePosition.timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
 			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << DescribeASIOTime(time) << ")";
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
@@ -798,9 +798,10 @@ namespace flexasio {
 		}
 
 		std::swap(locked_buffer_index, our_buffer_index);
-		position = Int64ToASIO<ASIOSamples>(ASIOToInt64(position) + frameCount);
-		position_timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
-		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ASIOToInt64(position) << ", timestamp: " << ASIOToInt64(position_timestamp);
+		currentSamplePosition.samples = Int64ToASIO<ASIOSamples>(ASIOToInt64(currentSamplePosition.samples) + frameCount);
+		currentSamplePosition.timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
+		samplePosition.store(currentSamplePosition);
+		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ASIOToInt64(currentSamplePosition.timestamp);
 
 		return paContinue;
 	}
@@ -816,11 +817,12 @@ namespace flexasio {
 		return runningState->GetSamplePosition(sPos, tStamp);
 	}
 
-	void FlexASIO::PreparedState::RunningState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
+	void FlexASIO::PreparedState::RunningState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) const
 	{
-		*sPos = position;
-		*tStamp = position_timestamp;
-		Log() << "Returning: sample position " << ASIOToInt64(position) << ", timestamp " << ASIOToInt64(position_timestamp);
+		const auto currentSamplePosition = samplePosition.load();
+		*sPos = currentSamplePosition.samples;
+		*tStamp = currentSamplePosition.timestamp;
+		Log() << "Returning: sample position " << ASIOToInt64(*sPos) << ", timestamp " << ASIOToInt64(*tStamp);
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
