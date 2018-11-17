@@ -194,20 +194,50 @@ namespace flexasio {
 	const FlexASIO::SampleType FlexASIO::int32 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
 	const FlexASIO::SampleType FlexASIO::int24 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
 	const FlexASIO::SampleType FlexASIO::int16 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
-
-	FlexASIO::SampleType FlexASIO::ParseSampleType(const std::string_view str) {
-		static const bool bigEndian = GetEndianness() == Endianness::BIG;
-		static const std::vector<std::pair<std::string_view, SampleType>> sampleTypes = {
+	const std::pair<std::string_view, FlexASIO::SampleType> FlexASIO::sampleTypes[] = {
 			{"Float32", float32},
 			{"Int32", int32},
 			{"Int24", int24},
 			{"Int16", int16},
-		};
+	};
+
+	FlexASIO::SampleType FlexASIO::ParseSampleType(const std::string_view str) {
+		static const bool bigEndian = GetEndianness() == Endianness::BIG;
 		const auto sampleType = Find(str, sampleTypes);
 		if (!sampleType.has_value()) {
 			throw std::runtime_error(std::string("Invalid '") + std::string(str) + "' sample type - valid values are " + Join(sampleTypes, ", ", [](const auto& item) { return std::string("'") + std::string(item.first) + "'"; }));
 		}
 		return *sampleType;
+	}
+
+	std::optional<FlexASIO::SampleType> FlexASIO::WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat) {
+		if (waveFormat.SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) return float32;
+		if (waveFormat.SubFormat == KSDATAFORMAT_SUBTYPE_PCM) {
+			for (const auto& sampleType : sampleTypes) {
+				const auto bits = sampleType.second.size * 8;
+				if (bits == waveFormat.Samples.wValidBitsPerSample) return sampleType.second;
+				if (bits == waveFormat.Format.wBitsPerSample) return sampleType.second;
+			}
+		}
+		return std::nullopt;
+	}
+
+	FlexASIO::SampleType FlexASIO::SelectSampleType(const Config::Stream& streamConfig, const PaHostApiTypeId hostApiTypeId, const std::optional<WAVEFORMATEXTENSIBLE>& deviceFormat) {
+		if (streamConfig.sampleType.has_value()) {
+			Log() << "Selecting sample type from configuration";
+			return ParseSampleType(*streamConfig.sampleType);
+		}
+		if (hostApiTypeId == paWASAPI && streamConfig.wasapiExclusiveMode) {
+			Log() << "WASAPI Exclusive mode detected";
+			if (deviceFormat.has_value()) {
+				Log() << "Selecting sample type from device format";
+				const auto sampleType = WaveFormatToSampleType(*deviceFormat);
+				if (sampleType.has_value()) return *sampleType;
+			}
+			Log() << "Unable to select sample type from device format, falling back";
+		}
+		Log() << "Selecting default sample type";
+		return float32;
 	}
 
 	std::string FlexASIO::DescribeSampleType(const SampleType& sampleType) {
@@ -253,27 +283,27 @@ namespace flexasio {
 		outputFormat(outputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, outputDevice->index) : std::nullopt),
 		inputSampleType([&]() -> std::optional<SampleType> {
 		if (!inputDevice.has_value()) return std::nullopt;
-		SampleType sampleType;
 		try {
-			sampleType = config.input.sampleType.has_value() ? ParseSampleType(*config.input.sampleType) : float32;
+			Log() << "Selecting input sample type";
+			const auto sampleType = SelectSampleType(config.input, hostApi.info.type, inputFormat);
+			Log() << "Selected input sample type: " << DescribeSampleType(sampleType);
+			return sampleType;
 		}
 		catch (const std::exception& exception) {
 			throw std::runtime_error(std::string("Could not select input sample type: ") + exception.what());
 		}
-		Log() << "Selected input sample type: " << DescribeSampleType(sampleType);
-		return sampleType;
 	}()),
 		outputSampleType([&]() -> std::optional<SampleType> {
 		if (!outputDevice.has_value()) return std::nullopt;
-		SampleType sampleType;
 		try {
-			sampleType = config.output.sampleType.has_value() ? ParseSampleType(*config.output.sampleType) : float32;
+			Log() << "Selecting output sample type";
+			const auto sampleType = SelectSampleType(config.output, hostApi.info.type, outputFormat);
+			Log() << "Selected output sample type: " << DescribeSampleType(sampleType);
+			return sampleType;
 		}
 		catch (const std::exception& exception) {
 			throw std::runtime_error(std::string("Could not select output sample type: ") + exception.what());
 		}
-		Log() << "Selected output sample type: " << DescribeSampleType(sampleType);
-		return sampleType;
 	}()),
 		sampleRate(GetDefaultSampleRate(inputDevice, outputDevice))
 	{

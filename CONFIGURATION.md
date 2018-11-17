@@ -246,7 +246,9 @@ Example:
 sampleType = "Int16"
 ```
 
-The default value is `Float32`.
+The default value is `Float32`, except in WASAPI Exclusive mode, where FlexASIO
+will try to guess the native sample type of the hardware and use that as the
+default.
 
 #### Option `suggestedLatencySeconds`
 
