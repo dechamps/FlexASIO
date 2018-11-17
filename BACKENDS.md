@@ -41,6 +41,10 @@ pipeline. In particular, choice of backend can affect:
   one they expect.
 - **Latency:** depending on the backend, the audio pipeline might include
   additional layers of buffering that incur additional latency.
+- **Latency reporting:** some backends are better than others at reporting the
+  end-to-end latency of the entire audio pipeline. Some backends underestimate
+  their own total latency, resulting in FlexASIO reporting misleading latency
+  numbers.
 - **Exclusivity:** some backends will seize complete control of the hardware
   device, preventing any other application from using it.
 - **Audio processing:** some backends will automatically apply additional
@@ -69,6 +73,11 @@ Exclusive, WDM-KS) can achieve an actual latency below 20 ms.
 audio processing at a low level in the audio driver, or baked into the hardware
 itself ([DSP][]). Choice of backend cannot affect such processing.
 
+**Note:** none of the backends seem to be capable of taking the hardware itself
+into account when reporting latency. So, for example, when playing audio over
+Bluetooth, the reported latency will not take the Bluetooth stack into account,
+and will therefore be grossly underestimated.
+
 ## MME backend
 
 [Multimedia Extensions][] is the first audio API that was introduced in Windows,
@@ -83,6 +92,10 @@ conversion, mixing, and APOs. As a result it is extremely permissive when it
 comes to audio formats. It should be expected to behave just like a typical
 Windows application would. Its latency should be expected to be mediocre at
 best, as MME was never designed for low-latency operation.
+
+Latency numbers reported by MME do not seem to take the Windows audio pipeline
+into account. This means the reported latency is underestimated by at least 20
+ms, if not more.
 
 **Note:** the channel count exposed by FlexASIO when using MME can be a bit odd.
 For example, it might expose 8 channels for a 5.1 output, downmixing the rear
@@ -133,6 +146,9 @@ also be helpful in applications where fidelity to the original signal is of the
 utmost importance, and in fact, this mode can be used for "bit-perfect"
 operation. However, since mixing is bypassed, other applications cannot use the
 audio device at the same time.
+
+In both modes, the latency numbers reported by WASAPI appear to be more reliable
+than other backends.
 
 **Note:** FlexASIO will show channel names (e.g. "Front left") when the WASAPI
 backend is used. Channel names are not shown when using other backends due to
