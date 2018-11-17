@@ -90,16 +90,20 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t bufferSetCount, size_t channelCount, size_t bufferSizeInSamples, size_t sampleSize);
+				Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInSamples, size_t inputSampleSize, size_t outputSampleSize);
 				~Buffers();
-				uint8_t* GetBuffer(size_t bufferSetIndex, size_t channelIndex) { return buffers.data() + bufferSetIndex * GetBufferSetSizeInBytes() + channelIndex * GetBufferSizeInBytes(); }
+				uint8_t* GetInputBuffer(size_t bufferSetIndex, size_t channelIndex) { return buffers.data() + bufferSetIndex * GetBufferSetSizeInBytes() + channelIndex * GetInputBufferSizeInBytes(); }
+				uint8_t* GetOutputBuffer(size_t bufferSetIndex, size_t channelIndex) { return GetInputBuffer(bufferSetIndex, inputChannelCount) + channelIndex * GetOutputBufferSizeInBytes(); }
 				size_t GetBufferSetSizeInBytes() const { return buffers.size() / bufferSetCount; }
-				size_t GetBufferSizeInBytes() const { return GetBufferSetSizeInBytes() / channelCount; }
-				size_t GetSampleSize() const { return GetBufferSizeInBytes() / bufferSizeInSamples; }
+				size_t GetInputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInSamples * inputSampleSize; }
+				size_t GetOutputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInSamples * outputSampleSize; }
 
 				const size_t bufferSetCount;
-				const size_t channelCount;
+				const size_t inputChannelCount;
+				const size_t outputChannelCount;
 				const size_t bufferSizeInSamples;
+				const size_t inputSampleSize;
+				const size_t outputSampleSize;
 
 				// This is a giant buffer containing all ASIO buffers. It is organized as follows:
 				// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
@@ -129,9 +133,6 @@ namespace flexasio {
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
 
-			bool IsInputEnabled() const;
-			bool IsOutputEnabled() const;
-
 			FlexASIO& flexASIO;
 			const ASIOSampleRate sampleRate;
 			const ASIOCallbacks callbacks;
@@ -152,6 +153,7 @@ namespace flexasio {
 		static const SampleType int24;
 		static const SampleType int16;
 		static SampleType ParseSampleType(std::string_view str);
+		static std::string DescribeSampleType(const SampleType&);
 
 		int GetInputChannelCount() const;
 		int GetOutputChannelCount() const;
@@ -162,7 +164,6 @@ namespace flexasio {
 
 		const HWND windowHandle = nullptr;
 		const Config config;
-		const SampleType sampleType;
 
 		PortAudioLogger portAudioLogger;
 		PortAudioHandle portAudioHandle;
@@ -172,6 +173,8 @@ namespace flexasio {
 		const std::optional<Device> outputDevice;
 		const std::optional<WAVEFORMATEXTENSIBLE> inputFormat;
 		const std::optional<WAVEFORMATEXTENSIBLE> outputFormat;
+		const std::optional<SampleType> inputSampleType;
+		const std::optional<SampleType> outputSampleType;
 
 		ASIOSampleRate sampleRate = 0;
 

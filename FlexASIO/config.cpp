@@ -98,13 +98,13 @@ namespace flexasio {
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
 			SetOption(table, "device", stream.device);
 			SetOption(table, "channels", stream.channels, ValidateChannelCount);
+			SetOption(table, "sampleType", stream.sampleType);
 			SetOption(table, "suggestedLatencySeconds", stream.suggestedLatencySeconds, ValidateSuggestedLatency);
 			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
 		}
 
 		void SetConfig(const toml::Table& table, Config& config) {
 			SetOption(table, "backend", config.backend);
-			SetOption(table, "sampleType", config.sampleType);
 			SetOption(table, "bufferSizeSamples", config.bufferSizeSamples, ValidateBufferSize);
 			ProcessTypedOption<toml::Table>(table, "input", [&](const toml::Table& table) { SetStream(table, config.input); });
 			ProcessTypedOption<toml::Table>(table, "output", [&](const toml::Table& table) { SetStream(table, config.output); });
