@@ -262,8 +262,10 @@ on reliability and latency.
 Note that this is only a hint; the resulting latency can be very different from
 the value of this option. PortAudio backends interpret this setting in
 complicated and confusing ways, so it is recommended to experiment with various
-values. For example, the WASAPI backend will interpret the value `0.0`
-specially, optimizing for low latency operation.
+values.
+
+**Note:** with WASAPI Exclusive, it is strongly recommended to set this option
+to `0.0`. Other values have been observed to make latency much worse.
 
 **Note:** the TOML parser that FlexASIO uses require all floating point values
 to have a decimal point. So, for example, `1` will not work, but `1.0` will.
