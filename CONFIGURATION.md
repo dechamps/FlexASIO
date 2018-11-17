@@ -14,6 +14,10 @@ example: `C:\Users\Your Name\FlexASIO.toml`.
 If the file is missing, this is equivalent to supplying an empty file,
 and as a result FlexASIO will use default values for everything.
 
+Configuration changes will only take effect after FlexASIO is reinitialized.
+Depending on the ASIO host application, this might require the application to be
+restarted.
+
 The configuration file is a text file that can be edited using any text editor,
 such as Notepad. The file follows the [TOML][] syntax, which is very similar to
 the syntax used for [INI files][]. Every feature described in the [official TOML documentation] should be supported.
