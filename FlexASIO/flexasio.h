@@ -48,7 +48,11 @@ namespace flexasio {
 		void ControlPanel();
 
 	private:
-		using Sample = float;
+		struct SampleType {
+			ASIOSampleType asio;
+			PaSampleFormat pa;
+			size_t size;
+		};
 
 		class PortAudioHandle {
 		public:
@@ -69,7 +73,7 @@ namespace flexasio {
 
 		class PreparedState {
 		public:
-			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks);
+			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInSamples, ASIOCallbacks* callbacks);
 			PreparedState(const PreparedState&) = delete;
 			PreparedState(PreparedState&&) = delete;
 
@@ -86,22 +90,24 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size);
+				Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size, size_t sample_size);
 				Buffers(const Buffers&) = delete;
 				Buffers(Buffers&&) = delete;
 				~Buffers();
-				Sample* getBuffer(size_t buffer, size_t channel) const { return buffers + buffer * channelCount * bufferSize + channel * bufferSize; }
-				size_t getSize() const { return bufferCount * channelCount * bufferSize; }
+				uint8_t* getBuffer(size_t buffer, size_t channel) const { return buffers + buffer * channelCount * bufferSizeInSamples * sampleSize + channel * bufferSizeInSamples * sampleSize; }
+				size_t getSizeInSamples() const { return bufferCount * channelCount * bufferSizeInSamples; }
+				size_t getSizeInBytes() const { return getSizeInSamples() * sampleSize; }
 
 				const size_t bufferCount;
 				const size_t channelCount;
-				const size_t bufferSize;
+				const size_t bufferSizeInSamples;
+				const size_t sampleSize;
 
 				// This is a giant buffer containing all ASIO buffers. It is organized as follows:
 				// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
 				// [ input channel 0 buffer 1 ] [ input channel 1 buffer 1 ] ... [ input channel N buffer 1 ] [ output channel 0 buffer 1 ] [ output channel 1 buffer 1 ] .. [ output channel N buffer 1 ]
 				// The reason why this is a giant blob is to slightly improve performance by (theroretically) improving memory locality.
-				Sample* const buffers;
+				uint8_t* const buffers;
 			};
 
 			class RunningState {
@@ -143,6 +149,12 @@ namespace flexasio {
 			std::optional<RunningState> runningState;
 		};
 
+		static const SampleType float32;
+		static const SampleType int32;
+		static const SampleType int24;
+		static const SampleType int16;
+		static SampleType ParseSampleType(std::string_view str);
+
 		int GetInputChannelCount() const;
 		int GetOutputChannelCount() const;
 		DWORD GetInputChannelMask() const;
@@ -152,6 +164,7 @@ namespace flexasio {
 
 		const HWND windowHandle = nullptr;
 		const Config config;
+		const SampleType sampleType;
 
 		PortAudioLogger portAudioLogger;
 		PortAudioHandle portAudioHandle;

@@ -7,6 +7,7 @@ namespace flexasio {
 
 	struct Config {
 		std::optional<std::string> backend;
+		std::optional<std::string> sampleType;
 		std::optional<int64_t> bufferSizeSamples;
 
 		struct Stream {

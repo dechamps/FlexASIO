@@ -47,9 +47,11 @@ pipeline. In particular, choice of backend can affect:
   processing on audio data. Specifically:
   - *Sample rate conversion:* some backends will accept any sample rate and then
     convert to whatever sample rate Windows is configured to use.
-  - *Downmixing:* likewise, some backends will accept any channel count and then
-    downmix (or maybe even upmix) to whatever channel count Windows is
-    configured to use.
+  - *Sample type conversion:* some backends will accept any sample type (16-bit
+    integer, 32-bit float, etc.) and then convert to whatever sample type
+    Windows is configured to use.
+  - *Downmixing:* some backends will accept any channel count and then downmix
+  (or maybe even upmix) to whatever channel count Windows is configured to use.
   - *Mixing:* if the backend is not exclusive (see above), audio might be mixed
     with the streams from other applications.
   - *APOs:* Hardware audio drivers can come bundled with so-called [Audio
@@ -62,12 +64,6 @@ pipeline. In particular, choice of backend can affect:
 **Note:** In addition to APOs, hardware devices can also implement additional
 audio processing at a low level in the audio driver, or baked into the hardware
 itself ([DSP][]). Choice of backend cannot affect such processing.
-
-**Note:** FlexASIO cannot (yet) provide true "bit-perfect" playback no matter
-which backend you choose, because it currently only exposes the 32-bit float
-sample format to the ASIO host application. Depending on the backend, the
-conversion to native device sample type (e.g. 16-bit signed integer) will be
-done either in PortAudio or inside the Windows audio pipeline.
 
 ## MME backend
 
@@ -127,8 +123,9 @@ entirety of the Windows audio pipeline, including mixing and APOs. As a result,
 PortAudio has a direct path to the audio hardware driver, which makes for an
 ideal setup for low latency operation. The lack of APOs in the signal path can
 also be helpful in applications where fidelity to the original signal is of the
-utmost importance. However, since mixing is bypassed, other applications cannot
-use the audio device at the same time.
+utmost importance, and in fact, this mode can be used for "bit-perfect"
+operation. However, since mixing is bypassed, other applications cannot use the
+audio device at the same time.
 
 **Note:** FlexASIO will show channel names (e.g. "Front left") when the WASAPI
 backend is used. Channel names are not shown when using other backends due to

@@ -97,6 +97,38 @@ backend = "Windows WASAPI"
 
 The default behaviour is to use DirectSound.
 
+#### Option `sampleType`
+
+*String*-typed option that determines which sample format FlexASIO will use.
+
+FlexASIO itself doesn't do any kind of sample type conversion; therefore, this
+option determines the type of samples on the ASIO side as well as the PortAudio
+side.
+
+**Note:** however, PortAudio *does* support transparent sample type conversion
+internally. If this option is set to a sample type that the device cannot be
+opened with, PortAudio will *automatically* and *implicitly* convert to the
+"closest" type that works. Sadly, this cannot be disabled, which means it's
+impossible to be sure what sample type is actually used in the PortAudio
+backend, aside from examining the log.
+
+The valid values are `Float32`, `Int32`, `Int24` and `Int16`.
+
+**Note:** it makes sense to choose a specific type when using a backend that
+goes directly to the hardware, bypassing the Windows audio engine (e.g.
+WASAPI Exclusive, WDM-KS). In other cases, it usually does not make sense to
+choose a type other than 32-bit float, because that's what the Windows audio
+pipeline uses internally, so any other type would just get converted to 32-bit
+float eventually.
+
+Example:
+
+```toml
+sampleType = "Int16"
+```
+
+The default value is `Float32`.
+
 #### Option `bufferSizeSamples`
 
 *Integer*-typed option that determines which ASIO buffer size (in samples)

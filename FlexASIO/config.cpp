@@ -104,6 +104,7 @@ namespace flexasio {
 
 		void SetConfig(const toml::Table& table, Config& config) {
 			SetOption(table, "backend", config.backend);
+			SetOption(table, "sampleType", config.sampleType);
 			SetOption(table, "bufferSizeSamples", config.bufferSizeSamples, ValidateBufferSize);
 			ProcessTypedOption<toml::Table>(table, "input", [&](const toml::Table& table) { SetStream(table, config.input); });
 			ProcessTypedOption<toml::Table>(table, "output", [&](const toml::Table& table) { SetStream(table, config.output); });
