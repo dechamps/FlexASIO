@@ -20,6 +20,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="asio.h" />
+    <ClInclude Include="endian.h" />
     <ClInclude Include="find.h" />
     <ClInclude Include="log.h" />
     <ClInclude Include="portaudio.h" />
@@ -29,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="asio.cpp" />
+    <ClCompile Include="endian.cpp" />
     <ClCompile Include="log.cpp" />
     <ClCompile Include="portaudio.cpp" />
     <ClCompile Include="shell.cpp" />

@@ -1,5 +1,6 @@
 #include "asio.h"
 
+#include "endian.h"
 #include "string.h"
 
 #include <cassert>
@@ -9,22 +10,6 @@
 #include "..\ASIOSDK2.3.1\common\asio.h"
 
 namespace flexasio {
-	namespace {
-		enum class Endianness { LITTLE, BIG };
-		Endianness GetEndianness() {
-			uint16_t uint16 = 1;
-			char bytes[sizeof uint16];
-			memcpy(bytes, &uint16, sizeof uint16);
-			if (bytes[0] == 1 && bytes[1] == 0) {
-				return Endianness::LITTLE;
-			}
-			if (bytes[0] == 0 && bytes[1] == 1) {
-				return Endianness::BIG;
-			}
-			abort();
-		}
-	}
-
 	// Somewhat surprisingly, ASIO 64-bit integer data types store the most significant 32 bits half *first*, even on little endian architectures. See the ASIO SDK documentation.
 	// On x86, which is little endian, that means we can't simply represent the value as an int64_t - we need to swap the two halves first.
 
