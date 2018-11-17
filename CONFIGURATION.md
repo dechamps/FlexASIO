@@ -57,12 +57,10 @@ backend = "Windows WASAPI"
 [input]
 wasapiExclusiveMode = true
 bufferSizeSamples = 480
-suggestedLatencySeconds = 0.0
 
 [output]
 wasapiExclusiveMode = true
 bufferSizeSamples = 480
-suggestedLatencySeconds = 0.0
 ```
 
 ## Options reference
@@ -255,17 +253,21 @@ default.
 *Floating-point*-typed option that determines the amount of audio latency (in
 seconds) that FlexASIO will "suggest" to PortAudio. In some cases this can
 influence the amount of additional buffering that will be introduced in the
-audio pipeline in addition to the ASIO buffer itself (see also the
-`bufferSizeSamples` option). As a result, this option can have a major impact
-on reliability and latency.
+audio pipeline in addition to the ASIO buffer itself. As a result, this option
+can have a major impact on reliability and latency.
 
-Note that this is only a hint; the resulting latency can be very different from
-the value of this option. PortAudio backends interpret this setting in
-complicated and confusing ways, so it is recommended to experiment with various
-values.
+**Note:** it rarely makes sense to use this option; the default value should be
+appropriate for most use cases. It usually makes more sense to adjust the ASIO
+buffer size (see `bufferSizeSamples`) instead.
 
-**Note:** with WASAPI Exclusive, it is strongly recommended to set this option
-to `0.0`. Other values have been observed to make latency much worse.
+The value of this option is only a hint; the resulting latency can be very
+different from the value of this option. PortAudio backends interpret this
+setting in complicated and confusing ways, so it is recommended to experiment
+with various values.
+
+**Note:** with WASAPI Exclusive, it is strongly recommended to leave this option
+to its default value of `0.0`. Other values have been observed to make latency
+much worse.
 
 **Note:** the TOML parser that FlexASIO uses require all floating point values
 to have a decimal point. So, for example, `1` will not work, but `1.0` will.
@@ -274,11 +276,10 @@ Example:
 
 ```toml
 [output]
-suggestedLatencySeconds = 0.01
+suggestedLatencySeconds = 0.010
 ```
 
-The default value is the ASIO buffer size divided by the sample rate; that is,
-20 ms if using the default preferred ASIO buffer size.
+The default value is `0.0`.
 
 #### Option `wasapiExclusiveMode`
 

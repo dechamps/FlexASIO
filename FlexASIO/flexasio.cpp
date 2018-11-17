@@ -452,7 +452,7 @@ namespace flexasio {
 		inputEnabled = inputEnabled && inputDevice.has_value();
 		outputEnabled = outputEnabled && outputDevice.has_value();
 
-		auto defaultSuggestedLatency = double(framesPerBuffer) / sampleRate;
+		auto defaultSuggestedLatency = 0.0;
 
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = paNonInterleaved;
