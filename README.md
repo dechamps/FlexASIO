@@ -80,11 +80,9 @@ basically a fact of life and is a problem with all audio APIs and
 drivers; the only way around it is to compensate the clock dift on the
 fly using sample rate conversion, but that's much more complicated.
 
-FlexASIO has not originally been designed with latency in mind; low latency
-operation is still a work in progress. Furthermore, the default configuration
-is optimized for ease of use and reliability, not latency. That said, it should
-be possible to achieve very low latencies through careful tuning of
-configuration settings; see the example in [CONFIGURATION](CONFIGURATION.md).
+The default configuration is optimized for ease of use and reliability, not
+latency. FlexASIO is capable of achieving very low latencies when configured
+properly; see [CONFIGURATION](CONFIGURATION.md) for an example.
 
 FlexASIO is Windows-only for now. That could change in the future, as
 PortAudio itself is cross-platform.

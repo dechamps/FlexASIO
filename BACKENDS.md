@@ -61,6 +61,10 @@ pipeline. In particular, choice of backend can affect:
 - **Feature set:** some FlexASIO features and options might not work with all
   backends.
 
+**Note:** the internal buffer size of the shared Windows audio pipeline has been
+observed to be 20 ms. This means that only exclusive backends (i.e. WASAPI
+Exclusive, WDM-KS) can achieve an actual latency below 20 ms.
+
 **Note:** In addition to APOs, hardware devices can also implement additional
 audio processing at a low level in the audio driver, or baked into the hardware
 itself ([DSP][]). Choice of backend cannot affect such processing.
@@ -116,12 +120,15 @@ sample rate of the input or output devices, as configured in the Windows sound
 settings. (Corollary: if the input and output devices are configured with
 different sample rates in Windows, WASAPI Shared won't work, period.) There is
 also no support for upmixing nor downmixing; the channel counts must match
-exactly. These limitations [are inherent to WASAPI itself][wasapisr].
+exactly. These limitations [are inherent to WASAPI itself][wasapisr]. It is
+reasonable to assume that this mode will provide the best possible latency for
+a shared backend.
 
 In *exclusive* mode, WASAPI behaves completely differently and bypasses the
 entirety of the Windows audio pipeline, including mixing and APOs. As a result,
 PortAudio has a direct path to the audio hardware driver, which makes for an
-ideal setup for low latency operation. The lack of APOs in the signal path can
+ideal setup for low latency operation - latencies in the single-digit
+milliseconds have been observed. The lack of APOs in the signal path can
 also be helpful in applications where fidelity to the original signal is of the
 utmost importance, and in fact, this mode can be used for "bit-perfect"
 operation. However, since mixing is bypassed, other applications cannot use the
@@ -144,6 +151,9 @@ similarly.
 Compared to WASAPI Exclusive, Kernel Streaming is a much older API that is
 perceived as highly complex and less reliable. WASAPI Exclusive should be
 expected to provide better results in most cases.
+
+In terms of latency, WDM-KS has been observed to perform slightly worse than
+WASAPI Exclusive, bottoming out at around 10 ms.
 
 **Note:** typically, WDM-KS will fail to initialize if the audio device is
 currently opened by any other application, even if no sound is playing.
