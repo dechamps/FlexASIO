@@ -241,11 +241,6 @@ namespace flexasio {
 
 			std::cout << std::endl;
 
-			const auto bufferSize = GetBufferSize();
-			if (!bufferSize.has_value()) return false;
-
-			std::cout << std::endl;
-
 			GetSampleRate();
 
 			std::cout << std::endl;
@@ -253,6 +248,11 @@ namespace flexasio {
 			for (const auto sampleRate : { 44100, 96000, 192000, 48000 }) {
 				if (!(CanSampleRate(sampleRate) && SetSampleRate(sampleRate) && GetSampleRate() == sampleRate) && sampleRate == 48000) return false;
 			}
+
+			std::cout << std::endl;
+
+			const auto bufferSize = GetBufferSize();
+			if (!bufferSize.has_value()) return false;
 
 			std::cout << std::endl;
 
