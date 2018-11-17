@@ -53,14 +53,13 @@ starting point for low latency operation:
 
 ```toml
 backend = "Windows WASAPI"
+bufferSizeSamples = 480
 
 [input]
 wasapiExclusiveMode = true
-bufferSizeSamples = 480
 
 [output]
 wasapiExclusiveMode = true
-bufferSizeSamples = 480
 ```
 
 ## Options reference
