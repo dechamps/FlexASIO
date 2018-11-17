@@ -47,6 +47,32 @@ namespace flexasio {
 			});
 	}
 
+	std::string GetASIOSampleTypeString(ASIOSampleType sampleType) {
+		return EnumToString(sampleType, {
+			{ASIOSTInt16MSB, "ASIOSTInt16MSB"},
+			{ASIOSTInt24MSB, "ASIOSTInt24MSB"},
+			{ASIOSTInt32MSB, "ASIOSTInt32MSB"},
+			{ASIOSTFloat32MSB, "ASIOSTFloat32MSB"},
+			{ASIOSTFloat64MSB, "ASIOSTFloat64MSB"},
+			{ASIOSTInt32MSB16, "ASIOSTInt32MSB16"},
+			{ASIOSTInt32MSB18, "ASIOSTInt32MSB18"},
+			{ASIOSTInt32MSB20, "ASIOSTInt32MSB20"},
+			{ASIOSTInt32MSB24, "ASIOSTInt32MSB24"},
+			{ASIOSTInt16LSB, "ASIOSTInt16LSB"},
+			{ASIOSTInt24LSB, "ASIOSTInt24LSB"},
+			{ASIOSTInt32LSB, "ASIOSTInt32LSB"},
+			{ASIOSTFloat32LSB, "ASIOSTFloat32LSB"},
+			{ASIOSTFloat64LSB, "ASIOSTFloat64LSB"},
+			{ASIOSTInt32LSB16, "ASIOSTInt32LSB16"},
+			{ASIOSTInt32LSB18, "ASIOSTInt32LSB18"},
+			{ASIOSTInt32LSB20, "ASIOSTInt32LSB20"},
+			{ASIOSTInt32LSB24, "ASIOSTInt32LSB24"},
+			{ASIOSTDSDInt8LSB1, "ASIOSTDSDInt8LSB1"},
+			{ASIOSTDSDInt8MSB1, "ASIOSTDSDInt8MSB1"},
+			{ASIOSTDSDInt8NER8, "ASIOSTDSDInt8NER8"},
+			});
+	}
+
 	std::string GetASIOFutureSelectorString(long selector) {
 		return EnumToString(selector, {
 			{kAsioEnableTimeCodeRead, "EnableTimeCodeRead"},

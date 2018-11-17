@@ -12,6 +12,8 @@ namespace flexasio {
 
 	std::string GetASIOErrorString(ASIOError error);
 
+	std::string GetASIOSampleTypeString(ASIOSampleType sampleType);
+
 	std::string GetASIOFutureSelectorString(long selector);
 	std::string GetASIOMessageSelectorString(long selector);
 
