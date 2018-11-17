@@ -358,7 +358,7 @@ namespace flexasio {
 		std::stringstream channel_string;
 		channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? GetInputChannelMask() : GetOutputChannelMask());
 		strcpy_s(info->name, 32, channel_string.str().c_str());
-		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << info->type;
+		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << GetASIOSampleTypeString(info->type);
 	}
 
 	Stream FlexASIO::OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
