@@ -90,24 +90,22 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t buffer_count, size_t channel_count, size_t buffer_size, size_t sample_size);
-				Buffers(const Buffers&) = delete;
-				Buffers(Buffers&&) = delete;
+				Buffers(size_t bufferSetCount, size_t channelCount, size_t bufferSizeInSamples, size_t sampleSize);
 				~Buffers();
-				uint8_t* getBuffer(size_t buffer, size_t channel) const { return buffers + buffer * channelCount * bufferSizeInSamples * sampleSize + channel * bufferSizeInSamples * sampleSize; }
-				size_t getSizeInSamples() const { return bufferCount * channelCount * bufferSizeInSamples; }
-				size_t getSizeInBytes() const { return getSizeInSamples() * sampleSize; }
+				uint8_t* GetBuffer(size_t bufferSetIndex, size_t channelIndex) { return buffers.data() + bufferSetIndex * GetBufferSetSizeInBytes() + channelIndex * GetBufferSizeInBytes(); }
+				size_t GetBufferSetSizeInBytes() const { return buffers.size() / bufferSetCount; }
+				size_t GetBufferSizeInBytes() const { return GetBufferSetSizeInBytes() / channelCount; }
+				size_t GetSampleSize() const { return GetBufferSizeInBytes() / bufferSizeInSamples; }
 
-				const size_t bufferCount;
+				const size_t bufferSetCount;
 				const size_t channelCount;
 				const size_t bufferSizeInSamples;
-				const size_t sampleSize;
 
 				// This is a giant buffer containing all ASIO buffers. It is organized as follows:
 				// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
 				// [ input channel 0 buffer 1 ] [ input channel 1 buffer 1 ] ... [ input channel N buffer 1 ] [ output channel 0 buffer 1 ] [ output channel 1 buffer 1 ] .. [ output channel N buffer 1 ]
 				// The reason why this is a giant blob is to slightly improve performance by (theroretically) improving memory locality.
-				uint8_t* const buffers;
+				std::vector<uint8_t> buffers;
 			};
 
 			class RunningState {
@@ -141,7 +139,7 @@ namespace flexasio {
 			// PortAudio buffer addresses are dynamic and are only valid for the duration of the stream callback.
 			// In contrast, ASIO buffer addresses are static and are valid for as long as the stream is running.
 			// Thus we need our own buffer on top of PortAudio's buffers. This doens't add any latency because buffers are copied immediately.
-			const Buffers buffers;
+			Buffers buffers;
 			const std::vector<ASIOBufferInfo> bufferInfos;
 
 			const Stream stream;

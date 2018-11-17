@@ -525,14 +525,13 @@ namespace flexasio {
 		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
-	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferCount, size_t channelCount, size_t bufferSizeInSamples, size_t sampleSize) :
-		bufferCount(bufferCount), channelCount(channelCount), bufferSizeInSamples(bufferSizeInSamples), sampleSize(sampleSize), buffers(new uint8_t[getSizeInBytes()]()) {
-		Log() << "Allocated " << bufferCount << " buffers, " << channelCount << " channels per buffer, " << bufferSizeInSamples << " samples per channel, " << sampleSize << " bytes per sample, memory range: " << static_cast<const void*>(buffers) << "-" << static_cast<const void*>(buffers + getSizeInBytes());
+	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t channelCount, size_t bufferSizeInSamples, size_t sampleSize) :
+		bufferSetCount(bufferSetCount), channelCount(channelCount), bufferSizeInSamples(bufferSizeInSamples), buffers(bufferSetCount * channelCount * bufferSizeInSamples * sampleSize) {
+		Log() << "Allocated " << bufferSetCount << " buffer sets, " << channelCount << " channels per buffer set, " << bufferSizeInSamples << " samples per channel, " << sampleSize << " bytes per sample, memory range: " << static_cast<const void*>(buffers.data()) << "-" << static_cast<const void*>(buffers.data() + buffers.size());
 	}
 
 	FlexASIO::PreparedState::Buffers::~Buffers() {
 		Log() << "Destroying buffers";
-		delete[] buffers;
 	}
 
 	FlexASIO::PreparedState::PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInSamples, ASIOCallbacks* callbacks) :
@@ -554,8 +553,8 @@ namespace flexasio {
 					throw ASIOException(ASE_InvalidParameter, "out of bounds output channel in createBuffers() buffer info");
 			}
 
-			uint8_t* first_half = buffers.getBuffer(0, channelIndex);
-			uint8_t* second_half = buffers.getBuffer(1, channelIndex);
+			uint8_t* first_half = buffers.GetBuffer(0, channelIndex);
+			uint8_t* second_half = buffers.GetBuffer(1, channelIndex);
 			asioBufferInfo.buffers[0] = first_half;
 			asioBufferInfo.buffers[1] = second_half;
 			Log() << "ASIO buffer #" << channelIndex << " is " << (asioBufferInfo.isInput ? "input" : "output") << " channel " << asioBufferInfo.channelNum
@@ -691,7 +690,7 @@ namespace flexasio {
 		if (statusFlags & paOutputUnderflow)
 			Log() << "OUTPUT UNDERFLOW detected (gaps were inserted in the output)";
 
-		const auto sampleSize = preparedState.buffers.sampleSize;
+		const auto sampleSize = preparedState.buffers.GetSampleSize();
 		const void* const* input_samples = static_cast<const void* const*>(input);
 		void* const* output_samples = static_cast<void* const*>(output);
 
