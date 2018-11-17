@@ -241,12 +241,16 @@ namespace flexasio {
 
 			std::cout << std::endl;
 
-			GetSampleRate();
+			const auto initialSampleRate = GetSampleRate();
+			if (!initialSampleRate.has_value()) return false;
 
 			std::cout << std::endl;
 
-			for (const auto sampleRate : { 44100, 96000, 192000, 48000 }) {
-				if (!(CanSampleRate(sampleRate) && SetSampleRate(sampleRate) && GetSampleRate() == sampleRate) && sampleRate == 48000) return false;
+			for (const auto sampleRate : { 44100.0, 48000.0, 96000.0, 192000.0, *initialSampleRate }) {
+				if (CanSampleRate(sampleRate)) {
+					if (!SetSampleRate(sampleRate)) return false;
+					if (GetSampleRate() != sampleRate) return false;
+				}
 			}
 
 			std::cout << std::endl;
