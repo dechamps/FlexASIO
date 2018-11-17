@@ -127,12 +127,27 @@ namespace flexasio {
 					ASIOTimeStamp timestamp = { 0 };
 				};
 
-				const PreparedState& preparedState;
+				class Registration {
+				public:
+					Registration(RunningState*& holder, RunningState& runningState) : holder(holder) {
+						holder = &runningState;
+					}
+					~Registration() { holder = nullptr; }
+
+				private:
+					RunningState*& holder;
+				};
+
+				void Register() { preparedState.runningState = this; }
+				void Unregister() { preparedState.runningState = nullptr; }
+
+				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				size_t our_buffer_index;
 				std::atomic<SamplePosition> samplePosition;
 				Win32HighResolutionTimer win32HighResolutionTimer;
+				Registration registration{ preparedState.runningState, *this };
 				const ActiveStream activeStream;
 			};
 
@@ -150,7 +165,12 @@ namespace flexasio {
 
 			const Stream stream;
 
-			std::optional<RunningState> runningState;
+			// RunningState will set runningState before ownedRunningState has finished constructing.
+			// This allows PreparedState to properly forward stream callbacks that might fire before RunningState construction is fully complete.
+			// (See https://github.com/dechamps/FlexASIO/issues/27)
+			// During steady-state operation, runningState just points to *ownedRunningState.
+			RunningState* runningState = nullptr;
+			std::optional<RunningState> ownedRunningState;
 		};
 
 		static const SampleType float32;

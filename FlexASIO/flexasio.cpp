@@ -695,8 +695,8 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Start()
 	{
-		if (runningState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called twice");
-		runningState.emplace(*this);
+		if (runningState != nullptr) throw ASIOException(ASE_InvalidMode, "start() called twice");
+		ownedRunningState.emplace(*this);
 	}
 
 	FlexASIO::PreparedState::RunningState::RunningState(PreparedState& preparedState) :
@@ -719,8 +719,8 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Stop()
 	{
-		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
-		runningState.reset();
+		if (runningState == nullptr) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
+		ownedRunningState.reset();
 	}
 
 	int FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
@@ -728,7 +728,7 @@ namespace flexasio {
 		PaStreamCallbackResult result = paContinue;
 		try {
 			auto& preparedState = *static_cast<PreparedState*>(userData);
-			if (!preparedState.runningState.has_value()) {
+			if (preparedState.runningState == nullptr) {
 				throw std::runtime_error("PortAudio stream callback fired in non-started state");
 			}
 			result = preparedState.runningState->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
@@ -823,7 +823,7 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 	{
-		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
+		if (runningState == nullptr) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
 		return runningState->GetSamplePosition(sPos, tStamp);
 	}
 
