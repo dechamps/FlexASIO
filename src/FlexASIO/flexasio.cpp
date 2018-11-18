@@ -102,6 +102,10 @@ namespace flexasio {
 
 		std::optional<Device> SelectDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDeviceIndex, std::optional<std::string_view> name) {
 			if (!name.has_value()) {
+				if (defaultDeviceIndex == paNoDevice) {
+					Log() << "No default device";
+					return std::nullopt;
+				}
 				Log() << "Using default device with index " << defaultDeviceIndex;
 				return Device(defaultDeviceIndex);
 			}
