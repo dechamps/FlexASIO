@@ -33,7 +33,7 @@ currently doesn't have.
 There are many reasons why FlexASIO might refuse to initialize. Sadly, the ASIO
 API doesn't provide many ways of surfacing error details to applications, and
 many applications don't display them anyway. The best way to shed light on what
-might be going on is to inspect the FlexASIO log.
+might be going on is to inspect the [FlexASIO log][logging].
 
 Otherwise, initialization failures can usually be traced back to problematic
 settings. Here are some common issues:
@@ -69,7 +69,7 @@ settings. Here are some common issues:
    which is especially problematic in Shared mode (see above). This can be
    worked around using the [`channels` configuration option][channels].
  - A **FlexASIO (or PortAudio) bug**. If you believe that is the case, please
-   file a report.
+   [file a report][report].
    - In particular, please do file a report if FlexASIO fails to initialize with
      the default configuration, as the defaults are always supposed to work on
      all systems.
@@ -104,14 +104,14 @@ two typical causes:
      deadlines, which can put too much pressure on the Windows thread scheduler
      or other parts of the system, especially when combined with expensive
      processing (see above).
- - **FlexASIO logging is enabled**.
+ - **[FlexASIO logging][logging] is enabled**.
    - FlexASIO writes to the log using blocking file I/O from critical real-time
      code paths. This can easily lead to missed deadlines, especially with small
      buffer sizes.
    - Do not forget to disable logging enabled when you don't need it.
    - To disable logging, simply delete or move the `FlexASIO.log` file.
  - A **FlexASIO (or PortAudio) bug** (or lack of optimization). If you believe
-   that is the case, please file a report.
+   that is the case, please [file a report][report].
 
 ## How to improve the latency?
 
@@ -219,8 +219,10 @@ wasapiExclusiveMode = true
 [channels]: CONFIGURATION.md#option-channels
 [device]: CONFIGURATION.md#option-device
 [CONFIGURATION]: CONFIGURATION.md
+[logging]: README.md#logging
 [issue #3]: https://github.com/dechamps/FlexASIO/issues/3
 [PortAudio]: http://www.portaudio.com/
+[report]: README.md#reporting-issues-feedback-feature-requests
 [sampleType]: CONFIGURATION.md#option-sampleType
 [suggestedLatencySeconds]: CONFIGURATION.md#option-suggestedLatencySeconds
 [wasapisr]: https://docs.microsoft.com/windows/desktop/CoreAudio/device-formats

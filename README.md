@@ -78,8 +78,8 @@ logging to it.
 Note that the contents of the log file are intended for consumption by
 developers. That said, grave errors should stick out in an obvious way
 (especially if you look towards the end of the log). If you are having
-trouble interpreting the contents of the log, feel free to ask for help
-by opening an issue (see "Reporting Issues", below).
+trouble interpreting the contents of the log, feel free to
+[ask for help][report].
 
 *Do not forget to remove the logfile once you're done with it* (or move
 it elsewhere). Indeed, logging slows down FlexASIO, which can lead to
@@ -108,13 +108,12 @@ The program is called `FlexASIOTest.exe` and can be found in the `x64`
 folder. It is a console program that should be run from the command
 line.
 
-It is a good idea to have logging enabled while running the test (see
-above).
+It is a good idea to have [logging][] enabled while running the test.
 
 Note that a successful test run does not necessarily mean FlexASIO is
 not at fault. Indeed it might be that the ASIO host application that
 you're using is triggering a pathological case in FlexASIO. If you
-suspect that's the case, please feel free to ask for help (see below).
+suspect that's the case, please feel free to [ask for help][report].
 
 ## Reporting issues, feedback, feature requests
 
@@ -123,7 +122,7 @@ FlexASIO welcomes feedback. Feel free to [file an issue][] in the
 
 When asking for help, it is strongly recommended to produce a log (see
 above) while the problem is occurring, and attach it to your report. The
-output of `FlexASIOTest` (see above), along with its log output, might
+output of [`FlexASIOTest`][test], along with its [log output][logging], might
 also help.
 
 [ASIO]: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
@@ -138,8 +137,11 @@ also help.
 [file an issue]: https://github.com/dechamps/FlexASIO/issues/new
 [GitHub]: https://github.com/dechamps/FlexASIO
 [GitHub issue tracker]: https://github.com/dechamps/FlexASIO/issues
+[logging]: #logging
 [MME]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
 [PortAudio]: http://www.portaudio.com/
 [releases]: https://github.com/dechamps/FlexASIO/releases
+[report]: #reporting-issues-feedback-feature-requests
+[test]: #test-program
 [WASAPI]: https://docs.microsoft.com/en-us/windows/desktop/coreaudio/wasapi

@@ -25,8 +25,8 @@ the syntax used for [INI files][]. Every feature described in the [official TOML
 FlexASIO will silently ignore attempts to set options that don't exist,
 so beware of typos. However, if an existing option is set to an invalid
 value (which includes using the wrong type or missing quotes), FlexASIO
-will *fail to initialize*. The FlexASIO log will contain details about what went
-wrong.
+will *fail to initialize*. The [FlexASIO log][logging] will contain details
+about what went wrong.
 
 ## Example configuration file
 
@@ -84,8 +84,8 @@ have wide-ranging consequences on the operation of the entire audio pipeline.
 For more information, see [BACKENDS][].
 
 The value of the option is matched against PortAudio host API names, as
-shown in the output of the `PortAudioDevices` program. If the specified name
-doesn't match any host API, FlexASIO will fail to initialize.
+shown in the output of the [`PortAudioDevices` program][PortAudioDevices]. If
+the specified name doesn't match any host API, FlexASIO will fail to initialize.
 
 In practice, PortAudio will recognize the following names: `MME`,
 `Windows DirectSound`, `Windows WASAPI` and `Windows WDM-KS`.
@@ -114,11 +114,12 @@ size.
 
 The ASIO buffer size is also used as the PortAudio buffer size, as FlexASIO
 bridges the two. Note that, for various technical reasons and depending on the
-backend and settings used (especially the `suggestedLatencySeconds` option),
-there are many scenarios where additional buffers will be inserted in the audio
-pipeline (either by PortAudio or by Windows itself), *in addition* to the ASIO
-buffer. This can result in overall latency being higher than what the ASIO
-buffer size alone would suggest.
+backend and settings used (especially the
+[`suggestedLatencySeconds` option][suggestedLatencySeconds]), there are many
+scenarios where additional buffers will be inserted in the audio pipeline
+(either by PortAudio or by Windows itself), *in addition* to the ASIO buffer.
+This can result in overall latency being higher than what the ASIO buffer size
+alone would suggest.
 
 Example:
 
@@ -142,16 +143,15 @@ stream or to the *output* (rendering, playback) audio stream, respectively.
 attempt to use.
 
 The value of the option is the *full name* of the device. The list of available
-device names is shown by the `PortAudioDevices` command line program which can
-be found in the FlexASIO installation folder. The value of this option must
-exactly match the "Device name" shown by `PortAudioDevices`, including any
-text in parentheses.
+device names is shown by the [`PortAudioDevices` program][PortAudioDevices]. The
+value of this option must exactly match the "Device name" shown by
+`PortAudioDevices`, including any text in parentheses.
 
-**Note:** only devices that match the selected *backend* (see above) will be
+**Note:** only devices that match the selected [*backend*][BACKENDS] will be
 considered. In other words, the "Host API name" as shown in the output of
-`PortAudioDevices` has to match the value of the `backend` option. Beware that a
-given hardware device will not necessarily have the same name under different
-backends.
+`PortAudioDevices` has to match the value of the [`backend` option][backend].
+Beware that a given hardware device will not necessarily have the same name
+under different backends.
 
 If the specified name doesn't match any device under the selected backend,
 FlexASIO will fail to initialize.
@@ -195,7 +195,7 @@ any channel count, upmixing or downmixing as necessary. Other backends might
 refuse to initialize.
 
 The value of this option must be strictly positive. To completely disable the
-input or output, set the `device` option to the empty string (see above).
+input or output, set the [`device` option][device] to the empty string.
 
 **Note:** with the WASAPI backend, setting this option has the side effect of
 disabling channel masks. This means channel names will not be shown, and the
@@ -213,8 +213,9 @@ channels = 6
 
 The default behaviour is to use the maximum channel count for the selected
 device as reported by PortAudio. This information is shown in the output of the
-`PortAudioDevice` program. Sadly, PortAudio often gets the channel count wrong,
-so setting this option explicitly might be necessary for correct operation.
+[`PortAudioDevices` program][PortAudioDevices]. Sadly, PortAudio often gets the
+channel count wrong, so setting this option explicitly might be necessary for
+correct operation.
 
 #### Option `sampleType`
 
@@ -230,16 +231,16 @@ internally. If this option is set to a sample type that the device cannot be
 opened with, PortAudio will *automatically* and *implicitly* convert to the
 "closest" type that works. Sadly, this cannot be disabled, which means it's
 impossible to be sure what sample type is actually used in the PortAudio
-backend, aside from examining the log.
+backend, aside from examining the [FlexASIO log][logging].
 
 The valid values are `Float32`, `Int32`, `Int24` and `Int16`.
 
-**Note:** it makes sense to choose a specific type when using a backend that
-goes directly to the hardware, bypassing the Windows audio engine (e.g.
-WASAPI Exclusive, WDM-KS). In other cases, it usually does not make sense to
-choose a type other than 32-bit float, because that's what the Windows audio
-pipeline uses internally, so any other type would just get converted to 32-bit
-float eventually.
+**Note:** it makes sense to choose a specific type when using a
+[backend][BACKENDS] that goes directly to the hardware, bypassing the Windows
+audio engine (e.g. WASAPI Exclusive, WDM-KS). In other cases, it usually does
+not make sense to choose a type other than 32-bit float, because that's what the
+Windows audio pipeline uses internally, so any other type would just get
+converted to 32-bit float eventually.
 
 Example:
 
@@ -261,12 +262,12 @@ can have a major impact on reliability and latency.
 
 **Note:** it rarely makes sense to use this option; the default value should be
 appropriate for most use cases. It usually makes more sense to adjust the ASIO
-buffer size (see `bufferSizeSamples`) instead.
+buffer size (see the [`bufferSizeSamples` option][bufferSizeSamples]) instead.
 
 The value of this option is only a hint; the resulting latency can be very
-different from the value of this option. PortAudio backends interpret this
-setting in complicated and confusing ways, so it is recommended to experiment
-with various values.
+different from the value of this option. PortAudio [backends][BACKENDS]
+interpret this setting in complicated and confusing ways, so it is recommended
+to experiment with various values.
 
 **Note:** with WASAPI Exclusive, it is strongly recommended to leave this option
 to its default value of `0.0`. Other values have been observed to make latency
@@ -288,10 +289,10 @@ The default value is `0.0`.
 
 *Boolean*-typed option that determines if the stream should be opened in
 *WASAPI Shared* or in *WASAPI Exclusive* mode. For more information, see
-[BACKENDS][].
+the [WASAPI backend documentation][].
 
-This option is ignored if the backend is not WASAPI. See the `backend` option,
-above.
+This option is ignored if the backend is not WASAPI. See the
+[`backend` option][backend].
 
 Example:
 
@@ -304,9 +305,16 @@ wasapiExclusiveMode = true
 
 The default behaviour is to open the stream in *shared* mode.
 
+[backend]: #option-backend
 [BACKENDS]: BACKENDS.md
+[bufferSizeSamples]: #option-bufferSizeSamples
 [configuration file]: https://en.wikipedia.org/wiki/Configuration_file
+[device]: #option-device
 [GUI]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [INI files]: https://en.wikipedia.org/wiki/INI_file
+[logging]: README.md#logging
 [official TOML documentation]: https://github.com/toml-lang/toml#toml
+[PortAudioDevices]: README.md#device-list-program
+[suggestedLatencySeconds]: #option-suggestedLatencySeconds
 [TOML]: https://en.wikipedia.org/wiki/TOML
+[WASAPI backend documentation]: BACKENDS.md#wasapi-backend

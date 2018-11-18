@@ -3,8 +3,8 @@
 This document provides background information about what FlexASIO *backends*
 are, and the differences between them. It is recommended reading for anyone
 wanting to optimize their audio pipeline. In particular, this document provides
-the necessary information to understand what the `backend` and
-`wasapiExclusiveMode` FlexASIO [configuration options][] do.
+the necessary information to understand what the [`backend`][backend] and
+[`wasapiExclusiveMode`][wasapiExclusiveMode] FlexASIO configuration options do.
 
 **Note:** this document is a work in progress, and does not go into much detail
 regarding the specific differences between the backends. For now, you will have
@@ -121,9 +121,9 @@ features and makes them available through various options (though, sadly,
 FlexASIO doesn't provide ways to leverage all these options yet).
 
 WASAPI can be used in two different modes: *shared* or *exclusive*. In FlexASIO,
-the `wasapiExclusiveMode` option determines which mode is used. The two modes
-behave very differently; in fact, they should probably be seen as two separate
-backends entirely.
+the [`wasapiExclusiveMode` option][wasapiExclusiveMode] determines which mode is
+used. The two modes behave very differently; in fact, they should probably be
+seen as two separate backends entirely.
 
 In *shared* mode, WASAPI behaves similarly to MME and DirectSound, in that the
 audio goes through most of the normal Windows audio pipeline. One important
@@ -175,7 +175,7 @@ WASAPI Exclusive, bottoming out at around 10 ms.
 currently opened by any other application, even if no sound is playing.
 Consequently, it is very likely to fail when used on the default device. This
 issue can be worked around by pointing FlexASIO to another, idle device using
-the `device` configuration option.
+the [`device` option][device].
 
 The alternative [ASIO4ALL][] and [ASIO2KS][] universal ASIO drivers use Kernel
 Streaming.
@@ -184,12 +184,14 @@ Streaming.
 [ASIO2KS]: http://www.asio2ks.de/
 [ASIO4ALL]: http://www.asio4all.org/
 [Audio Processing Objects]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-processing-object-architecture
-[configuration options]: CONFIGURATION.md
+[backend]: CONFIGURATION.md#option-backend
+[device]: CONFIGURATION.md#option-device
 [DirectSound]: https://en.wikipedia.org/wiki/DirectSound
 [DSP]: https://en.wikipedia.org/wiki/Digital_signal_processor
 [Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
 [Multimedia Extensions]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [portaudio]: http://www.portaudio.com/
+[wasapiExclusiveMode]: CONFIGURATION.md#option-wasapiExclusiveMode
 [Windows Audio Session API]: https://docs.microsoft.com/en-us/windows/desktop/coreaudio/wasapi
 [Windows Driver Model]: https://en.wikipedia.org/wiki/Windows_Driver_Model
 [wasapisr]: https://docs.microsoft.com/windows/desktop/CoreAudio/device-formats
