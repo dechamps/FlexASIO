@@ -1,93 +1,65 @@
-# FlexASIO README
-Author: Etienne Dechamps <etienne@edechamps.fr>
-Website: https://github.com/dechamps/FlexASIO
-License: MIT
+# FlexASIO, the flexible universal ASIO driver
+*Brought to you by [Etienne Dechamps][] - [GitHub][]*
 
 **If you are looking for an installer, see the
-[GitHub releases page](https://github.com/dechamps/FlexASIO/releases).**
+[GitHub releases page][releases].**
 
-## DESCRIPTION
+## Description
 
-Background: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
+FlexASIO is a *universal [ASIO][] driver*, meaning that it is not tied to
+specific audio hardware. Other examples of universal ASIO drivers include
+[ASIO4ALL][], [ASIO2KS][], [ASIO2WASAPI][].
 
-FlexASIO is an universal ASIO driver, meaning that it is not tied to
-specific audio hardware. Other examples of universal ASIO drivers
-include ASIO4ALL, ASIO2KS, ASIO2WASAPI. Universal ASIO drivers use
-hardware-agnostic audio interfaces provided by the operating system to
-produce and consume sound. The typical use case for such a driver is
-to make ASIO usable with audio hardware that doesn't come with its own
-ASIO drivers.
+Universal ASIO drivers use hardware-agnostic audio interfaces provided by the
+operating system to produce and consume sound. The typical use case for such a
+driver is to make ASIO usable with audio hardware that doesn't come with its own
+ASIO drivers, or where the bundled ASIO drivers don't provide the desired
+functionality.
 
 While ASIO4ALL and ASIO2KS use a low-level Windows audio API known as
-"Kernel Streaming" (also called "DirectKS", "WDM-KS") to operate, and
-ASIO2WASAPI uses WASAPI (in exclusive mode), FlexASIO uses an
-intermediate library called PortAudio that itself supports a large
-number of operating system sound APIs, including MME, DirectSound,
-WDM-KS, as well as the modern WASAPI interface that was released with
-Windows Vista (ironically, PortAudio can use ASIO as well, nicely
-closing the circle). Thus FlexASIO can be used to interface with any
-sound API available on your system. For more information, see [BACKENDS][].
+*[Kernel Streaming]* (also called "DirectKS", "WDM-KS") to operate, and
+ASIO2WASAPI uses [WASAPI][] (in exclusive mode only), FlexASIO differentiates
+itself by using an intermediate library called [PortAudio][] that itself
+supports a large number of operating system sound APIs, which includes Kernel
+Streaming and WASAPI (in shared *and* exclusive mode), but also more the more
+mundane APIs [MME][] and [DirectSound][]. Thus FlexASIO can be used to interface
+with *any* sound API available on a Windows system. For more information, see the
+[backends documentation][BACKENDS].
 
-PortAudio: http://www.portaudio.com/
+Among other things, this makes it possible to emulate a typical Windows
+application that opens an audio device in *shared mode*. This means other
+applications can use the same audio devices at the same time, with the
+Windows audio engine mixing the various audio streams. Others universal ASIO
+drivers do not offer this functionality as they always open audio devices in
+*exclusive mode*.
 
-In particular, FlexASIO makes it possible to open an audio device in so-called
-"shared" mode like any other application, which makes it an interesting
-alternative to ASIO4ALL/ASIO2KS/ASIO2WASAPI, as these drivers always open
-devices in exclusive mode without giving you a choice.
+## Requirements
 
-FlexASIO should be able to run on any version of Microsoft Windows,
-even very old ones, at least in theory. It is compatible with 32-bit and
-64-bit ASIO host applications.
+ - Windows Vista or later
+ - Compatible with 32-bit and 64-bit ASIO Host Applications
 
-## HOW TO USE
+## Usage
 
-Just install it and FlexASIO should magically appear in the ASIO
-driver list in any ASIO-enabled application. There is no graphical configuration
-interface (see "caveats" below), but there is a way to change some FlexASIO
-settings through a configuration file; see [CONFIGURATION](CONFIGURATION.md)
-for details.
+After running the [installer][releases], FlexASIO should appear in the ASIO
+driver list of any ASIO Host Application (e.g. Cubase, Sound Forge, Room EQ
+Wizard).
 
-To uninstall FlexASIO, just use the Windows "add/remove programs"
-control panel.
+The default settings are as follows:
 
-If you don't want to use the installer, you can install it manually by
-simply registering the DLL:
+ - DirectSound [backend][BACKENDS]
+ - Uses the Windows default recording and playback audio devices
+ - 32-bit float sample type
+ - 20 ms "preferred" buffer size
 
-    regsvr32 FlexASIO_x64.dll
-    regsvr32 FlexASIO_x86.dll
+All of the above can be customized using a [configuration file][CONFIGURATION].
 
-Use the `/u` switch to unregister.
+For more advanced use cases, such as low-latency operation and bit-perfect
+streaming, see the [FAQ][].
 
-## LIMITATIONS AND CAVEATS
+## Troubleshooting
 
-This an early version of FlexASIO. It has not been tested in any extensive way,
-and is certainly not free from bugs and crashes.
-
-FlexASIO doesn't come with a graphical configuration interface ("control
-panel" in ASIO terminology). The main reason is because programming GUIs
-takes a lot of time that I don't have (especially since I have zero
-experience in GUI programming). However, FlexASIO does come with a
-[configuration file](CONFIGURATION.md) that can be used to customize a number of
-settings, such as the audio backend used (WASAPI, DirectSound, etc.) and audio
-device selection. Like most of FlexASIO, this is very much a work in progress
-and more options will be added over time.
-
-If you are using different hardware devices for input and output, each
-with its own hardware clock, you are likely to end up with glitches
-sooner or later during playback. How soon depends on the amount of
-clock drift between the two hardware devices. Note that this is
-basically a fact of life and is a problem with all audio APIs and
-drivers; the only way around it is to compensate the clock dift on the
-fly using sample rate conversion, but that's much more complicated.
-
-The default configuration is optimized for ease of use and reliability, not
-latency. FlexASIO is capable of achieving very low latencies when configured
-properly; see [CONFIGURATION](CONFIGURATION.md) for an example.
-
-FlexASIO is Windows-only for now. That could change in the future, as
-PortAudio itself is cross-platform.
-
-## TROUBLESHOOTING
+The [FAQ][] provides information on how to deal with common issues. Otherwise,
+FlexASIO provides a number of troubleshooting tools described below.
 
 ### Logging
 
@@ -99,8 +71,8 @@ that FlexASIO is using the device and audio format that you expect).
 
 To enable logging, simply create an empty file (e.g. with Notepad) named
 `FlexASIO.log` directly under your user directory (e.g.
-`C:\Users\Your Name Here\FlexASIO.log`). Then restart your ASIO host
-application. FlexASIO will notice the presence of the file and start
+`C:\Users\Your Name Here\FlexASIO.log`). Then restart your ASIO Host
+Application. FlexASIO will notice the presence of the file and start
 logging to it.
 
 Note that the contents of the log file are intended for consumption by
@@ -111,7 +83,7 @@ by opening an issue (see "Reporting Issues", below).
 
 *Do not forget to remove the logfile once you're done with it* (or move
 it elsewhere). Indeed, logging slows down FlexASIO, which can lead to
-buffer underruns (audio glitches). The logfile can also grow to a very
+discontinuities (audio glitches). The logfile can also grow to a very
 large size over time.
 
 ### Device list program
@@ -144,13 +116,30 @@ not at fault. Indeed it might be that the ASIO host application that
 you're using is triggering a pathological case in FlexASIO. If you
 suspect that's the case, please feel free to ask for help (see below).
 
-## REPORTING ISSUES
+## Reporting issues, feedback, feature requests
 
-Just use the
-[GitHub issue tracker](https://github.com/dechamps/FlexASIO/issues).
+FlexASIO welcomes feedback. Feel free to [file an issue][] in the
+[GitHub issue tracker][], if there isn't one already.
+
 When asking for help, it is strongly recommended to produce a log (see
-above) while the problem is occuring, and attach it to your report. The
+above) while the problem is occurring, and attach it to your report. The
 output of `FlexASIOTest` (see above), along with its log output, might
 also help.
 
+[ASIO]: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
+[ASIO2KS]: http://www.asio2ks.de/
+[ASIO2WASAPI]: https://github.com/levmin/ASIO2WASAPI
+[ASIO4ALL]: http://www.asio4all.org/
 [BACKENDS]: BACKENDS.md
+[CONFIGURATION]: CONFIGURATION.md
+[DirectSound]: https://en.wikipedia.org/wiki/DirectSound
+[Etienne Dechamps]: mailto:etienne@edechamps.fr
+[FAQ]: FAQ.md
+[file an issue]: https://github.com/dechamps/FlexASIO/issues/new
+[GitHub]: https://github.com/dechamps/FlexASIO
+[GitHub issue tracker]: https://github.com/dechamps/FlexASIO/issues
+[MME]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
+[Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
+[PortAudio]: http://www.portaudio.com/
+[releases]: https://github.com/dechamps/FlexASIO/releases
+[WASAPI]: https://docs.microsoft.com/en-us/windows/desktop/coreaudio/wasapi
