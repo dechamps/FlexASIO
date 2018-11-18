@@ -233,7 +233,12 @@ opened with, PortAudio will *automatically* and *implicitly* convert to the
 impossible to be sure what sample type is actually used in the PortAudio
 backend, aside from examining the [FlexASIO log][logging].
 
-The valid values are `Float32`, `Int32`, `Int24` and `Int16`.
+The valid values are:
+
+ - `Float32`: 32-bit IEEE floating point
+ - `Int32`: 32-bit signed integer
+ - `Int24`: 24-bit signed integer
+ - `Int16`: 16-bit signed integer
 
 **Note:** it makes sense to choose a specific type when using a
 [backend][BACKENDS] that goes directly to the hardware, bypassing the Windows
