@@ -29,7 +29,7 @@ with *any* sound API available on a Windows system. For more information, see th
 Among other things, this makes it possible to emulate a typical Windows
 application that opens an audio device in *shared mode*. This means other
 applications can use the same audio devices at the same time, with the
-Windows audio engine mixing the various audio streams. Others universal ASIO
+Windows audio engine mixing the various audio streams. Other universal ASIO
 drivers do not offer this functionality as they always open audio devices in
 *exclusive mode*.
 
