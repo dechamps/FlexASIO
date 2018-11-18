@@ -48,8 +48,8 @@ Source:"build\x86\Release\FlexASIOTest_x86.exe"; DestDir: "{app}\x86"; Flags: ig
 Source:"build\x86\Release\FlexASIOTest_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\PortAudioDevices_x86.exe"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
 Source:"build\x86\Release\PortAudioDevices_x86.pdb"; DestDir: "{app}\x86"; Flags: ignoreversion 32bit
-Source:"LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
-Source:"*.md"; DestDir:"{app}"; Flags: ignoreversion
+Source:"..\LICENSE.txt"; DestDir:"{app}"; Flags: ignoreversion
+Source:"..\*.md"; DestDir:"{app}"; Flags: ignoreversion
 
 ; PortAudio library.
 ; Note that these are not actually build artefacts; you need to put them there manually.
