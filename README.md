@@ -120,10 +120,9 @@ suspect that's the case, please feel free to [ask for help][report].
 FlexASIO welcomes feedback. Feel free to [file an issue][] in the
 [GitHub issue tracker][], if there isn't one already.
 
-When asking for help, it is strongly recommended to produce a log (see
-above) while the problem is occurring, and attach it to your report. The
-output of [`FlexASIOTest`][test], along with its [log output][logging], might
-also help.
+When asking for help, it is strongly recommended to [produce a log][logging]
+while the problem is occurring, and attach it to your report. The output of
+[`FlexASIOTest`][test], along with its log output, might also help.
 
 [ASIO]: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
 [ASIO2KS]: http://www.asio2ks.de/
