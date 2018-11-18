@@ -250,6 +250,7 @@ converted to 32-bit float eventually.
 Example:
 
 ```toml
+[output]
 sampleType = "Int16"
 ```
 
