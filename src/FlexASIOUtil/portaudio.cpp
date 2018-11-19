@@ -268,7 +268,7 @@ namespace flexasio {
 		if (waveFormat.wFormatTag == WAVE_FORMAT_EXTENSIBLE) {
 			result << ", " << waveFormatExtensible.Samples.wValidBitsPerSample << " valid bits per sample, "
 				<< "channel mask " << GetWaveFormatChannelMaskString(waveFormatExtensible.dwChannelMask) << ", "
-				<< "format " << GetWaveSubFormatString(waveFormatExtensible.SubFormat);
+				<< "subformat " << GetWaveSubFormatString(waveFormatExtensible.SubFormat);
 		}
 
 		return result.str();
