@@ -21,9 +21,9 @@ While ASIO4ALL and ASIO2KS use a low-level Windows audio API known as
 ASIO2WASAPI uses [WASAPI][] (in exclusive mode only), FlexASIO differentiates
 itself by using an intermediate library called [PortAudio][] that itself
 supports a large number of operating system sound APIs, which includes Kernel
-Streaming and WASAPI (in shared *and* exclusive mode), but also more the more
-mundane APIs [MME][] and [DirectSound][]. Thus FlexASIO can be used to interface
-with *any* sound API available on a Windows system. For more information, see the
+Streaming and WASAPI (in shared *and* exclusive mode), but also the more mundane
+APIs [MME][] and [DirectSound][]. Thus FlexASIO can be used to interface with
+*any* sound API available on a Windows system. For more information, see the
 [backends documentation][BACKENDS].
 
 Among other things, this makes it possible to emulate a typical Windows
