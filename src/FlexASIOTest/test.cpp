@@ -275,6 +275,7 @@ namespace flexasio {
 				{
 					std::scoped_lock bufferSwitchCountLock(bufferSwitchCountMutex);
 					++bufferSwitchCount;
+					std::cout << "Buffer switch count: " << bufferSwitchCount << std::endl;
 				}
 				bufferSwitchCountCondition.notify_all();
 			};
