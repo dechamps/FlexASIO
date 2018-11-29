@@ -323,7 +323,8 @@ namespace flexasio {
 
 			std::cout << std::endl;
 
-			constexpr size_t bufferSwitchCountThreshold = 10;
+			// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
+			constexpr size_t bufferSwitchCountThreshold = 30;
 			std::cout << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches..." << std::endl;
 			std::cout << std::endl;
 
