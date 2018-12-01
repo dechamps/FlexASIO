@@ -14,7 +14,7 @@ vcpkg install portaudio:x64-windows portaudio:x86-windows tinytoml:x64-windows t
 ```
 
 You will also need to provide the [ASIO SDK][]. Download the SDK and put the
-ASIOSDK2.3.1 folder inside the FlexASIO `src` folder.
+ASIOSDK2.3.2 folder inside the FlexASIO `src` folder.
 
 The installer can be built using [Inno Setup][].
 

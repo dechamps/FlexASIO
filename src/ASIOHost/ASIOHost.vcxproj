@@ -19,17 +19,17 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\ASIOSDK2.3.1\common\asio.cpp" />
-    <ClCompile Include="..\ASIOSDK2.3.1\host\asiodrivers.cpp" />
-    <ClCompile Include="..\ASIOSDK2.3.1\host\pc\asiolist.cpp" />
+    <ClCompile Include="..\ASIOSDK2.3.2\common\asio.cpp" />
+    <ClCompile Include="..\ASIOSDK2.3.2\host\asiodrivers.cpp" />
+    <ClCompile Include="..\ASIOSDK2.3.2\host\pc\asiolist.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ASIOSDK2.3.1\common\asio.h" />
-    <ClInclude Include="..\ASIOSDK2.3.1\common\asiosys.h" />
-    <ClInclude Include="..\ASIOSDK2.3.1\common\iasiodrv.h" />
-    <ClInclude Include="..\ASIOSDK2.3.1\host\asiodrivers.h" />
-    <ClInclude Include="..\ASIOSDK2.3.1\host\ginclude.h" />
-    <ClInclude Include="..\ASIOSDK2.3.1\host\pc\asiolist.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\common\asio.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\common\asiosys.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\common\iasiodrv.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\host\asiodrivers.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\host\ginclude.h" />
+    <ClInclude Include="..\ASIOSDK2.3.2\host\pc\asiolist.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>

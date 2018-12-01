@@ -7,7 +7,7 @@
 #include "../FlexASIOUtil/asio.h"
 #include "../FlexASIOUtil/log.h"
 
-#include "..\ASIOSDK2.3.1\common\iasiodrv.h"
+#include "..\ASIOSDK2.3.2\common\iasiodrv.h"
 
 #include <atlbase.h>
 #include <atlcom.h>

@@ -9,7 +9,7 @@
   <PropertyGroup />
   <ItemDefinitionGroup>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)ASIOSDK2.3.1\common;$(SolutionDir)ASIOSDK2.3.1\host;$(SolutionDir)ASIOSDK2.3.1\host\pc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)ASIOSDK2.3.2\common;$(SolutionDir)ASIOSDK2.3.2\host;$(SolutionDir)ASIOSDK2.3.2\host\pc;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level2</WarningLevel>
       <TreatWarningAsError>false</TreatWarningAsError>

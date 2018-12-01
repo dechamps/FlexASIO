@@ -4,8 +4,8 @@
 
 #include "../FlexASIOUtil/portaudio.h"
 
-#include "..\ASIOSDK2.3.1\common\asiosys.h"
-#include "..\ASIOSDK2.3.1\common\asio.h"
+#include "..\ASIOSDK2.3.2\common\asiosys.h"
+#include "..\ASIOSDK2.3.2\common\asio.h"
 
 #include <portaudio.h>
 
