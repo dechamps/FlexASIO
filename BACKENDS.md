@@ -91,7 +91,9 @@ MME goes through the entire Windows audio pipeline, including sample rate
 conversion, mixing, and APOs. As a result it is extremely permissive when it
 comes to audio formats. It should be expected to behave just like a typical
 Windows application would. Its latency should be expected to be mediocre at
-best, as MME was never designed for low-latency operation.
+best, as MME was never designed for low-latency operation. This is compounded by
+the fact that MME appears to [behave very poorly][issue30] with small (<40 ms)
+buffer sizes.
 
 Latency numbers reported by MME do not seem to take the Windows audio pipeline
 into account. This means the reported latency is underestimated by at least 20
@@ -108,9 +110,12 @@ games.
 
 In practice, DirectSound should be expected to behave somewhat similarly to MME.
 It will accept most reasonable audio formats. Audio goes through the entire
-Windows pipeline, converting as necessary. One would expect latency to be
-somewhat better than MME, though it's not clear if that's really the case in
-practice.
+Windows pipeline, converting as necessary.
+
+One would expect latency to be somewhat better than MME, though it's not clear
+if that's really the case in practice. The DirectSound backend has been observed
+to [behave very poorly][issue29] with small (<=30 ms) buffer sizes on the input
+side, making it a poor choice for low-latency capture use cases.
 
 ## WASAPI backend
 
@@ -188,6 +193,8 @@ Streaming.
 [device]: CONFIGURATION.md#option-device
 [DirectSound]: https://en.wikipedia.org/wiki/DirectSound
 [DSP]: https://en.wikipedia.org/wiki/Digital_signal_processor
+[issue29]: https://github.com/dechamps/FlexASIO/issues/29
+[issue30]: https://github.com/dechamps/FlexASIO/issues/30
 [Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
 [Multimedia Extensions]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [portaudio]: http://www.portaudio.com/

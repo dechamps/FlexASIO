@@ -121,10 +121,15 @@ scenarios where additional buffers will be inserted in the audio pipeline
 This can result in overall latency being higher than what the ASIO buffer size
 alone would suggest.
 
+**Note:** each [backend][BACKENDS] has its own inherent limitations when it
+comes to buffer sizes. It has been observed that some backends (especially
+DirectSound and MME) simply cannot work properly with small buffer sizes (e.g.
+30 ms or less).
+
 Example:
 
 ```toml
-bufferSizeSamples = 480 # 10 ms at 48 kHz
+bufferSizeSamples = 3840 # 80 ms at 48 kHz
 ```
 
 The default behaviour is to advertise minimum, preferred and maximum buffer
