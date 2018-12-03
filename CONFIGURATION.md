@@ -128,7 +128,7 @@ bufferSizeSamples = 480 # 10 ms at 48 kHz
 ```
 
 The default behaviour is to advertise minimum, preferred and maximum buffer
-sizes of 1 ms, 20 ms and 1 s, respectively. The resulting sizes in samples are
+sizes of 1 ms, 40 ms and 1 s, respectively. The resulting sizes in samples are
 computed based on whatever sample rate the driver is set to when the application
 enquires.
 

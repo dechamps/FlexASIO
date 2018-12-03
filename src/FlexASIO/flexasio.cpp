@@ -357,7 +357,7 @@ namespace flexasio {
 			Log() << "Calculating default buffer size based on " << sampleRate << " Hz sample rate";
 			*minSize = long(sampleRate * 0.001); // 1 ms, there's basically no chance we'll get glitch-free streaming below this
 			*maxSize = long(sampleRate); // 1 second, more would be silly
-			*preferredSize = long(sampleRate * 0.02); // typical - 20 ms
+			*preferredSize = long(sampleRate * 0.04); // 40 ms - see https://github.com/dechamps/FlexASIO/issues/29
 			*granularity = 1; // Don't care
 		}
 		Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
