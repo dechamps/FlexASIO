@@ -277,6 +277,7 @@ namespace flexasio {
 		auto device = SelectDevice(hostApi.index, hostApi.info.defaultInputDevice, config.input.device);
 		if (device.has_value()) {
 			Log() << "Selected input device: " << *device;
+			if (device->info.maxInputChannels < 1) throw std::runtime_error("Selected input device has no input channels");
 		}
 		else {
 			Log() << "No input device, proceeding without input";
@@ -288,6 +289,7 @@ namespace flexasio {
 		auto device = SelectDevice(hostApi.index, hostApi.info.defaultOutputDevice, config.output.device);
 		if (device.has_value()) {
 			Log() << "Selected output device: " << *device;
+			if (device->info.maxOutputChannels < 1)	throw std::runtime_error("Selected output device has no output channels");
 		}
 		else {
 			Log() << "No output device, proceeding without output";
