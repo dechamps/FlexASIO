@@ -205,6 +205,7 @@ namespace flexasio {
 		const std::optional<SampleType> outputSampleType;
 
 		ASIOSampleRate sampleRate = 0;
+		bool sampleRateWasAccessed = false;
 
 		std::optional<PreparedState> preparedState;
 	};

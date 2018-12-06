@@ -566,6 +566,7 @@ namespace flexasio {
 
 	void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRateResult)
 	{
+		sampleRateWasAccessed = true;
 		*sampleRateResult = sampleRate;
 		Log() << "Returning sample rate: " << *sampleRateResult;
 	}
@@ -577,6 +578,8 @@ namespace flexasio {
 		if (!(requestedSampleRate > 0 && requestedSampleRate < (std::numeric_limits<ASIOSampleRate>::max)())) {
 			throw ASIOException(ASE_InvalidParameter, "setSampleRate() called with an invalid sample rate");
 		}
+
+		sampleRateWasAccessed = true;
 
 		if (requestedSampleRate == sampleRate) {
 			Log() << "Requested sampled rate is equal to current sample rate";
@@ -598,6 +601,11 @@ namespace flexasio {
 
 		if (preparedState.has_value()) {
 			throw ASIOException(ASE_InvalidMode, "createBuffers() called multiple times");
+		}
+
+		if (!sampleRateWasAccessed) {
+			// See https://github.com/dechamps/FlexASIO/issues/31
+			Log() << "WARNING: ASIO host application never enquired about sample rate, and therefore cannot know we are running at " << sampleRate << " Hz!";
 		}
 
 		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
