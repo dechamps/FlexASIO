@@ -583,12 +583,12 @@ namespace flexasio {
 			return;
 		}
 
+		sampleRate = requestedSampleRate;
 		if (preparedState.has_value())
 		{
 			Log() << "Sending a reset request to the host as it's not possible to change sample rate while streaming";
 			preparedState->RequestReset();
 		}
-		sampleRate = requestedSampleRate;
 	}
 
 	void FlexASIO::CreateBuffers(ASIOBufferInfo* bufferInfos, long numChannels, long bufferSize, ASIOCallbacks* callbacks) {
