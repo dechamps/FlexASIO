@@ -51,6 +51,8 @@ namespace flexasio {
 
 	namespace {
 
+		std::optional<ASIOSampleRate> previousSampleRate;
+
 		void LogPortAudioApiList() {
 			const auto pa_api_count = Pa_GetHostApiCount();
 			for (PaHostApiIndex pa_api_index = 0; pa_api_index < pa_api_count; ++pa_api_index) {
@@ -140,6 +142,15 @@ namespace flexasio {
 		}
 
 		ASIOSampleRate GetDefaultSampleRate(const std::optional<Device>& inputDevice, const std::optional<Device>& outputDevice) {
+			if (previousSampleRate.has_value()) {
+				// Work around a REW bug. See https://github.com/dechamps/FlexASIO/issues/31
+				// Another way of doing this would have been to only pick this sample rate if the application
+				// didn't enquire about sample rate at createBuffers() time, but that doesn't work as well because
+				// the default buffer size would be wrong.
+				Log() << "Using default sample rate " << *previousSampleRate << " Hz from a previous instance of the driver";
+				return *previousSampleRate;
+			}
+
 			ASIOSampleRate sampleRate = 0;
 			if (inputDevice.has_value()) {
 				sampleRate = (std::max)(sampleRate, inputDevice->info.defaultSampleRate);
@@ -567,6 +578,7 @@ namespace flexasio {
 	void FlexASIO::GetSampleRate(ASIOSampleRate* sampleRateResult)
 	{
 		sampleRateWasAccessed = true;
+		previousSampleRate = sampleRate;
 		*sampleRateResult = sampleRate;
 		Log() << "Returning sample rate: " << *sampleRateResult;
 	}
@@ -580,6 +592,7 @@ namespace flexasio {
 		}
 
 		sampleRateWasAccessed = true;
+		previousSampleRate = requestedSampleRate;
 
 		if (requestedSampleRate == sampleRate) {
 			Log() << "Requested sampled rate is equal to current sample rate";
