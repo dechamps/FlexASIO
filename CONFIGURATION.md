@@ -52,7 +52,7 @@ channels = 6
 wasapiExclusiveMode = true
 ```
 
-Experimentally, the following set of options have been shown to be a good
+Experimentally, the following set of options has been shown to be a good
 starting point for low latency operation:
 
 ```toml
@@ -60,9 +60,11 @@ backend = "Windows WASAPI"
 bufferSizeSamples = 480
 
 [input]
+suggestedLatencySeconds = 0.0
 wasapiExclusiveMode = true
 
 [output]
+suggestedLatencySeconds = 0.0
 wasapiExclusiveMode = true
 ```
 
@@ -103,37 +105,34 @@ The default behaviour is to use DirectSound.
 *Integer*-typed option that determines which ASIO buffer size (in samples)
 FlexASIO will suggest to the ASIO Host application.
 
-This option can have a major impact on reliability and latency. Smaller buffers
-will reduce latency but will increase the likelihood of glitches/discontinuities
-(buffer overflow/underrun) if the audio pipeline is not fast enough.
+This option, in combination with
+[`suggestedLatencySeconds`][suggestedLatencySeconds],
+can have a major impact on reliability and latency. Smaller buffers will reduce
+latency but will increase the likelihood of glitches/discontinuities (buffer
+overflow/underrun) if the audio pipeline is not fast enough.
 
 Note that some host applications might already provide a user-controlled buffer
 size setting; in this case, there should be no need to use this option. It is
 useful only when the application does not provide a way to customize the buffer
 size.
 
-The ASIO buffer size is also used as the PortAudio buffer size, as FlexASIO
-bridges the two. Note that, for various technical reasons and depending on the
-backend and settings used (especially the
+The ASIO buffer size is also used as the PortAudio "front" (user) buffer size,
+as FlexASIO bridges the two. Note that, for various technical reasons and
+depending on the backend and settings used (especially the
 [`suggestedLatencySeconds` option][suggestedLatencySeconds]), there are many
 scenarios where additional buffers will be inserted in the audio pipeline
 (either by PortAudio or by Windows itself), *in addition* to the ASIO buffer.
 This can result in overall latency being higher than what the ASIO buffer size
 alone would suggest.
 
-**Note:** each [backend][BACKENDS] has its own inherent limitations when it
-comes to buffer sizes. It has been observed that some backends (especially
-DirectSound and MME) simply cannot work properly with small buffer sizes (e.g.
-30 ms or less).
-
 Example:
 
 ```toml
-bufferSizeSamples = 3840 # 80 ms at 48 kHz
+bufferSizeSamples = 1920 # 40 ms at 48 kHz
 ```
 
 The default behaviour is to advertise minimum, preferred and maximum buffer
-sizes of 1 ms, 40 ms and 1 s, respectively. The resulting sizes in samples are
+sizes of 1 ms, 20 ms and 1 s, respectively. The resulting sizes in samples are
 computed based on whatever sample rate the driver is set to when the application
 enquires.
 
@@ -163,9 +162,14 @@ FlexASIO will fail to initialize.
 
 If the option is set to the empty string (`""`), no device will be used; that
 is, the input or output side of the stream will be disabled, and all other
-options in the section will be ignored. Note that making your ASIO Host
-Application unselect all input channels or all output channels will achieve the
-same result.
+options in the section will be ignored. Making your ASIO Host Application
+unselect all input channels or all output channels will achieve the same result.
+
+**Note:** using both input and output devices (full duplex mode) puts additional
+constraints on the [backend][BACKENDS] due to the need to synchronize buffer
+delivery. It makes discontinuities (glitches) more likely and increases the
+lowest achievable latency. It is recommended to only use a single device (half
+duplex mode) if possible.
 
 Example:
 
@@ -266,41 +270,46 @@ default.
 #### Option `suggestedLatencySeconds`
 
 *Floating-point*-typed option that determines the amount of audio latency (in
-seconds) that FlexASIO will "suggest" to PortAudio. In some cases this can
-influence the amount of additional buffering that will be introduced in the
-audio pipeline in addition to the ASIO buffer itself. As a result, this option
-can have a major impact on reliability and latency.
-
-**Note:** it rarely makes sense to use this option; the default value should be
-appropriate for most use cases. It usually makes more sense to adjust the ASIO
-buffer size (see the [`bufferSizeSamples` option][bufferSizeSamples]) instead.
+seconds) that FlexASIO will "suggest" to PortAudio. Typically, this has the
+effect of increasing the amount of additional buffering that PortAudio will
+introduce in the audio pipeline in addition to the ASIO buffer itself (see
+[`bufferSizeSamples`][bufferSizeSamples]). As a result, this option can have a
+major impact on reliability and latency.
 
 The value of this option is only a hint; the resulting latency can be very
 different from the value of this option. PortAudio [backends][BACKENDS]
-interpret this setting in complicated and confusing ways, so it is recommended
-to experiment with various values.
+interpret this setting in complicated and confusing ways, and it interacts
+strongly with the ASIO buffer size, so it is recommended to experiment with
+various values.
 
-**Note:** with WASAPI Exclusive, when using only a single device (i.e. input
-*or* output), it is recommended to leave this option to its default value of
-`0.0`. Other values have been observed to make latency much worse.
+Setting this option to `0.0` will request the lowest possible latency that
+FlexASIO will provide.
 
-**Note:** the TOML parser that FlexASIO uses require all floating point values
-to have a decimal point. So, for example, `1` will not work, but `1.0` will.
+**Note:** using both input and output devices (full duplex mode) puts more
+buffering constraints on the backend due to synchronization requirements. Using
+a low suggested latency value in this case is likely to cause audio
+discontinuities (glitches). This is less of a problem when using a single device
+(half duplex mode).
+
+**Note:** when using the [WASAPI backend][WASAPI] in Exclusive mode and a single
+device (input *or* output), a zero suggested latency is
+[handled specially][portaudio287] and makes the backend use a different
+buffering scheme, dramatically reducing latency.
 
 Example:
 
 ```toml
 [output]
-suggestedLatencySeconds = 0.010
+suggestedLatencySeconds = 0.050 # 50 ms
 ```
 
-The default value is `0.0`.
+The default value is 3 times the ASIO buffer length.
 
 #### Option `wasapiExclusiveMode`
 
 *Boolean*-typed option that determines if the stream should be opened in
 *WASAPI Shared* or in *WASAPI Exclusive* mode. For more information, see
-the [WASAPI backend documentation][].
+the [WASAPI backend documentation][WASAPI].
 
 This option is ignored if the backend is not WASAPI. See the
 [`backend` option][backend].
@@ -325,7 +334,8 @@ The default behaviour is to open the stream in *shared* mode.
 [INI files]: https://en.wikipedia.org/wiki/INI_file
 [logging]: README.md#logging
 [official TOML documentation]: https://github.com/toml-lang/toml#toml
+[portaudio287]: https://app.assembla.com/spaces/portaudio/tickets/287-wasapi-interprets-a-zero-suggestedlatency-in-surprising-ways
 [PortAudioDevices]: README.md#device-list-program
 [suggestedLatencySeconds]: #option-suggestedLatencySeconds
 [TOML]: https://en.wikipedia.org/wiki/TOML
-[WASAPI backend documentation]: BACKENDS.md#wasapi-backend
+[WASAPI]: BACKENDS.md#wasapi-backend

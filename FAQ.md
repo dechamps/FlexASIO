@@ -98,12 +98,18 @@ two typical causes:
    poorly optimized, and the pipeline is unable to keep up.
  - **Overly tight scheduling constraints**, which make it impossible to run the
    audio streaming event code (callback) in time.
-   - This is especially likely to occur when using very small buffer sizes (e.g.
-     10 ms or less).
+   - This is especially likely to occur when using very small buffer sizes
+     (smaller than the default values). See the
+     [`bufferSizeSamples`][bufferSizeSamples] and
+     [`suggestedLatencySeconds`][suggestedLatencySeconds] options.
    - Small buffer sizes require audio streaming events to fire with very tight
      deadlines, which can put too much pressure on the Windows thread scheduler
      or other parts of the system, especially when combined with expensive
      processing (see above).
+   - Scheduling constraints are tighter when using both input and output
+     devices (full duplex mode), even if both devices are backed by the same
+     hardware. Problems are less likely to occur when using only the input, or
+     only the output (half duplex mode).
  - **[FlexASIO logging][logging] is enabled**.
    - FlexASIO writes to the log using blocking file I/O from critical real-time
      code paths. This can easily lead to missed deadlines, especially with small
@@ -130,6 +136,9 @@ ASIO Host Applications make it possible to change the ASIO Buffer Size in the
 application itself. For those that don't, use the
 [`bufferSizeSamples` option][bufferSizeSamples].
 
+Finally, the [`suggestedLatencySeconds`][suggestedLatencySeconds] option should
+be set to the smallest possible value that works.
+
 In the end, a typical low-latency configuration might look something like this:
 
 ```toml
@@ -137,9 +146,11 @@ backend = "Windows WASAPI"
 bufferSizeSamples = 480 # 10 ms at 48 kHz
 
 [input]
+suggestedLatencySeconds = 0.0
 wasapiExclusiveMode = true
 
 [output]
+suggestedLatencySeconds = 0.0
 wasapiExclusiveMode = true
 ```
 
@@ -160,7 +171,7 @@ There are also a couple of things to keep in mind when interpreting latency
 numbers:
 
  - The reported latency **can be higher than the ASIO buffer size**.
-   - This is perfectly normal with some configurations, because some backends
+   - This is perfectly normal in most configurations, because some backends
      will add additional buffering on top of the ASIO buffer itself.
  - The reported latency usually **does not take the underlying hardware into
    account**.

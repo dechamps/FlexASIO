@@ -49,7 +49,7 @@ The default settings are as follows:
  - DirectSound [backend][BACKENDS]
  - Uses the Windows default recording and playback audio devices
  - 32-bit float sample type
- - 40 ms "preferred" buffer size
+ - 20 ms "preferred" buffer size
 
 All of the above can be customized using a [configuration file][CONFIGURATION].
 

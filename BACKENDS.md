@@ -35,7 +35,8 @@ choice of backend can have a large impact on the behaviour of the overall audio
 pipeline. In particular, choice of backend can affect:
 
 - **Reliability:** some backends can be more likely to work than others, because
-  of the quality and maturity of the code involved.
+  of the quality and maturity of the code involved. Some might be more likely
+  to introduce audio discontinuities (glitches).
 - **Ease of use:** Some backends are more "opinionated" than others about when
   it comes to which audio formats (i.e. sample rate, number of channels) they
   will accept. They might refuse to work if the audio format is not exactly the
@@ -93,8 +94,8 @@ conversion, mixing, and APOs. As a result it is extremely permissive when it
 comes to audio formats. It should be expected to behave just like a typical
 Windows application would. Its latency should be expected to be mediocre at
 best, as MME was never designed for low-latency operation. This is compounded by
-the fact that MME appears to [behave very poorly][issue30] with small (<40 ms)
-buffer sizes.
+the fact that MME appears to [behave very poorly][issue30] with small buffer
+sizes.
 
 Latency numbers reported by MME do not seem to take the Windows audio pipeline
 into account. This means the reported latency is underestimated by at least 20
@@ -118,8 +119,8 @@ Windows pipeline, converting as necessary.
 
 One would expect latency to be somewhat better than MME, though it's not clear
 if that's really the case in practice. The DirectSound backend has been observed
-to [behave very poorly][issue29] with small (<=30 ms) buffer sizes on the input
-side, making it a poor choice for low-latency capture use cases.
+to [behave very poorly][issue29] with small buffer sizes on the input side,
+making it a poor choice for low-latency capture use cases.
 
 Modern versions of Windows implement the DirectSound API by using WASAPI
 internally, making this backend a "second-class citizen" compared to WASAPI and

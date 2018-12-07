@@ -370,7 +370,7 @@ namespace flexasio {
 			Log() << "Calculating default buffer size based on " << sampleRate << " Hz sample rate";
 			*minSize = long(sampleRate * 0.001); // 1 ms, there's basically no chance we'll get glitch-free streaming below this
 			*maxSize = long(sampleRate); // 1 second, more would be silly
-			*preferredSize = long(sampleRate * 0.04); // 40 ms - see https://github.com/dechamps/FlexASIO/issues/29
+			*preferredSize = long(sampleRate * 0.02); // 20 ms
 			*granularity = 1; // Don't care
 		}
 		Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
@@ -474,6 +474,7 @@ namespace flexasio {
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = paNonInterleaved;
 		common_parameters.hostApiSpecificStreamInfo = NULL;
+		common_parameters.suggestedLatency = 3 * framesPerBuffer / sampleRate;
 
 		PaWasapiStreamInfo common_wasapi_stream_info = { 0 };
 		if (hostApi.info.type == paWASAPI) {
@@ -490,7 +491,7 @@ namespace flexasio {
 			input_parameters.device = inputDevice->index;
 			input_parameters.channelCount = GetInputChannelCount();
 			input_parameters.sampleFormat |= inputSampleType->pa;
-			input_parameters.suggestedLatency = config.input.suggestedLatencySeconds.has_value() ? *config.input.suggestedLatencySeconds : defaultSuggestedLatency;
+			if (config.input.suggestedLatencySeconds.has_value()) input_parameters.suggestedLatency = *config.input.suggestedLatencySeconds;
 			if (hostApi.info.type == paWASAPI)
 			{
 				const auto inputChannelMask = GetInputChannelMask();
@@ -514,7 +515,7 @@ namespace flexasio {
 			output_parameters.device = outputDevice->index;
 			output_parameters.channelCount = GetOutputChannelCount();
 			output_parameters.sampleFormat |= outputSampleType->pa;
-			output_parameters.suggestedLatency = config.output.suggestedLatencySeconds.has_value() ? *config.output.suggestedLatencySeconds : defaultSuggestedLatency;
+			if (config.output.suggestedLatencySeconds.has_value()) output_parameters.suggestedLatency = *config.output.suggestedLatencySeconds;
 			if (hostApi.info.type == paWASAPI)
 			{
 				const auto outputChannelMask = GetOutputChannelMask();
