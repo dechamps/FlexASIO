@@ -1,0 +1,18 @@
+add_library(FlexASIOUtil_log STATIC log.cpp)
+target_link_libraries(FlexASIOUtil_log
+	PRIVATE FlexASIOUtil_shell
+	PRIVATE FlexASIOUtil_version
+)
+
+add_library(FlexASIOUtil_portaudio STATIC portaudio.cpp)
+target_link_libraries(FlexASIOUtil_portaudio PRIVATE portaudio::portaudio)
+
+add_library(FlexASIOUtil_shell STATIC shell.cpp)
+
+add_library(FlexASIOUtil_version STATIC version.cpp)
+target_compile_definitions(FlexASIOUtil_version
+	# TODO: implement version information
+	PRIVATE FLEXASIO_GITSTR="unknown"
+	PRIVATE FLEXASIO_VERSION="unknown"
+	PRIVATE FLEXASIO_BUILD_TIMESTR="unknown"
+)

@@ -1,6 +1,8 @@
 #include "version.h"
 
+#ifndef FLEXASIO_VERSION
 #include "..\build\version.h"
+#endif
 
 namespace flexasio {
 	const char gitstr[] = FLEXASIO_GITSTR;

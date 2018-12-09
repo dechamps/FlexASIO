@@ -18,6 +18,13 @@ ASIOSDK2.3.2 folder inside the FlexASIO `src` folder.
 
 The installer can be built using [Inno Setup][].
 
+## CMake
+
+There is some work-in-progress support for CMake. It is not really usable yet.
+
+Note that vcpkg needs to be integrated with CMake using a toolchain file for the
+CMake build to work. See the vcpkg documentation for details.
+
 [ASIO SDK]: http://www.steinberg.net/en/company/developer.html
 [Inno Setup]: http://www.jrsoftware.org/isdl.php
 [PortAudio]: http://www.portaudio.com/
