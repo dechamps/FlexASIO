@@ -10,4 +10,5 @@ set(CMAKE_CXX_STANDARD 17)
 add_definitions(-DBUILD_CONFIGURATION="$<CONFIG>" -DBUILD_PLATFORM="unknown")
 
 add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
+add_subdirectory(FlexASIO)
 add_subdirectory(PortAudioDevices)

@@ -1,3 +1,7 @@
+add_library(FlexASIOUtil_asio STATIC asio.cpp)
+
+add_library(FlexASIOUtil_endian STATIC endian.cpp) # TODO: use CMake TestBigEndian module
+
 add_library(FlexASIOUtil_log STATIC log.cpp)
 target_link_libraries(FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_shell
@@ -9,6 +13,7 @@ target_link_libraries(FlexASIOUtil_portaudio PRIVATE portaudio::portaudio)
 
 add_library(FlexASIOUtil_shell STATIC shell.cpp)
 
+# TODO: versioninfo.rc
 add_library(FlexASIOUtil_version STATIC version.cpp)
 target_compile_definitions(FlexASIOUtil_version
 	# TODO: implement version information
