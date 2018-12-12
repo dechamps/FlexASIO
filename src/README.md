@@ -22,8 +22,10 @@ The installer can be built using [Inno Setup][].
 
 There is some work-in-progress support for CMake. It is not really usable yet.
 
-Note that vcpkg needs to be integrated with CMake using a toolchain file for the
-CMake build to work. See the vcpkg documentation for details.
+Note that vcpkg needs to be integrated with CMake for the build to work. You
+can use the method described in the vcpkg documentation, or you might find it
+easier to simply set the `VCPKG_DIR` environment variable to your vcpkg
+directory.
 
 [ASIO SDK]: http://www.steinberg.net/en/company/developer.html
 [Inno Setup]: http://www.jrsoftware.org/isdl.php
