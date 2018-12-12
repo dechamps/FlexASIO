@@ -4,6 +4,10 @@ project(FlexASIO DESCRIPTION "FlexASIO Universal ASIO Driver")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
 find_package(portaudio REQUIRED)
 
+# Put EXEs and DLLs in the same directory so that EXEs can find their dependencies.
+set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+
 set(CMAKE_CXX_STANDARD 17)
 
 # TODO: fix the platform. Might be easier to do this using the preprocessor, as CMake doesn't seem to provide a variable for the architecture.
