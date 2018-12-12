@@ -4,7 +4,8 @@ add_custom_command(
 	MAIN_DEPENDENCY flexasio.idl
 )
 
-add_library(FlexASIO MODULE cflexasio.cpp comdll.cpp config.cpp dll.def flexasio.cpp flexasio.idl flexasio.rc)
+# Note: this is SHARED, not MODULE, otherwise CMake refuses to link that in FlexASIOTest.
+add_library(FlexASIO SHARED cflexasio.cpp comdll.cpp config.cpp dll.def flexasio.cpp flexasio.idl flexasio.rc)
 target_compile_definitions(FlexASIO PRIVATE _WINDLL)
 target_include_directories(FlexASIO PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(FlexASIO
