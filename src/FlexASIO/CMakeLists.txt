@@ -1,6 +1,14 @@
+if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+	set(FLEXASIO_MIDL_ENV_FLAG /env win32)
+elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
+	set(FLEXASIO_MIDL_ENV_FLAG /env amd64)
+else()
+	set(FLEXASIO_MIDL_ENV_FLAG)
+endif()
+
 add_custom_command(
 	OUTPUT flexasio_h.h
-	COMMAND midl /nologo /header flexasio_h.h /env x64 "${CMAKE_CURRENT_LIST_DIR}/flexasio.idl"  # TODO: fix hardcoded architecture
+	COMMAND midl /nologo /header flexasio_h.h ${FLEXASIO_MIDL_ENV_FLAG} "${CMAKE_CURRENT_LIST_DIR}/flexasio.idl"
 	MAIN_DEPENDENCY flexasio.idl
 )
 
