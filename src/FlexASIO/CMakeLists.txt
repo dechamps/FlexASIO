@@ -6,21 +6,46 @@ else()
 	set(FLEXASIO_MIDL_ENV_FLAG)
 endif()
 
+# TODO: missing TLB output
 add_custom_command(
 	OUTPUT flexasio_h.h
 	COMMAND midl /nologo /header flexasio_h.h ${FLEXASIO_MIDL_ENV_FLAG} "${CMAKE_CURRENT_LIST_DIR}/flexasio.idl"
 	MAIN_DEPENDENCY flexasio.idl
 )
 
+add_library(FlexASIO_cflexasio cflexasio.cpp flexasio.idl)
+target_include_directories(FlexASIO_cflexasio PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+target_link_libraries(FlexASIO_cflexasio
+	PRIVATE FlexASIO_flexasio
+	PRIVATE FlexASIOUtil_asio
+	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIOUtil_shell
+)
+
+add_library(FlexASIO_comdll comdll.cpp)
+target_compile_definitions(FlexASIO_comdll PRIVATE _WINDLL)
+
+add_library(FlexASIO_config config.cpp)
+target_link_libraries(FlexASIO_config
+	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIOUtil_shell
+	PRIVATE portaudio::portaudio # TODO: use a cleaner way to find tinytoml
+)
+
+add_library(FlexASIO_flexasio flexasio.cpp)
+target_link_libraries(FlexASIO_flexasio
+	PUBLIC FlexASIO_config
+	PUBLIC FlexASIOUtil_portaudio
+	PRIVATE FlexASIOUtil_asio
+	PRIVATE FlexASIOUtil_log
+	PRIVATE portaudio::portaudio
+	PRIVATE winmm
+)
+
 # Note: this is SHARED, not MODULE, otherwise CMake refuses to link that in FlexASIOTest.
-add_library(FlexASIO SHARED cflexasio.cpp comdll.cpp config.cpp dll.def flexasio.cpp flexasio.idl flexasio.rc)
-target_compile_definitions(FlexASIO PRIVATE _WINDLL)
+add_library(FlexASIO SHARED dll.def flexasio.rc flexasio.idl)
 target_include_directories(FlexASIO PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
 target_link_libraries(FlexASIO
-	PRIVATE portaudio::portaudio
-	PRIVATE FlexASIOUtil_asio
-	PRIVATE FlexASIOUtil_endian
-	PRIVATE FlexASIOUtil_log
-	PRIVATE FlexASIOUtil_portaudio
-	PRIVATE winmm
+	PRIVATE FlexASIO_cflexasio
+	PRIVATE FlexASIO_comdll
 )
