@@ -34,7 +34,7 @@ add_library(FlexASIO_config STATIC EXCLUDE_FROM_ALL config.cpp)
 target_link_libraries(FlexASIO_config
 	PRIVATE FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_shell
-	PRIVATE portaudio::portaudio # TODO: use a cleaner way to find tinytoml
+	PRIVATE tinytoml::toml
 )
 
 add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)

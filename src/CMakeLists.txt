@@ -15,6 +15,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
 find_package(portaudio REQUIRED)
+find_package(tinytoml REQUIRED)
 
 # Put EXEs and DLLs in the same directory so that EXEs can find their dependencies.
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
