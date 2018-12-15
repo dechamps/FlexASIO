@@ -1,5 +1,5 @@
 [uuid(DCF8D18D-F399-49C8-8286-E84CA8AD7729)]
-library audiolysAPODll
+library LFlexASIO
 {
 	[object, uuid(1C653355-6D85-43AD-9674-05D4549F19C1)]
 	interface IFlexASIO : IUnknown
