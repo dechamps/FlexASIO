@@ -1,6 +1,8 @@
 #include <winver.h>  // Required, otherwise VERSIONINFO doesn't work
 
+#ifndef FLEXASIO_VERSION
 #include "build/version.h"
+#endif
 
 VS_VERSION_INFO VERSIONINFO
 {

@@ -16,11 +16,4 @@ target_link_libraries(FlexASIOUtil_portaudio PUBLIC portaudio::portaudio)
 
 add_library(FlexASIOUtil_shell STATIC shell.cpp)
 
-# TODO: versioninfo.rc
 add_library(FlexASIOUtil_version STATIC version.cpp)
-target_compile_definitions(FlexASIOUtil_version
-	# TODO: implement version information
-	PRIVATE FLEXASIO_GITSTR="unknown"
-	PRIVATE FLEXASIO_VERSION="unknown"
-	PRIVATE FLEXASIO_BUILD_TIMESTR="unknown"
-)
