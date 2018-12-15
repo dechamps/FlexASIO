@@ -2,4 +2,4 @@
 
 #define FLEXASIO_GITSTR "unknown"
 #define FLEXASIO_VERSION "unknown"
-#define FLEXASIO_BUILD_TIMESTR "unknown"
+#define FLEXASIO_BUILD_TIMESTR "@FLEXASIO_BUILD_TIMESTR@"

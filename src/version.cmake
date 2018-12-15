@@ -1,1 +1,2 @@
-configure_file("${CMAKE_CURRENT_LIST_DIR}/version.in.h" "${OUTPUT_HEADER_FILE}")
+string(TIMESTAMP FLEXASIO_BUILD_TIMESTR UTC)
+configure_file("${CMAKE_CURRENT_LIST_DIR}/version.in.h" "${OUTPUT_HEADER_FILE}" @ONLY ESCAPE_QUOTES)
