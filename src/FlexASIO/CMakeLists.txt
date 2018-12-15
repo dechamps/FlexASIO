@@ -6,18 +6,23 @@ else()
 	set(FLEXASIO_MIDL_ENV_FLAG)
 endif()
 
-# TODO: missing TLB output
 add_custom_command(
-	OUTPUT flexasio_h.h
+	OUTPUT flexasio_h.h flexasio_i.c flexasio.tlb
 	COMMAND midl /nologo /header flexasio_h.h ${FLEXASIO_MIDL_ENV_FLAG} "${CMAKE_CURRENT_LIST_DIR}/flexasio.idl"
 	MAIN_DEPENDENCY flexasio.idl
 )
+add_library(FlexASIO_idl INTERFACE)
+target_sources(FlexASIO_idl
+	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/flexasio_h.h"
+	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/flexasio.tlb"
+)
+target_include_directories(FlexASIO_idl INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
 
-add_library(FlexASIO_cflexasio cflexasio.cpp flexasio.idl)
-target_include_directories(FlexASIO_cflexasio PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+add_library(FlexASIO_cflexasio cflexasio.cpp)
 target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_flexasio
 	PRIVATE FlexASIOUtil_asio
+	PRIVATE FlexASIO_idl
 	PRIVATE FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_shell
 )
@@ -43,9 +48,9 @@ target_link_libraries(FlexASIO_flexasio
 )
 
 # Note: this is SHARED, not MODULE, otherwise CMake refuses to link that in FlexASIOTest.
-add_library(FlexASIO SHARED dll.def flexasio.rc flexasio.idl)
-target_include_directories(FlexASIO PRIVATE "${CMAKE_CURRENT_BINARY_DIR}")
+add_library(FlexASIO SHARED dll.def flexasio.rc)
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
 	PRIVATE FlexASIO_comdll
+	PRIVATE FlexASIO_idl
 )
