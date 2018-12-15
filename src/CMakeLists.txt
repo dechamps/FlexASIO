@@ -22,7 +22,7 @@ set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
-
+add_compile_options(/WX) # TODO: fix /W4, /permissive- and /analyze issues
 add_definitions(-DBUILD_CONFIGURATION="$<CONFIG>" -DBUILD_PLATFORM="${FLEXASIO_PLATFORM}")
 
 add_subdirectory(ASIOHost EXCLUDE_FROM_ALL)
