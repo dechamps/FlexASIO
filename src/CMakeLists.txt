@@ -17,6 +17,22 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
 find_package(portaudio REQUIRED)
 find_package(tinytoml REQUIRED)
 
+# TODO: clean up directory structure
+set(FLEXASIO_VERSION_FILE "${CMAKE_BINARY_DIR}/version/build/version.h")
+add_custom_target(FlexASIO_build_version_header
+	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_GITSTR \"unknown\"" > "${FLEXASIO_VERSION_FILE}"
+	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_VERSION \"unknown\"" >> "${FLEXASIO_VERSION_FILE}"
+	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_BUILD_TIMESTR \"unknown\"" >> "${FLEXASIO_VERSION_FILE}"
+	BYPRODUCTS "${FLEXASIO_VERSION_FILE}"
+	VERBATIM
+)
+add_library(FlexASIO_build_version INTERFACE)
+add_dependencies(FlexASIO_build_version FlexASIO_build_version_header)
+target_include_directories(FlexASIO_build_version
+	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/version"
+	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/version/build"
+)
+
 # Put EXEs and DLLs in the same directory so that EXEs can find their dependencies.
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -26,10 +42,6 @@ add_compile_options(/WX) # TODO: fix /W4, /permissive- and /analyze issues
 add_definitions(
 	-DBUILD_CONFIGURATION="$<CONFIG>"
 	-DBUILD_PLATFORM="${FLEXASIO_PLATFORM}"
-	# TODO: implement version information
-	-DFLEXASIO_GITSTR="unknown"
-	-DFLEXASIO_VERSION="unknown"
-	-DFLEXASIO_BUILD_TIMESTR="unknown"
 )
 
 add_subdirectory(ASIOHost EXCLUDE_FROM_ALL)

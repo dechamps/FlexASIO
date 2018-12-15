@@ -52,6 +52,7 @@ add_library(FlexASIO SHARED dll.def flexasio.rc ../versioninfo.rc)
 target_compile_definitions(FlexASIO PRIVATE PROJECT_DESCRIPTION="FlexASIO ASIO Driver DLL")
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
+	PRIVATE FlexASIO_build_version
 	PRIVATE FlexASIO_comdll
 	PRIVATE FlexASIO_idl
 )

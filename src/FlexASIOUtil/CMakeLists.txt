@@ -17,3 +17,4 @@ target_link_libraries(FlexASIOUtil_portaudio PUBLIC portaudio::portaudio)
 add_library(FlexASIOUtil_shell STATIC shell.cpp)
 
 add_library(FlexASIOUtil_version STATIC version.cpp)
+target_link_libraries(FlexASIOUtil_version PRIVATE FlexASIO_build_version)

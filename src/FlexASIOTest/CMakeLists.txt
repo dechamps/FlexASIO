@@ -3,5 +3,6 @@ target_compile_definitions(FlexASIOTest PRIVATE PROJECT_DESCRIPTION="FlexASIO Se
 target_link_libraries(FlexASIOTest
 	PRIVATE ASIOHost_asio
 	PRIVATE FlexASIO
+	PRIVATE FlexASIO_build_version
 	PRIVATE FlexASIOUtil_asio
 )
