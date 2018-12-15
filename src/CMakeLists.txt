@@ -25,7 +25,7 @@ set(CMAKE_CXX_STANDARD 17)
 
 add_definitions(-DBUILD_CONFIGURATION="$<CONFIG>" -DBUILD_PLATFORM="${FLEXASIO_PLATFORM}")
 
-add_subdirectory(ASIOHost)
+add_subdirectory(ASIOHost EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIO)
 add_subdirectory(FlexASIOTest)
