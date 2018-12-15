@@ -20,11 +20,8 @@ find_package(tinytoml REQUIRED)
 # TODO: clean up directory structure
 set(FLEXASIO_VERSION_FILE "${CMAKE_BINARY_DIR}/version/build/version.h")
 add_custom_target(FlexASIO_build_version_header
-	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_GITSTR \"unknown\"" > "${FLEXASIO_VERSION_FILE}"
-	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_VERSION \"unknown\"" >> "${FLEXASIO_VERSION_FILE}"
-	COMMAND "${CMAKE_COMMAND}" -E echo "#define FLEXASIO_BUILD_TIMESTR \"unknown\"" >> "${FLEXASIO_VERSION_FILE}"
+	COMMAND "${CMAKE_COMMAND}" -DOUTPUT_HEADER_FILE="${FLEXASIO_VERSION_FILE}" -P "${CMAKE_CURRENT_LIST_DIR}/version.cmake"
 	BYPRODUCTS "${FLEXASIO_VERSION_FILE}"
-	VERBATIM
 )
 add_library(FlexASIO_build_version INTERFACE)
 add_dependencies(FlexASIO_build_version FlexASIO_build_version_header)
