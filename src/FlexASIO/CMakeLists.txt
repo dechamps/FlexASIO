@@ -18,7 +18,7 @@ target_sources(FlexASIO_idl
 )
 target_include_directories(FlexASIO_idl INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
 
-add_library(FlexASIO_cflexasio STATIC cflexasio.cpp)
+add_library(FlexASIO_cflexasio STATIC EXCLUDE_FROM_ALL cflexasio.cpp)
 target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_flexasio
 	PRIVATE FlexASIOUtil_asio
@@ -27,17 +27,17 @@ target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIOUtil_shell
 )
 
-add_library(FlexASIO_comdll STATIC comdll.cpp)
+add_library(FlexASIO_comdll STATIC EXCLUDE_FROM_ALL comdll.cpp)
 target_compile_definitions(FlexASIO_comdll PRIVATE _WINDLL)
 
-add_library(FlexASIO_config STATIC config.cpp)
+add_library(FlexASIO_config STATIC EXCLUDE_FROM_ALL config.cpp)
 target_link_libraries(FlexASIO_config
 	PRIVATE FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_shell
 	PRIVATE portaudio::portaudio # TODO: use a cleaner way to find tinytoml
 )
 
-add_library(FlexASIO_flexasio STATIC flexasio.cpp)
+add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)
 target_link_libraries(FlexASIO_flexasio
 	PUBLIC FlexASIO_config
 	PUBLIC FlexASIOUtil_portaudio
