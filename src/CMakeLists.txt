@@ -21,7 +21,7 @@ find_package(Git)
 # TODO: clean up directory structure
 set(FLEXASIO_VERSION_FILE "${CMAKE_BINARY_DIR}/version/build/version.h")
 add_custom_target(FlexASIO_build_version_header
-	COMMAND "${CMAKE_COMMAND}" -DOUTPUT_HEADER_FILE="${FLEXASIO_VERSION_FILE}" -DGit_FOUND="${Git_FOUND}" -DGIT_EXECUTABLE="${GIT_EXECUTABLE}" -P "${CMAKE_CURRENT_LIST_DIR}/version.cmake"
+	COMMAND "${CMAKE_COMMAND}" -DOUTPUT_HEADER_FILE="${FLEXASIO_VERSION_FILE}" -DGit_FOUND="${Git_FOUND}" -DGIT_EXECUTABLE="${GIT_EXECUTABLE}" -P "${CMAKE_CURRENT_LIST_DIR}/version_header.cmake"
 	BYPRODUCTS "${FLEXASIO_VERSION_FILE}"
 )
 add_library(FlexASIO_build_version INTERFACE)

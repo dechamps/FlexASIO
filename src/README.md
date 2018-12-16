@@ -16,8 +16,6 @@ vcpkg install portaudio:x64-windows portaudio:x86-windows tinytoml:x64-windows t
 You will also need to provide the [ASIO SDK][]. Download the SDK and put the
 ASIOSDK2.3.2 folder inside the FlexASIO `src` folder.
 
-The installer can be built using [Inno Setup][].
-
 ## CMake
 
 There is some work-in-progress support for CMake. It is not really usable yet.
@@ -26,6 +24,18 @@ Note that vcpkg needs to be integrated with CMake for the build to work. You
 can use the method described in the vcpkg documentation, or you might find it
 easier to simply set the `VCPKG_DIR` environment variable to your vcpkg
 directory.
+
+### Packaging
+
+The following command will do a clean build and generate a FlexASIO installer
+package for you:
+
+```
+cmake -P installer.cmake
+```
+
+Note that for this to work, you need to have [Inno Setup][] installed, and the
+`VCPKG_DIR` environment variable must be set.
 
 [ASIO SDK]: http://www.steinberg.net/en/company/developer.html
 [Inno Setup]: http://www.jrsoftware.org/isdl.php
