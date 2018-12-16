@@ -11,4 +11,5 @@ if(portaudio_FOUND AND NOT TARGET portaudio::portaudio)
 		IMPORTED_LOCATION "${portaudio_LIBRARY}"
 		INTERFACE_INCLUDE_DIRECTORIES "${portaudio_INCLUDE_DIR}"
 	)
+	install(FILES "${portaudio_LIBRARY}/../../bin/portaudio_${FLEXASIO_PLATFORM}.dll" DESTINATION bin)
 endif()
