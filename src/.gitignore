@@ -1,6 +1,2 @@
-*.vcxproj.user
-.vs/
-
+/.vs/
 /ASIOSDK2.3.2/
-
-/build/
