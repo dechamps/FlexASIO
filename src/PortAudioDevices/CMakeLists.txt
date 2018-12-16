@@ -6,3 +6,4 @@ target_link_libraries(PortAudioDevices
 	PRIVATE FlexASIOUtil_portaudio
 	PRIVATE portaudio::portaudio
 )
+install(TARGETS PortAudioDevices RUNTIME DESTINATION bin)

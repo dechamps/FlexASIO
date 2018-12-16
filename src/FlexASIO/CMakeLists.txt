@@ -56,3 +56,4 @@ target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_comdll
 	PRIVATE FlexASIO_idl
 )
+install(TARGETS FlexASIO RUNTIME DESTINATION bin)
