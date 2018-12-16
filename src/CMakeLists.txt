@@ -36,7 +36,14 @@ set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
-add_compile_options(/WX) # TODO: fix /W4, /permissive- and /analyze issues
+add_compile_options(
+	# TODO: fix /W4, /permissive- and /analyze issues
+	/WX 
+
+	 # TODO: we should probably not do this. The build is currently broken with
+	 # NDEBUG because we have assert() calls with side effects (e.g. log.cpp).
+	/UNDEBUG
+)
 add_definitions(
 	-DBUILD_CONFIGURATION="$<CONFIG>"
 	-DBUILD_PLATFORM="${FLEXASIO_PLATFORM}"
