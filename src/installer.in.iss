@@ -1,3 +1,6 @@
+; Note: this Inno Setup installer script is meant to run as part of
+; installer.cmake. It will not work on its own.
+
 [Setup]
 AppID=FlexASIO
 AppName=FlexASIO
