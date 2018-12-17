@@ -11,10 +11,10 @@ namespace flexasio {
 		Log();
 		~Log();
 
-		template <typename T> friend Log& operator<<(Log& lhs, T&& rhs) {
-			if (!lhs.stream.has_value()) return lhs;
+		template <typename T> friend Log&& operator<<(Log&& lhs, T&& rhs) {
+			if (!lhs.stream.has_value()) return std::move(lhs);
 			*lhs.stream << std::forward<T>(rhs);
-			return lhs;
+			return std::move(lhs);
 		}
 
 	private:
