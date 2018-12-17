@@ -1,6 +1,5 @@
 #include "flexasio.h"
 
-#include <cassert>
 #include <algorithm>
 #include <memory>
 #include <mutex>

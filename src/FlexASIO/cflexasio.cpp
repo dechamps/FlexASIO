@@ -12,7 +12,7 @@
 #include <atlbase.h>
 #include <atlcom.h>
 
-#include <cassert>
+#include <cstdlib>
 #include <string_view>
 
 // Provide a definition for the ::CFlexASIO class declaration that the MIDL compiler generated.
@@ -209,12 +209,12 @@ namespace flexasio {
 
 IASIO* CreateFlexASIO() {
 	::CFlexASIO* flexASIO = nullptr;
-	assert(::flexasio::CFlexASIO::CreateInstance(&flexASIO) == S_OK);
-	assert(flexASIO != nullptr);
+	if (::flexasio::CFlexASIO::CreateInstance(&flexASIO) != S_OK) abort();
+	if (flexASIO == nullptr) abort();
 	return flexASIO;
 }
 
 void ReleaseFlexASIO(IASIO* const iASIO) {
-	assert(iASIO != nullptr);
+	if (iASIO == nullptr) abort();
 	iASIO->Release();
 }

@@ -6,7 +6,7 @@
 #include <optional>
 #include <string_view>
 #include <vector>
-#include <cassert>
+#include <cstdlib>
 #include <sstream>
 
 #include "..\ASIOSDK2.3.2\host\ginclude.h"
@@ -196,11 +196,11 @@ namespace flexasio {
 		// This works by assuming that we will only use one set of callbacks at a time, such that we can use global state as a side channel.
 		struct Callbacks {
 			Callbacks() {
-				assert(global == nullptr);
+				if (global != nullptr) abort();
 				global = this;
 			}
 			~Callbacks() {
-				assert(global == this);
+				if (global != this) abort();
 				global = nullptr;
 			}
 
@@ -221,7 +221,7 @@ namespace flexasio {
 		private:
 			template <auto memberFunction> auto GetASIOCallback() const {
 				return [](auto... args) {
-					assert(global != nullptr);
+					if (global == nullptr) abort();
 					return (global->*memberFunction)(args...);
 				};
 			}

@@ -1,6 +1,6 @@
 #include "log.h"
 
-#include <cassert>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <mutex>
@@ -73,13 +73,13 @@ namespace flexasio {
 
 		std::string FormatFiletimeISO8601(const FILETIME filetime) {
 			SYSTEMTIME systemtimeUTC;
-			assert(FileTimeToSystemTime(&filetime, &systemtimeUTC));
+			if (!FileTimeToSystemTime(&filetime, &systemtimeUTC)) abort();
 			systemtimeUTC.wMilliseconds = 0;
 
 			const auto localTimezoneAndBias = GetTimezoneAndBias();
 
 			SYSTEMTIME systemtimeLocal;
-			assert(SystemTimeToTzSpecificLocalTime(&localTimezoneAndBias.first, &systemtimeUTC, &systemtimeLocal));
+			if (!SystemTimeToTzSpecificLocalTime(&localTimezoneAndBias.first, &systemtimeUTC, &systemtimeLocal)) abort();
 
 			std::stringstream stream;
 			stream.fill('0');
@@ -87,7 +87,7 @@ namespace flexasio {
 			stream << FormatSystemTimeISO8601(systemtimeLocal);
 
 			FILETIME truncatedFiletime;
-			assert(SystemTimeToFileTime(&systemtimeUTC, &truncatedFiletime));
+			if (!SystemTimeToFileTime(&systemtimeUTC, &truncatedFiletime)) abort();
 			stream << "." << std::setw(7) << FileTimeToTenthsOfUs(filetime) - FileTimeToTenthsOfUs(truncatedFiletime);
 
 			stream << ((localTimezoneAndBias.second >= 0) ? "-" : "+");

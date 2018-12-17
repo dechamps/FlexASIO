@@ -3,7 +3,6 @@
 #include "endian.h"
 #include "string.h"
 
-#include <cassert>
 #include <cstring>
 #include <utility>
 
