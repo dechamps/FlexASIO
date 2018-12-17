@@ -24,8 +24,18 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(
-	# TODO: fix /W4, /permissive- and /analyze issues
-	/WX
+	# TODO: fix /permissive- and /analyze issues
+	/WX /W4
+
+	# Suppress warnings about shadowing declarations.
+	#
+	# In most cases, this happens when a lambda is used to initialize some
+	# variable, and the lambda declares a local variable with the same name as the
+	# variable it's tasked with initializing. In such cases the shadowing is
+	# actually desirable, because it prevents one from accidentally using the (not
+	# yet initialized) outer variable instead of the (valid) local variable within
+	# the lambda.
+	/wd4458 /wd4456
 )
 add_definitions(
 	-DBUILD_CONFIGURATION="$<CONFIG>"

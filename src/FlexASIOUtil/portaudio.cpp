@@ -205,7 +205,7 @@ namespace flexasio {
 	}
 
 	std::string GetWaveFormatTagString(WORD formatTag) {
-		return EnumToString(formatTag, {
+		return EnumToString(int(formatTag), {
 			{ WAVE_FORMAT_EXTENSIBLE, "EXTENSIBLE" },
 			{ WAVE_FORMAT_MPEG, "MPEG" },
 			{ WAVE_FORMAT_MPEGLAYER3, "MPEGLAYER3" },

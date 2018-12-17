@@ -189,7 +189,7 @@ namespace flexasio {
 		}
 
 		// No-op PortAudio stream callback. Useful for backends that fail to initialize without a callback, such as WDM-KS.
-		int NoOpStreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
+		int NoOpStreamCallback(const void *, void *, unsigned long, const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *) throw() {
 			Log() << "In no-op stream callback";
 			return paContinue;
 		}
@@ -467,8 +467,6 @@ namespace flexasio {
 
 		inputEnabled = inputEnabled && inputDevice.has_value();
 		outputEnabled = outputEnabled && outputDevice.has_value();
-
-		auto defaultSuggestedLatency = 0.0;
 
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = paNonInterleaved;
