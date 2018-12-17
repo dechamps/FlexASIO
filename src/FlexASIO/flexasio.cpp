@@ -806,10 +806,15 @@ namespace flexasio {
 		for (const auto& bufferInfo : preparedState.bufferInfos)
 		{
 			void* buffer = bufferInfo.buffers[our_buffer_index];
-			if (bufferInfo.isInput)
+			if (bufferInfo.isInput) {
+				if(input_samples == nullptr) abort();
 				memcpy(buffer, input_samples[bufferInfo.channelNum], frameCount * inputSampleSize);
+			}
 			else
+			{
+				if(output_samples == nullptr) abort();
 				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * outputSampleSize);
+			}
 		}
 
 		auto currentSamplePosition = samplePosition.load();

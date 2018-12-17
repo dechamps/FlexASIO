@@ -155,7 +155,7 @@ namespace flexasio {
 		if (output == nullptr) return;
 		stream.emplace();
 
-		FILETIME now;
+		FILETIME now = { 0 };
 		GetSystemTimeAsFileTimeFunction()(&now);
 		*stream << FormatFiletimeISO8601(now) << " " << GetCurrentProcessId() << " " << GetCurrentThreadId() << " ";
 	}

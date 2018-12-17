@@ -45,7 +45,7 @@ namespace flexasio {
 
 		void DebugPrint(const char* log) {
 			std::string_view logline(log);
-			while (!logline.empty() && isspace(logline.back())) logline.remove_suffix(1);
+			while (!logline.empty() && isspace(static_cast<unsigned char>(logline.back()))) logline.remove_suffix(1);
 			Log() << "[PortAudio] " << logline;
 		}
 	}

@@ -1,5 +1,6 @@
 set(ASIOSDK ../ASIOSDK2.3.2)
 include_directories("${ASIOSDK}/common")
+add_compile_options(/analyze-)
 
 add_library(ASIOHost_asiolist STATIC "${ASIOSDK}/host/pc/asiolist.cpp")
 target_include_directories(ASIOHost_asiolist PUBLIC "${ASIOSDK}/host/pc")

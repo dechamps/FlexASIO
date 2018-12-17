@@ -9,7 +9,10 @@
 
 #include "..\ASIOSDK2.3.2\common\iasiodrv.h"
 
+#pragma warning(push)
+#pragma warning(disable:6011 6387)
 #include <atlbase.h>
+#pragma warning(pop)
 #include <atlcom.h>
 
 #include <cstdlib>
