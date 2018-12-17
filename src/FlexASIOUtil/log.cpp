@@ -11,7 +11,7 @@
 #include <windows.h>
 
 #include "shell.h"
-#include "version.h"
+#include "../version/version.h"
 
 namespace flexasio {
 

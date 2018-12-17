@@ -1,6 +1,6 @@
 #include "version.h"
 
-#include "..\build\version.h"
+#include "version_stamp.h"
 
 namespace flexasio {
 	const char gitstr[] = FLEXASIO_GITSTR;

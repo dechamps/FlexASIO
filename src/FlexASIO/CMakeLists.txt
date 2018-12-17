@@ -43,6 +43,7 @@ target_link_libraries(FlexASIO_flexasio
 	PUBLIC FlexASIOUtil_portaudio
 	PRIVATE FlexASIOUtil_asio
 	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIO_version
 	PRIVATE portaudio::portaudio
 	PRIVATE winmm
 )
@@ -52,7 +53,7 @@ add_library(FlexASIO SHARED dll.def flexasio.rc ../versioninfo.rc)
 target_compile_definitions(FlexASIO PRIVATE PROJECT_DESCRIPTION="FlexASIO ASIO Driver DLL")
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
-	PRIVATE FlexASIO_build_version
+	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIO_comdll
 	PRIVATE FlexASIO_idl
 )

@@ -3,7 +3,7 @@ target_compile_definitions(FlexASIOTest PRIVATE PROJECT_DESCRIPTION="FlexASIO Se
 target_link_libraries(FlexASIOTest
 	PRIVATE ASIOHost_asio
 	PRIVATE FlexASIO
-	PRIVATE FlexASIO_build_version
+	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIOUtil_asio
 )
 install(TARGETS FlexASIOTest RUNTIME DESTINATION bin)

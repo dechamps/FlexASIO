@@ -16,9 +16,9 @@
 
 #include "../FlexASIOUtil/endian.h"
 #include "../FlexASIOUtil/log.h"
-#include "../FlexASIOUtil/version.h"
 #include "../FlexASIOUtil/asio.h"
 #include "../FlexASIOUtil/string.h"
+#include "../version/version.h"
 
 namespace flexasio {
 

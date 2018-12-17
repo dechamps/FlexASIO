@@ -18,19 +18,6 @@ find_package(portaudio REQUIRED)
 find_package(tinytoml REQUIRED)
 find_package(Git)
 
-# TODO: clean up directory structure
-set(FLEXASIO_VERSION_FILE "${CMAKE_BINARY_DIR}/version/build/version.h")
-add_custom_target(FlexASIO_build_version_header
-	COMMAND "${CMAKE_COMMAND}" -DOUTPUT_HEADER_FILE="${FLEXASIO_VERSION_FILE}" -DGit_FOUND="${Git_FOUND}" -DGIT_EXECUTABLE="${GIT_EXECUTABLE}" -P "${CMAKE_CURRENT_LIST_DIR}/version_header.cmake"
-	BYPRODUCTS "${FLEXASIO_VERSION_FILE}"
-)
-add_library(FlexASIO_build_version INTERFACE)
-add_dependencies(FlexASIO_build_version FlexASIO_build_version_header)
-target_include_directories(FlexASIO_build_version
-	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/version"
-	INTERFACE "${CMAKE_CURRENT_BINARY_DIR}/version/build"
-)
-
 # Put EXEs and DLLs in the same directory so that EXEs can find their dependencies.
 set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -54,5 +41,6 @@ add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIO)
 add_subdirectory(FlexASIOTest)
 add_subdirectory(PortAudioDevices)
+add_subdirectory(version)
 
 include(InstallRequiredSystemLibraries)

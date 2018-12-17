@@ -4,7 +4,7 @@ find_package(VisualStudio_cmake REQUIRED)
 find_package(InnoSetup REQUIRED)
 
 find_package(Git REQUIRED)
-include(version.cmake)
+include(version/version.cmake)
 
 string(TIMESTAMP FLEXASIO_BUILD_TIMESTAMP "%Y-%m-%dT%H%M%SZ" UTC)
 string(RANDOM FLEXASIO_BUILD_ID)
