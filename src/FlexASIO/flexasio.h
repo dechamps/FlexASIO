@@ -179,7 +179,7 @@ namespace flexasio {
 		static const SampleType int16;
 		static const std::pair<std::string_view, SampleType> sampleTypes[];
 		static SampleType ParseSampleType(std::string_view str);
-		static std::optional<SampleType> FlexASIO::WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat);
+		static std::optional<SampleType> WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat);
 		static SampleType SelectSampleType(const Config::Stream&, PaHostApiTypeId, const std::optional<WAVEFORMATEXTENSIBLE>&);
 		static std::string DescribeSampleType(const SampleType&);
 

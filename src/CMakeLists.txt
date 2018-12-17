@@ -24,8 +24,8 @@ set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(
-	# TODO: fix /permissive- and /analyze issues
-	/WX /W4
+	# TODO: fix /analyze issues
+	/WX /W4 /permissive-
 
 	# Suppress warnings about shadowing declarations.
 	#
