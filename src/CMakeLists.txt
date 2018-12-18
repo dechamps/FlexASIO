@@ -41,7 +41,7 @@ add_definitions(
 	-DBUILD_PLATFORM="${FLEXASIO_PLATFORM}"
 )
 
-add_subdirectory(ASIOHost EXCLUDE_FROM_ALL)
+add_subdirectory(asiosdk EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIO)
 add_subdirectory(FlexASIOTest)

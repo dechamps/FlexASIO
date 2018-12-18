@@ -21,8 +21,8 @@ can use the method described in the vcpkg documentation, or you might find it
 easier to simply set the `VCPKG_DIR` environment variable to your vcpkg
 directory.
 
-You will also need to provide the [ASIO SDK][]. Download the SDK and put the
-ASIOSDK2.3.2 folder inside the FlexASIO `src` folder.
+The FlexASIO CMake build system will download the [ASIO SDK][] for you
+automatically at configure time.
 
 ## Packaging
 

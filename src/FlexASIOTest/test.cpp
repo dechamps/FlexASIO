@@ -9,8 +9,9 @@
 #include <cstdlib>
 #include <sstream>
 
-#include "..\ASIOSDK2.3.2\host\ginclude.h"
-#include "..\ASIOSDK2.3.2\common\asio.h"
+#include <host\ginclude.h>
+#include <common\asio.h>
+
 #include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
 #include "..\FlexASIOUtil\find.h"

@@ -6,7 +6,7 @@
 #include <cstring>
 #include <utility>
 
-#include "..\ASIOSDK2.3.2\common\asio.h"
+#include <common\asio.h>
 
 namespace flexasio {
 	// Somewhat surprisingly, ASIO 64-bit integer data types store the most significant 32 bits half *first*, even on little endian architectures. See the ASIO SDK documentation.
