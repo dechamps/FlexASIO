@@ -13,7 +13,7 @@
 #include "portaudio.h"
 #include "pa_win_wasapi.h"
 
-#include "../FlexASIOUtil/endian.h"
+#include "endian.h"
 #include "../FlexASIOUtil/log.h"
 #include "../FlexASIOUtil/asio.h"
 #include "../FlexASIOUtil/string.h"
@@ -204,11 +204,11 @@ namespace flexasio {
 
 	}
 
-	const FlexASIO::SampleType FlexASIO::float32 = { GetEndianness() == Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
-	const FlexASIO::SampleType FlexASIO::int32 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
-	const FlexASIO::SampleType FlexASIO::int24 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
-	const FlexASIO::SampleType FlexASIO::int16 = { GetEndianness() == Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
-	const std::pair<std::string_view, FlexASIO::SampleType> FlexASIO::sampleTypes[] = {
+	constexpr FlexASIO::SampleType FlexASIO::float32 = { endianness == Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
+	constexpr FlexASIO::SampleType FlexASIO::int32 = { endianness == Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
+	constexpr FlexASIO::SampleType FlexASIO::int24 = { endianness == Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
+	constexpr FlexASIO::SampleType FlexASIO::int16 = { endianness == Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
+	constexpr std::pair<std::string_view, FlexASIO::SampleType> FlexASIO::sampleTypes[] = {
 			{"Float32", float32},
 			{"Int32", int32},
 			{"Int24", int24},
@@ -216,7 +216,6 @@ namespace flexasio {
 	};
 
 	FlexASIO::SampleType FlexASIO::ParseSampleType(const std::string_view str) {
-		static const bool bigEndian = GetEndianness() == Endianness::BIG;
 		const auto sampleType = Find(str, sampleTypes);
 		if (!sampleType.has_value()) {
 			throw std::runtime_error(std::string("Invalid '") + std::string(str) + "' sample type - valid values are " + Join(sampleTypes, ", ", [](const auto& item) { return std::string("'") + std::string(item.first) + "'"; }));

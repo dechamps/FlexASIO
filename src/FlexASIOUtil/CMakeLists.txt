@@ -1,9 +1,7 @@
 add_library(FlexASIOUtil_asio STATIC asio.cpp)
 target_link_libraries(FlexASIOUtil_asio
-	PRIVATE FlexASIOUtil_endian
+	PRIVATE FlexASIO_endian
 )
-
-add_library(FlexASIOUtil_endian STATIC endian.cpp) # TODO: use CMake TestBigEndian module
 
 add_library(FlexASIOUtil_log STATIC log.cpp)
 target_link_libraries(FlexASIOUtil_log

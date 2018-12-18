@@ -13,7 +13,7 @@ namespace flexasio {
 	// On x86, which is little endian, that means we can't simply represent the value as an int64_t - we need to swap the two halves first.
 
 	template <typename ASIOInt64> int64_t ASIOToInt64(ASIOInt64 asioInt64) {
-		if (GetEndianness() == Endianness::LITTLE) std::swap(asioInt64.hi, asioInt64.lo);
+		if constexpr (endianness == Endianness::LITTLE) std::swap(asioInt64.hi, asioInt64.lo);
 		int64_t result;
 		static_assert(sizeof asioInt64 == sizeof result);
 		memcpy(&result, &asioInt64, sizeof result);
@@ -26,7 +26,7 @@ namespace flexasio {
 		ASIOInt64 result;
 		static_assert(sizeof int64 == sizeof result);
 		memcpy(&result, &int64, sizeof result);
-		if (GetEndianness() == Endianness::LITTLE) std::swap(result.hi, result.lo);
+		if constexpr (endianness == Endianness::LITTLE) std::swap(result.hi, result.lo);
 		return result;
 	}
 	template ASIOTimeStamp Int64ToASIO<ASIOTimeStamp>(int64_t);
