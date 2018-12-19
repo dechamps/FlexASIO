@@ -5,15 +5,11 @@
 FlexASIO is designed to be built using CMake within the Microsoft Visual C++
 2017 toolchain native CMake support.
 
-For the build to work you will need to provide these dependencies:
-
- - [PortAudio][]
- - [tinytoml][]
-
-The easiest way to get these dependencies is to use [vcpkg][]:
+For the build to work you will need to provide the [PortAudio][] dependency. The
+easiest way is to use [vcpkg][]:
 
 ```
-vcpkg install portaudio:x64-windows portaudio:x86-windows tinytoml:x64-windows tinytoml:x86-windows
+vcpkg install portaudio:x64-windows portaudio:x86-windows
 ```
 
 Note that vcpkg needs to be integrated with CMake for the build to work. You
@@ -23,6 +19,9 @@ directory.
 
 The FlexASIO CMake build system will download the [ASIO SDK][] for you
 automatically at configure time.
+
+The [tinytoml][] dependency is pulled in as a git submodule. Make sure to
+run `git submodule update --init`.
 
 ## Packaging
 

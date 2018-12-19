@@ -1,0 +1,3 @@
+[submodule "src/tinytoml"]
+	path = src/tinytoml
+	url = https://github.com/mayah/tinytoml.git

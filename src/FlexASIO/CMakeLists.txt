@@ -35,7 +35,7 @@ add_library(FlexASIO_config STATIC EXCLUDE_FROM_ALL config.cpp)
 target_link_libraries(FlexASIO_config
 	PRIVATE FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_shell
-	PRIVATE tinytoml::toml
+	PRIVATE tinytoml
 )
 
 add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)
