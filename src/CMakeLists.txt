@@ -1,54 +1,32 @@
+# FlexASIO CMake superbuild.
+
 cmake_minimum_required(VERSION 3.11)
-project(FlexASIO DESCRIPTION "FlexASIO Universal ASIO Driver")
-
-if(DEFINED ENV{VCPKG_DIR})
-	include("$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
-endif()
-
-if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-	set(FLEXASIO_PLATFORM x86)
-elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(FLEXASIO_PLATFORM x64)
-else()
-	set(FLEXASIO_PLATFORM unknown)
-endif()
-
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
-find_package(portaudio REQUIRED)
-find_package(Git)
-
-add_library(tinytoml INTERFACE)
-target_include_directories(tinytoml INTERFACE "${CMAKE_CURRENT_LIST_DIR}/tinytoml/include")
-
-# Put EXEs and DLLs in the same directory so that EXEs can find their dependencies.
-set (CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-
-set(CMAKE_CXX_STANDARD 17)
-add_compile_options(
-	/WX /W4 /permissive- /analyze
-
-	# Suppress warnings about shadowing declarations.
-	#
-	# In most cases, this happens when a lambda is used to initialize some
-	# variable, and the lambda declares a local variable with the same name as the
-	# variable it's tasked with initializing. In such cases the shadowing is
-	# actually desirable, because it prevents one from accidentally using the (not
-	# yet initialized) outer variable instead of the (valid) local variable within
-	# the lambda.
-	/wd4458 /wd4456
-)
-add_definitions(
-	-DBUILD_CONFIGURATION="$<CONFIG>"
-	-DBUILD_PLATFORM="${FLEXASIO_PLATFORM}"
+project(flexasio DESCRIPTION "FlexASIO Universal ASIO Driver Superbuild")
+include(ExternalProject)
+set(INTERNAL_INSTALL_PREFIX "${CMAKE_CURRENT_BINARY_DIR}/install")
+set(CMAKE_ARGS
+    "-DCMAKE_INSTALL_PREFIX=${INTERNAL_INSTALL_PREFIX}"
+    "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
 )
 
-add_subdirectory(asiosdk EXCLUDE_FROM_ALL)
-add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
-add_subdirectory(FlexASIO)
-add_subdirectory(FlexASIOTest)
-add_subdirectory(PortAudioDevices)
-add_subdirectory(endian)
-add_subdirectory(version)
+ExternalProject_Add(
+    tinytoml
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/tinytoml"
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND "" BUILD_ALWAYS
+    INSTALL_COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/tinytoml/include" "${INTERNAL_INSTALL_PREFIX}/include"
+    EXCLUDE_FROM_ALL
+)
 
+ExternalProject_Add(
+    FlexASIO
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/flexasio"
+    BUILD_ALWAYS TRUE
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+    CMAKE_ARGS ${CMAKE_ARGS}
+    DEPENDS tinytoml
+)
+
+install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 include(InstallRequiredSystemLibraries)
