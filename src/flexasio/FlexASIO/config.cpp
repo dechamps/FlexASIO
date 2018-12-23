@@ -4,10 +4,7 @@
 
 #include <filesystem>
 
-#pragma warning(push)
-#pragma warning(disable:6330) // https://github.com/mayah/tinytoml/pull/38
 #include <toml/toml.h>
-#pragma warning(pop)
 
 #include "../FlexASIOUtil/log.h"
 #include "../FlexASIOUtil/find.h"
