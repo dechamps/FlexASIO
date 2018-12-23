@@ -9,6 +9,19 @@ set(CMAKE_ARGS
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
 )
 
+function(check_git_submodule DIR)
+    file(GLOB DIR_FILES "${DIR}/*")
+	if (DIR_FILES STREQUAL "")
+		message(WARNING "It looks like the '${DIR}' directory is empty. Did you forget to update git submodules?")
+		find_package(Git)
+		if (Git_FOUND)
+			message(STATUS "Updating the '${DIR}' git submodule to fix.")
+			execute_process(COMMAND "${GIT_EXECUTABLE}" -C "${CMAKE_CURRENT_LIST_DIR}" submodule update --init -- "${DIR}")
+		endif()
+	endif()
+endfunction()
+
+check_git_submodule(tinytoml)
 ExternalProject_Add(
     tinytoml
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/tinytoml"
@@ -19,6 +32,7 @@ ExternalProject_Add(
     EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(portaudio)
 find_path(DXSDK_INCLUDE_DIR dsound.h)
 find_library(DXSDK_DSOUND_LIBRARY dsound.lib)
 ExternalProject_Add(

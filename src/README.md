@@ -7,8 +7,7 @@ FlexASIO is designed to be built using CMake within the Microsoft Visual C++
 
 FlexASIO uses a CMake "superbuild" system (in `/src`) to automatically build the
 [tinytoml][] and [PortAudio][] dependencies before building FlexASIO itself.
-These dependencies are pulled in as git submodules; make sure to run
-`git submodule update --init`.
+These dependencies are pulled in as git submodules.
 
 If you want to handle the dependencies yourself, you can build FlexASIO in
 isolation from `/src/flexasio`.
