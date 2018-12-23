@@ -291,11 +291,6 @@ a low suggested latency value in this case is likely to cause audio
 discontinuities (glitches). This is less of a problem when using a single device
 (half duplex mode).
 
-**Note:** when using the [WASAPI backend][WASAPI] in Exclusive mode and a single
-device (input *or* output), a zero suggested latency is
-[handled specially][portaudio287] and makes the backend use a different
-buffering scheme, dramatically reducing latency.
-
 Example:
 
 ```toml
