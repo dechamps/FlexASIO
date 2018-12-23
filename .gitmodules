@@ -1,3 +1,6 @@
 [submodule "src/tinytoml"]
 	path = src/tinytoml
 	url = https://github.com/mayah/tinytoml.git
+[submodule "src/portaudio"]
+	path = src/portaudio
+	url = https://git.assembla.com/portaudio.git

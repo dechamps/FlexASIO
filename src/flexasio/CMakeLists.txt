@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 3.11)
 project(FlexASIO DESCRIPTION "FlexASIO Universal ASIO Driver")
 
-if(DEFINED ENV{VCPKG_DIR})
-	include("$ENV{VCPKG_DIR}/scripts/buildsystems/vcpkg.cmake")
-endif()
-
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
 	set(FLEXASIO_PLATFORM x86)
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
