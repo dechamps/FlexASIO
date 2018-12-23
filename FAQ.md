@@ -63,11 +63,6 @@ settings. Here are some common issues:
    that WDM-KS is unlikely to initialize successfully on the Windows default
    devices; this can be worked around using the
    [`device` configuration option][device].
- - It has been observed that **some backends will guess the device channel
-   count wrong** on some systems, leading to initialization failures. In
-   particular this is a known issue with the WASAPI backend (see [issue #3][]),
-   which is especially problematic in Shared mode (see above). This can be
-   worked around using the [`channels` configuration option][channels].
  - A **FlexASIO (or PortAudio) bug**. If you believe that is the case, please
    [file a report][report].
    - In particular, please do file a report if FlexASIO fails to initialize with
