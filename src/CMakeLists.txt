@@ -47,8 +47,6 @@ ExternalProject_Add(
 		"-DCMAKE_ARCHIVE_OUTPUT_DIRECTORY=${INTERNAL_INSTALL_PREFIX}/lib"
 		-DPA_ENABLE_DEBUG_OUTPUT=ON
 		"-DCMAKE_PROJECT_portaudio_INCLUDE=${CMAKE_CURRENT_LIST_DIR}/portaudio.cmake"
-		# Work around https://lists.columbia.edu/pipermail/portaudio/2017-January/001001.html
-		-DMSVS=ON
 		# Work around lack of https://app.assembla.com/spaces/portaudio/git/commits/0baa1e2e31f37bac2883ea59e50b76037271426d
 		"-DDXSDK_ROOT_DIR=${DXSDK_INCLUDE_DIR}/.." "-DDXSDK_INCLUDE_DIR=${DXSDK_INCLUDE_DIR}" "-DDXSDK_DSOUND_LIBRARY=${DXSDK_DSOUND_LIBRARY}"
 		INSTALL_COMMAND "${CMAKE_COMMAND}" -E copy_directory "${CMAKE_CURRENT_LIST_DIR}/portaudio/include" "${INTERNAL_INSTALL_PREFIX}/include"
