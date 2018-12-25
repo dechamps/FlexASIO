@@ -283,7 +283,7 @@ strongly with the ASIO buffer size, so it is recommended to experiment with
 various values.
 
 Setting this option to `0.0` will request the lowest possible latency that
-FlexASIO will provide.
+PortAudio can provide for the selected buffer size.
 
 **Note:** using both input and output devices (full duplex mode) puts more
 buffering constraints on the backend due to synchronization requirements. Using
