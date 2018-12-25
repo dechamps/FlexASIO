@@ -109,7 +109,7 @@ two typical causes:
    - FlexASIO writes to the log using blocking file I/O from critical real-time
      code paths. This can easily lead to missed deadlines, especially with small
      buffer sizes.
-   - Do not forget to disable logging enabled when you don't need it.
+   - Do not forget to disable logging when you don't need it.
    - To disable logging, simply delete or move the `FlexASIO.log` file.
  - A **FlexASIO (or PortAudio) bug** (or lack of optimization). If you believe
    that is the case, please [file a report][report].
