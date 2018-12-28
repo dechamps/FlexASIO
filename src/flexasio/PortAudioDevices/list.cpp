@@ -6,7 +6,6 @@
 #include <iostream>
 #include <string>
 
-#include "../FlexASIOUtil/log.h"
 #include "../FlexASIOUtil/portaudio.h"
 #include "../FlexASIOUtil/string.h"
 
@@ -64,7 +63,7 @@ namespace flexasio {
 		}
 
 		void InitAndListDevices() {
-			PortAudioDebugRedirector portAudioLogger([](std::string_view str) { Log() << "[PortAudio] " << str; });
+			PortAudioDebugRedirector portAudioLogger([](std::string_view str) { std::cerr << "[PortAudio] " << str << std::endl; });
 
 			try {
 				ThrowOnPaError(Pa_Initialize());
