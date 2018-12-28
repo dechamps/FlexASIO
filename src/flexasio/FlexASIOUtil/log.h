@@ -12,8 +12,7 @@ namespace flexasio {
 		~Log();
 
 		template <typename T> friend Log&& operator<<(Log&& lhs, T&& rhs) {
-			if (!lhs.stream.has_value()) return std::move(lhs);
-			*lhs.stream << std::forward<T>(rhs);
+			if (lhs.stream.has_value()) *lhs.stream << std::forward<T>(rhs);
 			return std::move(lhs);
 		}
 
