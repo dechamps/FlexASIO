@@ -7,12 +7,15 @@
 
 namespace flexasio {
 
+	class LogSink {
+	public:
+		virtual void Write(std::string_view) = 0;
+	};
+
 	class Logger final
 	{
 	public:
-		using Write = std::function<void(std::string_view)>;
-
-		explicit Logger(Write write);
+		explicit Logger(LogSink* sink);
 		~Logger();
 
 		template <typename T> friend Logger&& operator<<(Logger&& lhs, T&& rhs) {
@@ -22,7 +25,9 @@ namespace flexasio {
 
 	private:
 		struct EnabledState {
-			Write write;
+			explicit EnabledState(LogSink& sink) : sink(sink) {}
+
+			LogSink& sink;
 			std::stringstream stream;
 		};
 

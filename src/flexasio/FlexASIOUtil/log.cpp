@@ -104,9 +104,9 @@ namespace flexasio {
 			return moduleName;
 		}
 
-		class LogOutput {
+		class FileLogSink final : public LogSink {
 		public:
-			static std::unique_ptr<LogOutput> Open() {
+			static std::unique_ptr<FileLogSink> Open() {
 				const auto userDirectory = GetUserDirectory();
 				if (!userDirectory.has_value()) return nullptr;
 
@@ -115,15 +115,15 @@ namespace flexasio {
 
 				if (!std::filesystem::exists(path)) return nullptr;
 
-				return std::make_unique<LogOutput>(path);
+				return std::make_unique<FileLogSink>(path);
 			}
 
-			static LogOutput* Get() {
+			static FileLogSink* Get() {
 				static const auto output = Open();
 				return output.get();
 			}
 
-			LogOutput(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
+			FileLogSink(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
 				Log() << "Logfile opened";
 				Log() << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
 
@@ -131,19 +131,17 @@ namespace flexasio {
 				Log() << "Host process: " << GetModuleName();
 			}
 
-			~LogOutput() {
+			~FileLogSink() {
 				Log() << "Closing logfile";
 			}
 
-			void Write(const std::string_view str) {
+			void Write(const std::string_view str) override {
 				std::scoped_lock stream_lock(stream_mutex);
 				stream << str << std::endl;
 			}
 
 		private:
-			Logger Log() {
-				return Logger([this](std::string_view str) { Write(str); });
-			}
+			Logger Log() { return Logger(this); }
 
 			std::mutex stream_mutex;
 			std::ofstream stream;
@@ -151,11 +149,10 @@ namespace flexasio {
 
 	}
 
-	Logger::Logger(Write write) {
-		if (!write) return;
+	Logger::Logger(LogSink* sink) {
+		if (sink == nullptr) return;
 
-		enabledState.emplace();
-		enabledState->write = std::move(write);
+		enabledState.emplace(*sink);
 
 		FILETIME now = { 0 };
 		GetSystemTimeAsFileTimeFunction()(&now);
@@ -164,13 +161,9 @@ namespace flexasio {
 
 	Logger::~Logger() {
 		if (!enabledState.has_value()) return;
-		enabledState->write(enabledState->stream.str());
+		enabledState->sink.Write(enabledState->stream.str());
 	}
 
-	Logger Log() {
-		auto* const logOutput = LogOutput::Get();
-		if (logOutput == nullptr) return Logger({});
-		return Logger([](std::string_view str){ LogOutput::Get()->Write(str); });
-	}
+	Logger Log() { return Logger(FileLogSink::Get()); }
 
 }
