@@ -135,14 +135,14 @@ namespace flexasio {
 				Log() << "Closing logfile";
 			}
 
-			void Write(const std::string& str) {
+			void Write(const std::string_view str) {
 				std::scoped_lock stream_lock(stream_mutex);
 				stream << str << std::endl;
 			}
 
 		private:
 			Logger Log() {
-				return Logger([this](const std::string& str) { Write(str); });
+				return Logger([this](std::string_view str) { Write(str); });
 			}
 
 			std::mutex stream_mutex;
@@ -170,9 +170,7 @@ namespace flexasio {
 	Logger Log() {
 		auto* const logOutput = LogOutput::Get();
 		if (logOutput == nullptr) return Logger({});
-		return Logger([](const std::string& str){
-			LogOutput::Get()->Write(str);
-		});
+		return Logger([](std::string_view str){ LogOutput::Get()->Write(str); });
 	}
 
 }

@@ -3,13 +3,14 @@
 #include <functional>
 #include <optional>
 #include <sstream>
+#include <string_view>
 
 namespace flexasio {
 
 	class Logger final
 	{
 	public:
-		using Write = std::function<void(const std::string&)>;
+		using Write = std::function<void(std::string_view)>;
 
 		explicit Logger(Write write);
 		~Logger();
