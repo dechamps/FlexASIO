@@ -12,6 +12,11 @@
 #include <host\ginclude.h>
 #include <common\asio.h>
 
+#pragma warning(push)
+#pragma warning(disable:4018 4267)
+#include <cxxopts.hpp>
+#pragma warning(pop)
+
 #include "../FlexASIOUtil/log.h"
 #include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
@@ -23,6 +28,26 @@ extern IASIO* theAsioDriver;
 
 namespace flexasio {
 	namespace {
+
+		struct Config {
+			std::optional<double> sampleRate;
+		};
+
+		std::optional<Config> GetConfig(int& argc, char**& argv) {
+			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
+			Config config;
+			options.add_options()("sample-rate", "ASIO sample rate to use; default is to use the initial sample rate of the driver", cxxopts::value(config.sampleRate));
+			try {
+				options.parse(argc, argv);
+			}
+			catch (const cxxopts::OptionParseException& exception) {
+				std::cerr << "USAGE ERROR: " << exception.what() << std::endl;
+				std::cerr << std::endl;
+				std::cerr << options.help() << std::endl;
+				return std::nullopt;
+			}
+			return config;
+		}
 
 		class LogState final {
 		public:
@@ -248,7 +273,7 @@ namespace flexasio {
 
 		Callbacks* Callbacks::global = nullptr;
 
-		bool Run() {
+		bool Run(const Config& config) {
 			if (!Init()) return false;
 
 			Log();
@@ -258,17 +283,25 @@ namespace flexasio {
 
 			Log();
 
-			const auto initialSampleRate = GetSampleRate();
+			auto initialSampleRate = GetSampleRate();
 			if (!initialSampleRate.has_value()) return false;
+
+			const auto targetSampleRate = config.sampleRate.has_value() ? *config.sampleRate : *initialSampleRate;
 
 			Log();
 
-			for (const auto sampleRate : { 44100.0, 48000.0, 96000.0, 192000.0, *initialSampleRate }) {
+			for (const auto sampleRate : { 44100.0, 48000.0, 96000.0, 192000.0 }) {
 				if (CanSampleRate(sampleRate)) {
 					if (!SetSampleRate(sampleRate)) return false;
 					if (GetSampleRate() != sampleRate) return false;
 				}
 			}
+
+			Log();
+
+			if (!CanSampleRate(targetSampleRate)) return false;
+			if (!SetSampleRate(targetSampleRate)) return false;
+			if (GetSampleRate() != targetSampleRate) return false;
 
 			Log();
 
@@ -360,13 +393,13 @@ namespace flexasio {
 			return true;
 		}
 
-		bool InitAndRun() {
+		bool InitAndRun(const Config& config) {
 			// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
 			// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
 			// as opposed to whatever ASIO driver might be currently installed on the system.
 			theAsioDriver = CreateFlexASIO();
 
-			const bool result = Run();
+			const bool result = Run(config);
 
 			// There are cases in which the ASIO host library will nullify the driver pointer.
 			// For example, it does that if the driver fails to initialize.
@@ -382,7 +415,9 @@ namespace flexasio {
 	}
 }
 
-int main(int, char**) {
-	if (!::flexasio::InitAndRun()) return 1;
+int main(int argc, char** argv) {
+	const auto config = ::flexasio::GetConfig(argc, argv);
+	if (!config.has_value()) return 2;
+	if (!::flexasio::InitAndRun(*config)) return 1;
 	return 0;
 }

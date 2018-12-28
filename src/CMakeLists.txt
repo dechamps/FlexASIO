@@ -32,6 +32,16 @@ ExternalProject_Add(
     EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(cxxopts)
+ExternalProject_Add(
+    cxxopts
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/cxxopts"
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+	CMAKE_ARGS ${CMAKE_ARGS}
+    BUILD_ALWAYS
+    EXCLUDE_FROM_ALL
+)
+
 check_git_submodule(portaudio)
 ExternalProject_Add(
 	portaudio
@@ -51,7 +61,7 @@ ExternalProject_Add(
     BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
     INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
     CMAKE_ARGS ${CMAKE_ARGS}
-    DEPENDS tinytoml portaudio
+    DEPENDS tinytoml cxxopts portaudio
 )
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")
