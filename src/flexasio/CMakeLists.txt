@@ -12,6 +12,7 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
 find_package(tinytoml REQUIRED)
 find_package(cxxopts REQUIRED)
+find_package(sndfile REQUIRED)
 find_package(portaudio REQUIRED)
 find_package(Git)
 

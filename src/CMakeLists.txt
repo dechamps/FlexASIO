@@ -42,6 +42,16 @@ ExternalProject_Add(
     EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(libsndfile)
+ExternalProject_Add(
+    libsndfile
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/libsndfile"
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+	CMAKE_ARGS ${CMAKE_ARGS} -DBUILD_PROGRAMS=OFF -DBUILD_SHARED_LIBS=ON
+    BUILD_ALWAYS USES_TERMINAL_BUILD TRUE
+    EXCLUDE_FROM_ALL
+)
+
 check_git_submodule(portaudio)
 ExternalProject_Add(
 	portaudio
@@ -61,7 +71,7 @@ ExternalProject_Add(
     BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
     INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
     CMAKE_ARGS ${CMAKE_ARGS}
-    DEPENDS tinytoml cxxopts portaudio
+    DEPENDS tinytoml cxxopts libsndfile portaudio
 )
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")

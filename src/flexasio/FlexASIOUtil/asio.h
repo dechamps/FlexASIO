@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <optional>
 
 namespace flexasio {
 	template <typename ASIOInt64> int64_t ASIOToInt64(ASIOInt64);
@@ -13,6 +14,7 @@ namespace flexasio {
 	std::string GetASIOErrorString(ASIOError error);
 
 	std::string GetASIOSampleTypeString(ASIOSampleType sampleType);
+	std::optional<size_t> GetASIOSampleSize(ASIOSampleType sampleType);
 
 	std::string GetASIOFutureSelectorString(long selector);
 	std::string GetASIOMessageSelectorString(long selector);

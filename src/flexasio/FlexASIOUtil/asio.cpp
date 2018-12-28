@@ -72,6 +72,29 @@ namespace flexasio {
 			});
 	}
 
+	std::optional<size_t> GetASIOSampleSize(ASIOSampleType sampleType) {
+		return Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, size_t>>{
+			{ASIOSTInt16MSB, 2},
+			{ ASIOSTInt24MSB, 3 },
+			{ ASIOSTInt32MSB, 4 },
+			{ ASIOSTFloat32MSB, 4 },
+			{ ASIOSTFloat64MSB, 8 },
+			{ ASIOSTInt32MSB16, 4 },
+			{ ASIOSTInt32MSB18, 4 },
+			{ ASIOSTInt32MSB20, 4 },
+			{ ASIOSTInt32MSB24, 4 },
+			{ ASIOSTInt16LSB, 2 },
+			{ ASIOSTInt24LSB, 3 },
+			{ ASIOSTInt32LSB, 4 },
+			{ ASIOSTFloat32LSB, 4 },
+			{ ASIOSTFloat64LSB, 8 },
+			{ ASIOSTInt32LSB16, 4 },
+			{ ASIOSTInt32LSB18, 4 },
+			{ ASIOSTInt32LSB20, 4 },
+			{ ASIOSTInt32LSB24, 4 },
+			});
+	}
+
 	std::string GetASIOFutureSelectorString(long selector) {
 		return EnumToString(selector, {
 			{kAsioEnableTimeCodeRead, "EnableTimeCodeRead"},

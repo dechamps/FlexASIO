@@ -9,6 +9,8 @@
 #include <cstdlib>
 #include <sstream>
 
+#include <sndfile.h>
+
 #include <host\ginclude.h>
 #include <common\asio.h>
 
@@ -30,13 +32,16 @@ namespace flexasio {
 	namespace {
 
 		struct Config {
+			std::optional<std::string> outputFile;
 			std::optional<double> sampleRate;
 		};
 
 		std::optional<Config> GetConfig(int& argc, char**& argv) {
 			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
 			Config config;
-			options.add_options()("sample-rate", "ASIO sample rate to use; default is to use the initial sample rate of the driver", cxxopts::value(config.sampleRate));
+			options.add_options()
+				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
+				("sample-rate", "ASIO sample rate to use; default is to use the initial sample rate of the driver", cxxopts::value(config.sampleRate));
 			try {
 				options.parse(argc, argv);
 			}
@@ -63,6 +68,95 @@ namespace flexasio {
 			static LogState logState;
 			return Logger(&logState.sink());
 		}
+
+		ASIOSampleType GetCommonSampleType(const std::vector<ASIOChannelInfo>& channelInfos, const bool input) {
+			std::optional<ASIOSampleType> sampleType;
+			for (const auto& channelInfo : channelInfos) {
+				if (!!channelInfo.isInput != input) continue;
+				if (!sampleType.has_value()) {
+					sampleType = channelInfo.type;
+					continue;
+				}
+				if (*sampleType != channelInfo.type) throw std::runtime_error(std::string(input ? "Input" : "Output") + " channels don't have the same sample type (found " + GetASIOSampleTypeString(*sampleType) + " and " + GetASIOSampleTypeString(channelInfo.type));
+			}
+			if (!sampleType.has_value()) throw std::runtime_error(std::string("No ") + (input ? "input" : "output") + " channels");
+			return *sampleType;
+		}
+
+		std::vector<uint8_t> MakeInterleavedBuffer(std::vector<ASIOBufferInfo> bufferInfos, ASIOSampleType sampleType, long bufferSize, long doubleBufferIndex) {
+			const auto inputEnd = std::partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return bufferInfo.isInput;  });
+			bufferInfos.resize(inputEnd - bufferInfos.begin());
+
+			const auto sampleSize = GetASIOSampleSize(sampleType);
+			if (!sampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(sampleType));
+			std::vector<uint8_t> interleavedBuffer(bufferSize * bufferInfos.size() * *sampleSize);
+
+			uint8_t* interleavedPtr = &interleavedBuffer.front();
+			while (bufferSize > 0) {
+				for (auto& bufferInfo : bufferInfos) {
+					auto& buffer = bufferInfo.buffers[doubleBufferIndex];
+					memcpy(interleavedPtr, buffer, *sampleSize);
+					buffer = static_cast<uint8_t*>(buffer) + *sampleSize;
+					interleavedPtr += *sampleSize;
+				}
+				--bufferSize;
+			}
+			if (interleavedPtr != &interleavedBuffer.front() + interleavedBuffer.size()) abort();
+			return interleavedBuffer;
+		}
+
+		std::optional<int> ASIOSampleTypeToSfFormat(const ASIOSampleType sampleType) {
+			return Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, int>>{
+				{ASIOSTInt16MSB, SF_FORMAT_PCM_16 | SF_ENDIAN_BIG},
+				{ASIOSTInt24MSB, SF_FORMAT_PCM_24 | SF_ENDIAN_BIG},
+				{ASIOSTInt32MSB, SF_FORMAT_PCM_32 | SF_ENDIAN_BIG},
+				{ASIOSTFloat32MSB, SF_FORMAT_FLOAT | SF_ENDIAN_BIG},
+				{ASIOSTFloat64MSB, SF_FORMAT_DOUBLE | SF_ENDIAN_BIG},
+				{ASIOSTInt16LSB, SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE},
+				{ASIOSTInt24LSB, SF_FORMAT_PCM_24 | SF_ENDIAN_LITTLE},
+				{ASIOSTInt32LSB, SF_FORMAT_PCM_32 | SF_ENDIAN_LITTLE},
+				{ASIOSTFloat32LSB, SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE},
+				{ASIOSTFloat64LSB, SF_FORMAT_DOUBLE | SF_ENDIAN_LITTLE},
+				});
+		}
+
+		class OutputFile {
+		public:
+			OutputFile(const std::string_view path, const int sampleRate, const int channels, const ASIOSampleType sampleType) :
+				sfInfo(GetSfInfo(sampleRate, channels, sampleType)),
+				sndfile(sf_open(std::string(path).c_str(), SFM_WRITE, &sfInfo)) {
+				if (sndfile == NULL) throw std::runtime_error("Unable to open output file '" + std::string(path) + "': " + sf_strerror(NULL));
+			}
+
+			void Write(const std::vector<uint8_t>& interleavedBuffer) {
+				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
+					const auto bytesToWrite = interleavedBuffer.end() - bufferIt;
+					const auto bytesWritten = sf_write_raw(sndfile, const_cast<uint8_t*>(&*bufferIt), bytesToWrite);
+					if (bytesWritten <= 0 || bytesWritten > bytesToWrite) throw std::runtime_error(std::string("Unable to write to output file: ") + sf_strerror(sndfile));
+					bufferIt += int(bytesWritten);
+				}
+			}
+
+			~OutputFile() {
+				const auto closeError = sf_close(sndfile);
+				if (closeError != 0) std::cerr << "Error while closing output file: " << sf_error_number(closeError) << std::endl;
+			}
+
+		private:
+			static SF_INFO GetSfInfo(const int sampleRate, const int channels, const ASIOSampleType sampleType) {
+				const auto sfFormat = ASIOSampleTypeToSfFormat(sampleType);
+				if (!sfFormat.has_value()) throw std::runtime_error("ASIO sample type " + GetASIOSampleTypeString(sampleType) + " is not supported as an output file format");
+
+				SF_INFO sfInfo = { 0 };
+				sfInfo.samplerate = sampleRate;
+				sfInfo.channels = channels;
+				sfInfo.format = SF_FORMAT_WAVEX | *sfFormat;
+				return sfInfo;
+			}
+
+			SF_INFO sfInfo;
+			SNDFILE* const sndfile;
+		};
 
 		template <typename FunctionPointer> struct function_pointer_traits;
 		template <typename ReturnValue, typename... Args> struct function_pointer_traits<ReturnValue(*)(Args...)> {
@@ -95,22 +189,28 @@ namespace flexasio {
 			FlexASIOTest(Config config) : config(std::move(config)) {}
 
 			bool Run() {
-				// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
-				// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
-				// as opposed to whatever ASIO driver might be currently installed on the system.
-				theAsioDriver = CreateFlexASIO();
+				try {
+					// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
+					// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
+					// as opposed to whatever ASIO driver might be currently installed on the system.
+					theAsioDriver = CreateFlexASIO();
 
-				const bool result = RunInitialized();
+					const bool result = RunInitialized();
 
-				// There are cases in which the ASIO host library will nullify the driver pointer.
-				// For example, it does that if the driver fails to initialize.
-				// (Sadly the ASIO host library won't call Release() in that case, because memory leaks are fun!)
-				if (theAsioDriver != nullptr) {
-					ReleaseFlexASIO(theAsioDriver);
-					theAsioDriver = nullptr;
+					// There are cases in which the ASIO host library will nullify the driver pointer.
+					// For example, it does that if the driver fails to initialize.
+					// (Sadly the ASIO host library won't call Release() in that case, because memory leaks are fun!)
+					if (theAsioDriver != nullptr) {
+						ReleaseFlexASIO(theAsioDriver);
+						theAsioDriver = nullptr;
+					}
+
+					return result;
 				}
-
-				return result;
+				catch (const std::exception& exception) {
+					Log() << "FATAL ERROR: " << exception.what();
+					return false;
+				}
 			}
 
 		private:
@@ -183,9 +283,17 @@ namespace flexasio {
 				return channelInfo;
 			}
 
-			void GetAllChannelInfo(std::pair<long, long> ioChannelCounts) {
-				for (long inputChannel = 0; inputChannel < ioChannelCounts.first; ++inputChannel) GetChannelInfo(inputChannel, true);
-				for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) GetChannelInfo(outputChannel, false);
+			std::vector<ASIOChannelInfo> GetAllChannelInfo(std::pair<long, long> ioChannelCounts) {
+				std::vector<ASIOChannelInfo> channelInfos;
+				for (long inputChannel = 0; inputChannel < ioChannelCounts.first; ++inputChannel) {
+					const auto channelInfo = GetChannelInfo(inputChannel, true);
+					if (channelInfo.has_value()) channelInfos.push_back(*channelInfo);
+				}
+				for (long outputChannel = 0; outputChannel < ioChannelCounts.second; ++outputChannel) {
+					const auto channelInfo = GetChannelInfo(outputChannel, false);
+					if (channelInfo.has_value()) channelInfos.push_back(*channelInfo);
+				}
+				return channelInfos;
 			}
 
 			struct Buffers {
@@ -336,9 +444,46 @@ namespace flexasio {
 
 				Log();
 
-				GetAllChannelInfo(ioChannelCounts);
+				const auto channelInfos = GetAllChannelInfo(ioChannelCounts);
+				if (long(channelInfos.size()) != ioChannelCounts.first + ioChannelCounts.second) return false;
 
 				Log();
+
+				std::optional<OutputFile> outputFile;
+				std::optional<ASIOSampleType> outputSampleType;
+				if (config.outputFile.has_value()) {
+					try {
+						outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
+						outputFile.emplace(*config.outputFile, int(targetSampleRate), ioChannelCounts.first, *outputSampleType);
+					}
+					catch (const std::exception& exception) {
+						throw std::runtime_error(std::string("Cannot output to file: ") + exception.what());
+					}
+				}
+
+				Callbacks callbacks;
+				callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
+					Log() << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ") called before start!";
+					Log() << "<- ";
+				};
+				callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
+					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ") called before start!";
+					Log() << "<- nullptr";
+					return nullptr;
+				};
+				callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
+					Log() << "sampleRateDidChange(" << sampleRate << ")";
+					Log() << "<-";
+				};
+				callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
+					Log() << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")";
+					const auto result = HandleASIOMessage(selector, value, message, opt);
+					Log() << "<- " << result;
+					return result;
+				};
+				
+				const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
+				if (buffers.info.size() == 0) return false;
 
 				std::mutex bufferSwitchCountMutex;
 				std::condition_variable bufferSwitchCountCondition;
@@ -352,33 +497,23 @@ namespace flexasio {
 					bufferSwitchCountCondition.notify_all();
 				};
 
-				Callbacks callbacks;
-				callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
-					Log() << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
+				auto bufferSwitch = [&](long doubleBufferIndex) {
 					GetSamplePosition();
-					Log() << "<-";
+					if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputSampleType, bufferSize->preferred, doubleBufferIndex));
 					incrementBufferSwitchCount();
 				};
-				callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
-					Log() << "sampleRateDidChange(" << sampleRate << ")";
+
+				callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
+					Log() << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
+					bufferSwitch(doubleBufferIndex);
 					Log() << "<-";
-				};
-				callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
-					Log() << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")";
-					const auto result = HandleASIOMessage(selector, value, message, opt);
-					Log() << "<- " << result;
-					return result;
 				};
 				callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
 					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
-					GetSamplePosition();
+					bufferSwitch(doubleBufferIndex);
 					Log() << "<- nullptr";
-					incrementBufferSwitchCount();
 					return nullptr;
 				};
-
-				const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
-				if (buffers.info.size() == 0) return false;
 
 				Log();
 
