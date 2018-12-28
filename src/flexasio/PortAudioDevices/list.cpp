@@ -64,7 +64,7 @@ namespace flexasio {
 		}
 
 		void InitAndListDevices() {
-			PortAudioLogger portAudioLogger;
+			PortAudioDebugRedirector portAudioLogger([](std::string_view str) { Log() << "[PortAudio] " << str; });
 
 			try {
 				ThrowOnPaError(Pa_Initialize());

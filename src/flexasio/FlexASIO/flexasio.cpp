@@ -263,7 +263,9 @@ namespace flexasio {
 		const auto config = LoadConfig();
 		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
 		return *config;
-	}()), hostApi([&] {
+	}()),
+	portAudioDebugRedirector([](std::string_view str) { Log() << "[PortAudio] " << str; }),
+	hostApi([&] {
 		LogPortAudioApiList();
 		auto hostApi = config.backend.has_value() ? SelectHostApiByName(*config.backend) : SelectDefaultHostApi();
 		Log() << "Selected backend: " << hostApi;

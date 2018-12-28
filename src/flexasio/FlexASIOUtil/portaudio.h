@@ -6,14 +6,23 @@
 #include <windows.h>
 #include <MMReg.h>
 
+#include <functional>
 #include <string>
+#include <string_view>
 
 namespace flexasio {
 
-	class PortAudioLogger final {
+	class PortAudioDebugRedirector final {
 	public:
-		PortAudioLogger();
-		~PortAudioLogger();
+		using Write = std::function<void(std::string_view)>;
+
+		explicit PortAudioDebugRedirector(Write write);
+		~PortAudioDebugRedirector();
+
+	private:
+		static void DebugPrint(const char*);
+
+		static Write write;
 	};
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId);

@@ -7,7 +7,6 @@
 #include <ksmedia.h>
 
 #include <cctype>
-#include <mutex>
 #include <stdexcept>
 #include <string_view>
 
@@ -39,32 +38,30 @@ typedef struct PaUtilHostApiSpecificStreamInfoHeader
 
 namespace flexasio {
 
-	namespace {
-		std::mutex loggerMutex;
-		size_t loggerReferenceCount;
-
-		void DebugPrint(const char* log) {
-			std::string_view logline(log);
-			while (!logline.empty() && isspace(static_cast<unsigned char>(logline.back()))) logline.remove_suffix(1);
-			Log() << "[PortAudio] " << logline;
-		}
-	}
-
-	PortAudioLogger::PortAudioLogger() {
-		Log() << "PortAudio version: " << Pa_GetVersionText();
-
-		std::scoped_lock loggerLock(loggerMutex);
-		if (loggerReferenceCount++ > 0) return;
-		Log() << "Enabling PortAudio debug output redirection";
+	PortAudioDebugRedirector::PortAudioDebugRedirector(Write write) {
+		write(std::string("PortAudio version: ") + Pa_GetVersionText());
+		write("Enabling PortAudio debug output redirection");
+		if (this->write) abort();
+		this->write = std::move(write);
 		PaUtil_SetDebugPrintFunction(DebugPrint);
 	}
 
-	PortAudioLogger::~PortAudioLogger() {
-		std::scoped_lock loggerLock(loggerMutex);
-		if (--loggerReferenceCount > 0) return;
-		Log() << "Disabling PortAudio debug output redirection";
+	PortAudioDebugRedirector::~PortAudioDebugRedirector() {
+		this->write("Disabling PortAudio debug output redirection");
 		PaUtil_SetDebugPrintFunction(NULL);
+		if (!this->write) abort();
+		this->write = nullptr;
 	}
+
+	void PortAudioDebugRedirector::DebugPrint(const char* str) {
+		if (!PortAudioDebugRedirector::write) abort();
+
+		std::string_view line(str);
+		while (!line.empty() && isspace(static_cast<unsigned char>(line.back()))) line.remove_suffix(1);
+		PortAudioDebugRedirector::write(line);
+	}
+
+	PortAudioDebugRedirector::Write PortAudioDebugRedirector::write;
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId) {
 		return EnumToString(hostApiTypeId, {

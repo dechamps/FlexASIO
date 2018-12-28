@@ -193,7 +193,7 @@ namespace flexasio {
 		const HWND windowHandle = nullptr;
 		const Config config;
 
-		PortAudioLogger portAudioLogger;
+		PortAudioDebugRedirector portAudioDebugRedirector;
 		PortAudioHandle portAudioHandle;
 
 		const HostApi hostApi;
