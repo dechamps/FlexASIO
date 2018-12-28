@@ -38,6 +38,12 @@ target_link_libraries(FlexASIO_config
 	PRIVATE tinytoml
 )
 
+add_library(FlexASIO_portaudio STATIC EXCLUDE_FROM_ALL portaudio.cpp)
+target_link_libraries(FlexASIO_portaudio
+	PRIVATE FlexASIOUtil_portaudio
+	PRIVATE portaudio::portaudio
+)
+
 add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)
 target_link_libraries(FlexASIO_flexasio
 	PUBLIC asiosdk_headers
@@ -56,6 +62,7 @@ add_library(FlexASIO SHARED dll.def flexasio.rc ../versioninfo.rc)
 target_compile_definitions(FlexASIO PRIVATE PROJECT_DESCRIPTION="FlexASIO ASIO Driver DLL")
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
+	PRIVATE FlexASIO_portaudio
 	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIO_comdll
 	PRIVATE FlexASIO_idl

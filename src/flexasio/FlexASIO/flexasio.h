@@ -2,6 +2,7 @@
 
 #include "config.h"
 
+#include "portaudio.h"
 #include "../FlexASIOUtil/portaudio.h"
 
 #include <common\asiosys.h>
