@@ -4,6 +4,7 @@
 #include <fstream>
 #include <functional>
 #include <mutex>
+#include <thread>
 #include <optional>
 #include <sstream>
 #include <string_view>
@@ -56,6 +57,25 @@ namespace flexasio {
 	private:
 		std::mutex mutex;
 		LogSink& backend;
+	};
+
+	class AsyncLogSink final : public LogSink {
+	public:
+		AsyncLogSink(LogSink& backend) : backend(backend), thread([&] { RunThread(); }) {}
+		~AsyncLogSink();
+
+		void Write(std::string_view) override;
+
+	private:
+		void RunThread();
+
+		LogSink& backend;
+		std::mutex mutex;
+		std::condition_variable stateChanged;
+		std::vector<std::string> queue;
+		bool shutdown = false;
+
+		std::thread thread;
 	};
 
 	class Logger final

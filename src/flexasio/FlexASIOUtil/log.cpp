@@ -120,6 +120,46 @@ namespace flexasio {
 		backend.Write(str);
 	}
 
+	void AsyncLogSink::Write(const std::string_view str) {
+		std::string strCopy(str);
+		bool notify;
+		{
+			std::scoped_lock lock(mutex);
+			if (shutdown) abort();
+			notify = queue.empty();
+			queue.emplace_back(std::move(strCopy));
+		}
+		if (notify) stateChanged.notify_all();
+	}
+
+	void AsyncLogSink::RunThread() {
+		for (;;) {
+			std::vector<std::string> localQueue;
+			localQueue.reserve(32);
+			bool localShutdown;
+
+			{
+				std::unique_lock lock(mutex);
+				stateChanged.wait(lock, [&] { return !queue.empty() || shutdown; });
+				localQueue.swap(queue);
+				localShutdown = shutdown;
+			}
+			
+			for (const auto& str : localQueue) backend.Write(str);
+
+			if (localShutdown) break;
+		}
+	}
+
+	AsyncLogSink::~AsyncLogSink() {
+		{
+			std::scoped_lock lock(mutex);
+			shutdown = true;
+		}
+		stateChanged.notify_all();
+		thread.join();
+	}
+
 	Logger::Logger(LogSink* sink) {
 		if (sink == nullptr) return;
 

@@ -30,7 +30,7 @@ namespace flexasio {
 
 		private:
 			StreamLogSink stream_sink{ std::cout };
-			ThreadSafeLogSink thread_safe_sink{ stream_sink };
+			AsyncLogSink thread_safe_sink{ stream_sink };
 			PreambleLogSink preamble_sink{ thread_safe_sink };
 		};
 
