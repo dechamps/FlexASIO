@@ -1,6 +1,9 @@
 #pragma once
 
+#include <filesystem>
+#include <fstream>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <sstream>
 #include <string_view>
@@ -10,6 +13,49 @@ namespace flexasio {
 	class LogSink {
 	public:
 		virtual void Write(std::string_view) = 0;
+	};
+
+	class PreambleLogSink final : public LogSink {
+	public:
+		PreambleLogSink(LogSink& backend);
+
+		void Write(const std::string_view str) override { backend.Write(str); }
+
+	private:
+		LogSink& backend;
+	};
+
+	class StreamLogSink final : public LogSink {
+	public:
+		StreamLogSink(std::ostream& stream) : stream(stream) {}
+
+		void Write(const std::string_view str) override { stream << str << std::endl;  }
+
+	private:
+		std::ostream& stream;
+	};
+
+	class FileLogSink final : public LogSink {
+	public:
+		FileLogSink(const std::filesystem::path& path);
+		~FileLogSink();
+
+		void Write(const std::string_view str) override { stream_sink.Write(str); }
+
+	private:
+		std::ofstream stream;
+		StreamLogSink stream_sink{ stream };
+	};
+
+	class ThreadSafeLogSink final : public LogSink {
+	public:
+		ThreadSafeLogSink(LogSink& backend) : backend(backend) {}
+
+		void Write(std::string_view) override;
+
+	private:
+		std::mutex mutex;
+		LogSink& backend;
 	};
 
 	class Logger final

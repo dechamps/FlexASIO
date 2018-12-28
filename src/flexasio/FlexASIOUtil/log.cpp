@@ -104,9 +104,9 @@ namespace flexasio {
 			return moduleName;
 		}
 
-		class FileLogSink final : public LogSink {
+		class FlexASIOLogSink final : public LogSink {
 		public:
-			static std::unique_ptr<FileLogSink> Open() {
+			static std::unique_ptr<FlexASIOLogSink> Open() {
 				const auto userDirectory = GetUserDirectory();
 				if (!userDirectory.has_value()) return nullptr;
 
@@ -115,38 +115,44 @@ namespace flexasio {
 
 				if (!std::filesystem::exists(path)) return nullptr;
 
-				return std::make_unique<FileLogSink>(path);
+				return std::make_unique<FlexASIOLogSink>(path);
 			}
 
-			static FileLogSink* Get() {
+			static FlexASIOLogSink* Get() {
 				static const auto output = Open();
 				return output.get();
 			}
 
-			FileLogSink(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
-				Log() << "Logfile opened";
-				Log() << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
-
-				Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
-				Log() << "Host process: " << GetModuleName();
+			FlexASIOLogSink(const std::filesystem::path& path) : file_sink(path) {
+				Logger(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
 			}
 
-			~FileLogSink() {
-				Log() << "Closing logfile";
-			}
-
-			void Write(const std::string_view str) override {
-				std::scoped_lock stream_lock(stream_mutex);
-				stream << str << std::endl;
-			}
+			void Write(const std::string_view str) override { return preamble_sink.Write(str); }
 
 		private:
-			Logger Log() { return Logger(this); }
-
-			std::mutex stream_mutex;
-			std::ofstream stream;
+			FileLogSink file_sink;
+			ThreadSafeLogSink thread_safe_sink{ file_sink };
+			PreambleLogSink preamble_sink{ thread_safe_sink };
 		};
 
+	}
+
+	PreambleLogSink::PreambleLogSink(LogSink& backend) : backend(backend) {
+		Logger(this) << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
+		Logger(this) << "Host process: " << GetModuleName();
+	}
+
+	FileLogSink::FileLogSink(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
+		Logger(this) << "Logfile opened: " << path;
+	}
+
+	FileLogSink::~FileLogSink() {
+		Logger(this) << "Closing logfile";
+	}
+
+	void ThreadSafeLogSink::Write(const std::string_view str) {
+		std::scoped_lock lock(mutex);
+		backend.Write(str);
 	}
 
 	Logger::Logger(LogSink* sink) {
@@ -164,6 +170,6 @@ namespace flexasio {
 		enabledState->sink.Write(enabledState->stream.str());
 	}
 
-	Logger Log() { return Logger(FileLogSink::Get()); }
+	Logger Log() { return Logger(FlexASIOLogSink::Get()); }
 
 }
