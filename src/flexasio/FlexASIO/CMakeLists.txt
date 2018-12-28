@@ -23,7 +23,7 @@ target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_flexasio
 	PRIVATE FlexASIOUtil_asio
 	PRIVATE FlexASIO_idl
-	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
 	PRIVATE asiosdk_headers
 )
@@ -33,9 +33,15 @@ target_compile_definitions(FlexASIO_comdll PRIVATE _WINDLL)
 
 add_library(FlexASIO_config STATIC EXCLUDE_FROM_ALL config.cpp)
 target_link_libraries(FlexASIO_config
-	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
 	PRIVATE tinytoml
+)
+
+add_library(FlexASIO_log STATIC EXCLUDE_FROM_ALL log.cpp)
+target_link_libraries(FlexASIO_log
+	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIOUtil_shell
 )
 
 add_library(FlexASIO_portaudio STATIC EXCLUDE_FROM_ALL portaudio.cpp)
@@ -50,7 +56,7 @@ target_link_libraries(FlexASIO_flexasio
 	PUBLIC FlexASIO_config
 	PUBLIC FlexASIOUtil_portaudio
 	PRIVATE FlexASIOUtil_asio
-	PRIVATE FlexASIOUtil_log
+	PRIVATE FlexASIO_log
 	PRIVATE FlexASIO_endian
 	PRIVATE FlexASIO_version
 	PRIVATE portaudio::portaudio

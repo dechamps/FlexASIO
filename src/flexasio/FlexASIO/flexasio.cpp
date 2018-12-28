@@ -14,7 +14,7 @@
 #include "pa_win_wasapi.h"
 
 #include "endian.h"
-#include "../FlexASIOUtil/log.h"
+#include "log.h"
 #include "../FlexASIOUtil/asio.h"
 #include "../FlexASIOUtil/string.h"
 #include "../version/version.h"

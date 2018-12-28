@@ -1,6 +1,6 @@
 #include "portaudio.h"
 
-#include "../FlexASIOUtil/log.h"
+#include "log.h"
 #include "../FlexASIOUtil/portaudio.h"
 
 namespace flexasio {

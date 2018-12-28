@@ -5,7 +5,7 @@
 #include "flexasio_h.h"
 
 #include "../FlexASIOUtil/asio.h"
-#include "../FlexASIOUtil/log.h"
+#include "log.h"
 
 #include <common\iasiodrv.h>
 

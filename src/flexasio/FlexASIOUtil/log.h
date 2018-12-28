@@ -80,6 +80,4 @@ namespace flexasio {
 		std::optional<EnabledState> enabledState;
 	};
 
-	Logger Log();
-
 }

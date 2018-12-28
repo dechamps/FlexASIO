@@ -6,7 +6,7 @@
 
 #include <toml/toml.h>
 
-#include "../FlexASIOUtil/log.h"
+#include "log.h"
 #include "../FlexASIOUtil/find.h"
 #include "../FlexASIOUtil/shell.h"
 
