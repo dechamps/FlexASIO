@@ -6,5 +6,6 @@ target_link_libraries(FlexASIOTest
 	PRIVATE FlexASIO
 	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIOUtil_asio
+	PRIVATE FlexASIOUtil_log
 )
 install(TARGETS FlexASIOTest RUNTIME DESTINATION bin)

@@ -12,6 +12,7 @@
 #include <host\ginclude.h>
 #include <common\asio.h>
 
+#include "../FlexASIOUtil/log.h"
 #include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
 #include "..\FlexASIOUtil\find.h"
@@ -23,32 +24,47 @@ extern IASIO* theAsioDriver;
 namespace flexasio {
 	namespace {
 
+		class LogState final {
+		public:
+			LogSink& sink() { return preamble_sink;  }
+
+		private:
+			StreamLogSink stream_sink{ std::cout };
+			ThreadSafeLogSink thread_safe_sink{ stream_sink };
+			PreambleLogSink preamble_sink{ thread_safe_sink };
+		};
+
+		Logger Log() {
+			static LogState logState;
+			return Logger(&logState.sink());
+		}
+
 		template <typename FunctionPointer> struct function_pointer_traits;
 		template <typename ReturnValue, typename... Args> struct function_pointer_traits<ReturnValue(*)(Args...)> {
 			using function = std::function<ReturnValue(Args...)>;
 		};
 
 		ASIOError PrintError(ASIOError error) {
-			std::cout << "-> " << GetASIOErrorString(error) << std::endl;
+			Log() << "-> " << GetASIOErrorString(error);
 			return error;
 		}
 
 		std::optional<ASIODriverInfo> Init() {
 			ASIODriverInfo asioDriverInfo = { 0 };
 			asioDriverInfo.asioVersion = 2;
-			std::cout << "ASIOInit(asioVersion = " << asioDriverInfo.asioVersion << ")" << std::endl;
+			Log() << "ASIOInit(asioVersion = " << asioDriverInfo.asioVersion << ")";
 			const auto initError = PrintError(ASIOInit(&asioDriverInfo));
-			std::cout << "asioVersion = " << asioDriverInfo.asioVersion << " driverVersion = " << asioDriverInfo.asioVersion << " name = " << asioDriverInfo.name << " errorMessage = " << asioDriverInfo.errorMessage << " sysRef = " << asioDriverInfo.sysRef << std::endl;
+			Log() << "asioVersion = " << asioDriverInfo.asioVersion << " driverVersion = " << asioDriverInfo.asioVersion << " name = " << asioDriverInfo.name << " errorMessage = " << asioDriverInfo.errorMessage << " sysRef = " << asioDriverInfo.sysRef;
 			if (initError != ASE_OK) return std::nullopt;
 			return asioDriverInfo;
 		}
 
 		std::pair<long, long> GetChannels() {
-			std::cout << "ASIOGetChannels()" << std::endl;
+			Log() << "ASIOGetChannels()";
 			long numInputChannels, numOutputChannels;
 			const auto error = PrintError(ASIOGetChannels(&numInputChannels, &numOutputChannels));
 			if (error != ASE_OK) return { 0, 0 };
-			std::cout << "Channel count: " << numInputChannels << " input, " << numOutputChannels << " output" << std::endl;
+			Log() << "Channel count: " << numInputChannels << " input, " << numOutputChannels << " output";
 			return { numInputChannels, numOutputChannels };
 		}
 
@@ -60,45 +76,45 @@ namespace flexasio {
 		};
 
 		std::optional<BufferSize> GetBufferSize() {
-			std::cout << "ASIOGetBufferSize()" << std::endl;
+			Log() << "ASIOGetBufferSize()";
 			BufferSize bufferSize;
 			const auto error = PrintError(ASIOGetBufferSize(&bufferSize.min, &bufferSize.max, &bufferSize.preferred, &bufferSize.granularity));
 			if (error != ASE_OK) return std::nullopt;
-			std::cout << "Buffer size: min " << bufferSize.min << " max " << bufferSize.max << " preferred " << bufferSize.preferred << " granularity " << bufferSize.granularity << std::endl;
+			Log() << "Buffer size: min " << bufferSize.min << " max " << bufferSize.max << " preferred " << bufferSize.preferred << " granularity " << bufferSize.granularity;
 			return bufferSize;
 		}
 
 		std::optional<ASIOSampleRate> GetSampleRate() {
-			std::cout << "ASIOGetSampleRate()" << std::endl;
+			Log() << "ASIOGetSampleRate()";
 			ASIOSampleRate sampleRate = NAN;
 			const auto error = PrintError(ASIOGetSampleRate(&sampleRate));
 			if (error != ASE_OK) return std::nullopt;
-			std::cout << "Sample rate: " << sampleRate << std::endl;
+			Log() << "Sample rate: " << sampleRate;
 			return sampleRate;
 		}
 
 		bool CanSampleRate(ASIOSampleRate sampleRate) {
-			std::cout << "ASIOCanSampleRate(" << sampleRate << ")" << std::endl;
+			Log() << "ASIOCanSampleRate(" << sampleRate << ")";
 			return PrintError(ASIOCanSampleRate(sampleRate)) == ASE_OK;
 		}
 
 		bool SetSampleRate(ASIOSampleRate sampleRate) {
-			std::cout << "ASIOSetSampleRate(" << sampleRate << ")" << std::endl;
+			Log() << "ASIOSetSampleRate(" << sampleRate << ")";
 			return PrintError(ASIOSetSampleRate(sampleRate)) == ASE_OK;
 		}
 
 		bool OutputReady() {
-			std::cout << "ASIOOutputReady()" << std::endl;
+			Log() << "ASIOOutputReady()";
 			return PrintError(ASIOOutputReady()) == ASE_OK;
 		}
 
 		std::optional<ASIOChannelInfo> GetChannelInfo(long channel, ASIOBool isInput) {
-			std::cout << "ASIOGetChannelInfo(channel = " << channel << " isInput = " << isInput << ")" << std::endl;
+			Log() << "ASIOGetChannelInfo(channel = " << channel << " isInput = " << isInput << ")";
 			ASIOChannelInfo channelInfo;
 			channelInfo.channel = channel;
 			channelInfo.isInput = isInput;
 			if (PrintError(ASIOGetChannelInfo(&channelInfo)) != ASE_OK) return std::nullopt;
-			std::cout << "isActive = " << channelInfo.isActive << " channelGroup = " << channelInfo.channelGroup << " type = " << GetASIOSampleTypeString(channelInfo.type) << " name = " << channelInfo.name << std::endl;
+			Log() << "isActive = " << channelInfo.isActive << " channelGroup = " << channelInfo.channelGroup << " type = " << GetASIOSampleTypeString(channelInfo.type) << " name = " << channelInfo.name;
 			return channelInfo;
 		}
 
@@ -114,8 +130,8 @@ namespace flexasio {
 			Buffers(Buffers&&) = default;
 			~Buffers() {
 				if (info.size() == 0) return;
-				std::cout << std::endl;
-				std::cout << "ASIODisposeBuffers()" << std::endl;
+				Log();
+				Log() << "ASIODisposeBuffers()";
 				PrintError(ASIODisposeBuffers());
 			}
 
@@ -136,11 +152,11 @@ namespace flexasio {
 				bufferInfo.channelNum = outputChannel;
 			}
 
-			std::cout << "ASIOCreateBuffers(";
+			Log() << "ASIOCreateBuffers(";
 			for (const auto& bufferInfo : bufferInfos) {
-				std::cout << "isInput = " << bufferInfo.isInput << " channelNum = " << bufferInfo.channelNum << " ";
+				Log() << "isInput = " << bufferInfo.isInput << " channelNum = " << bufferInfo.channelNum << " ";
 			}
-			std::cout << ", bufferSize = " << bufferSize << ", bufferSwitch = " << (void*)(callbacks.bufferSwitch) << " sampleRateDidChange = " << (void*)(callbacks.sampleRateDidChange) << " asioMessage = " << (void*)(callbacks.asioMessage) << " bufferSwitchTimeInfo = " << (void*)(callbacks.bufferSwitchTimeInfo) << ")" << std::endl;
+			Log() << ", bufferSize = " << bufferSize << ", bufferSwitch = " << (void*)(callbacks.bufferSwitch) << " sampleRateDidChange = " << (void*)(callbacks.sampleRateDidChange) << " asioMessage = " << (void*)(callbacks.asioMessage) << " bufferSwitchTimeInfo = " << (void*)(callbacks.bufferSwitchTimeInfo) << ")";
 
 			if (PrintError(ASIOCreateBuffers(bufferInfos.data(), long(bufferInfos.size()), bufferSize, &callbacks)) != ASE_OK) return {};
 			return Buffers(bufferInfos);
@@ -148,27 +164,27 @@ namespace flexasio {
 
 		void GetLatencies() {
 			long inputLatency = LONG_MIN, outputLatency = LONG_MIN;
-			std::cout << "ASIOGetLatencies()" << std::endl;
+			Log() << "ASIOGetLatencies()";
 			if (PrintError(ASIOGetLatencies(&inputLatency, &outputLatency)) != ASE_OK) return;
-			std::cout << "Latencies: input " << inputLatency << " samples, output " << outputLatency << " samples" << std::endl;
+			Log() << "Latencies: input " << inputLatency << " samples, output " << outputLatency << " samples";
 		}
 
 		bool Start() {
-			std::cout << "ASIOStart()" << std::endl;
+			Log() << "ASIOStart()";
 			return PrintError(ASIOStart()) == ASE_OK;
 		}
 
 		bool Stop() {
-			std::cout << "ASIOStop()" << std::endl;
+			Log() << "ASIOStop()";
 			return PrintError(ASIOStop()) == ASE_OK;
 		}
 
 		void GetSamplePosition() {
-			std::cout << "ASIOGetSamplePosition()" << std::endl;
+			Log() << "ASIOGetSamplePosition()";
 			ASIOSamples samples;
 			ASIOTimeStamp timeStamp;
 			if (PrintError(ASIOGetSamplePosition(&samples, &timeStamp)) != ASE_OK) return;
-			std::cout << "Sample position: " << ASIOToInt64(samples) << " timestamp: " << ASIOToInt64(timeStamp) << std::endl;
+			Log() << "Sample position: " << ASIOToInt64(samples) << " timestamp: " << ASIOToInt64(timeStamp);
 		}
 
 		using ASIOMessageHandler = decltype(ASIOCallbacks::asioMessage);
@@ -183,7 +199,7 @@ namespace flexasio {
 		};
 
 		long HandleSelectorSupportedMessage(long, long value, void*, double*) {
-			std::cout << "Being queried for message selector " << GetASIOMessageSelectorString(value) << std::endl;
+			Log() << "Being queried for message selector " << GetASIOMessageSelectorString(value);
 			return Find(value, message_selector_handlers).has_value() ? 1 : 0;
 		}
 
@@ -235,17 +251,17 @@ namespace flexasio {
 		bool Run() {
 			if (!Init()) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			const auto ioChannelCounts = GetChannels();
 			if (ioChannelCounts.first == 0 && ioChannelCounts.second == 0) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			const auto initialSampleRate = GetSampleRate();
 			if (!initialSampleRate.has_value()) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			for (const auto sampleRate : { 44100.0, 48000.0, 96000.0, 192000.0, *initialSampleRate }) {
 				if (CanSampleRate(sampleRate)) {
@@ -254,20 +270,20 @@ namespace flexasio {
 				}
 			}
 
-			std::cout << std::endl;
+			Log();
 
 			const auto bufferSize = GetBufferSize();
 			if (!bufferSize.has_value()) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			OutputReady();
 
-			std::cout << std::endl;
+			Log();
 
 			GetAllChannelInfo(ioChannelCounts);
 
-			std::cout << std::endl;
+			Log();
 
 			std::mutex bufferSwitchCountMutex;
 			std::condition_variable bufferSwitchCountCondition;
@@ -276,32 +292,32 @@ namespace flexasio {
 				{
 					std::scoped_lock bufferSwitchCountLock(bufferSwitchCountMutex);
 					++bufferSwitchCount;
-					std::cout << "Buffer switch count: " << bufferSwitchCount << std::endl;
+					Log() << "Buffer switch count: " << bufferSwitchCount;
 				}
 				bufferSwitchCountCondition.notify_all();
 			};
 
 			Callbacks callbacks;
 			callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
-				std::cout << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				Log() << "bufferSwitch(doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
 				GetSamplePosition();
-				std::cout << "<-" << std::endl;
+				Log() << "<-";
 				incrementBufferSwitchCount();
 			};
 			callbacks.sampleRateDidChange = [&](ASIOSampleRate sampleRate) {
-				std::cout << "sampleRateDidChange(" << sampleRate << ")" << std::endl;
-				std::cout << "<-" << std::endl;
+				Log() << "sampleRateDidChange(" << sampleRate << ")";
+				Log() << "<-";
 			};
 			callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
-				std::cout << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")" << std::endl;
+				Log() << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")";
 				const auto result = HandleASIOMessage(selector, value, message, opt);
-				std::cout << "<- " << result << std::endl;
+				Log() << "<- " << result;
 				return result;
 			};
 			callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
-				std::cout << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")" << std::endl;
+				Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
 				GetSamplePosition();
-				std::cout << "<- nullptr" << std::endl;
+				Log() << "<- nullptr";
 				incrementBufferSwitchCount();
 				return nullptr;
 			};
@@ -309,33 +325,33 @@ namespace flexasio {
 			const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
 			if (buffers.info.size() == 0) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			GetSampleRate();
 			GetAllChannelInfo(ioChannelCounts);
 
-			std::cout << std::endl;
+			Log();
 
 			GetLatencies();
 
-			std::cout << std::endl;
+			Log();
 
 			if (!Start()) return false;
 
-			std::cout << std::endl;
+			Log();
 
 			// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
 			constexpr size_t bufferSwitchCountThreshold = 30;
-			std::cout << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches..." << std::endl;
-			std::cout << std::endl;
+			Log() << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches...";
+			Log();
 
 			{
 				std::unique_lock bufferSwitchCountLock(bufferSwitchCountMutex);
 				bufferSwitchCountCondition.wait(bufferSwitchCountLock, [&] { return bufferSwitchCount >= bufferSwitchCountThreshold;  });
 			}
 
-			std::cout << std::endl;
-			std::cout << "Reached " << bufferSwitchCountThreshold << " buffer switches, stopping" << std::endl;
+			Log();
+			Log() << "Reached " << bufferSwitchCountThreshold << " buffer switches, stopping";
 
 			if (!Stop()) return false;
 
