@@ -1,28 +1,33 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <sstream>
 
 namespace flexasio {
 
-	class Log final
+	class Logger final
 	{
 	public:
-		Log();
-		~Log();
+		using Write = std::function<void(const std::string&)>;
 
-		template <typename T> friend Log&& operator<<(Log&& lhs, T&& rhs) {
-			if (lhs.stream.has_value()) *lhs.stream << std::forward<T>(rhs);
+		explicit Logger(Write write);
+		~Logger();
+
+		template <typename T> friend Logger&& operator<<(Logger&& lhs, T&& rhs) {
+			if (lhs.enabledState.has_value()) lhs.enabledState->stream << std::forward<T>(rhs);
 			return std::move(lhs);
 		}
 
 	private:
-		class Output;
+		struct EnabledState {
+			Write write;
+			std::stringstream stream;
+		};
 
-		Log(Output*);
-
-		Output* const output;
-		std::optional<std::stringstream> stream;
+		std::optional<EnabledState> enabledState;
 	};
+
+	Logger Log();
 
 }

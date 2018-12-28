@@ -104,66 +104,75 @@ namespace flexasio {
 			return moduleName;
 		}
 
+		class LogOutput {
+		public:
+			static std::unique_ptr<LogOutput> Open() {
+				const auto userDirectory = GetUserDirectory();
+				if (!userDirectory.has_value()) return nullptr;
+
+				std::filesystem::path path(*userDirectory);
+				path.append("FlexASIO.log");
+
+				if (!std::filesystem::exists(path)) return nullptr;
+
+				return std::make_unique<LogOutput>(path);
+			}
+
+			static LogOutput* Get() {
+				static const auto output = Open();
+				return output.get();
+			}
+
+			LogOutput(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
+				Log() << "Logfile opened";
+				Log() << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
+
+				Log() << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
+				Log() << "Host process: " << GetModuleName();
+			}
+
+			~LogOutput() {
+				Log() << "Closing logfile";
+			}
+
+			void Write(const std::string& str) {
+				std::scoped_lock stream_lock(stream_mutex);
+				stream << str << std::endl;
+			}
+
+		private:
+			Logger Log() {
+				return Logger([this](const std::string& str) { Write(str); });
+			}
+
+			std::mutex stream_mutex;
+			std::ofstream stream;
+		};
+
 	}
 
-	class Log::Output {
-	public:
-		static std::unique_ptr<Output> Open() {
-			const auto userDirectory = GetUserDirectory();
-			if (!userDirectory.has_value()) return nullptr;
+	Logger::Logger(Write write) {
+		if (!write) return;
 
-			std::filesystem::path path(*userDirectory);
-			path.append("FlexASIO.log");
-
-			if (!std::filesystem::exists(path)) return nullptr;
-
-			auto output = std::make_unique<Output>(path);
-
-			return output;
-		}
-
-		static Output* Get() {
-			static const auto output = Open();
-			return output.get();
-		}
-
-		Output(const std::filesystem::path& path) : stream(path, std::ios::app | std::ios::out) {
-			Log(this) << "Logfile opened";
-			Log(this) << "Log time source: " << ((GetSystemTimeAsFileTimeFunction() == GetSystemTimeAsFileTime) ? "GetSystemTimeAsFileTime" : "GetSystemTimePreciseAsFileTime");
-
-			Log(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
-			Log(this) << "Host process: " << GetModuleName();
-		}
-
-		~Output() {
-			Log(this) << "Closing logfile";
-		}
-
-		void Write(const std::string& str) {
-			std::scoped_lock stream_lock(stream_mutex);
-			stream << str << std::flush;
-		}
-
-	private:
-		std::mutex stream_mutex;
-		std::ofstream stream;
-	};
-
-	Log::Log() : Log(Output::Get()) { }
-
-	Log::Log(Output* output) : output(output) {
-		if (output == nullptr) return;
-		stream.emplace();
+		enabledState.emplace();
+		enabledState->write = std::move(write);
 
 		FILETIME now = { 0 };
 		GetSystemTimeAsFileTimeFunction()(&now);
-		*stream << FormatFiletimeISO8601(now) << " " << GetCurrentProcessId() << " " << GetCurrentThreadId() << " ";
+		enabledState->stream << FormatFiletimeISO8601(now) << " " << GetCurrentProcessId() << " " << GetCurrentThreadId() << " ";
 	}
 
-	Log::~Log() {
-		if (!stream.has_value()) return;
-		*stream << std::endl;
-		output->Write(stream->str());
+	Logger::~Logger() {
+		if (!enabledState.has_value()) return;
+		enabledState->write(enabledState->stream.str());
+	}
+
+	Logger Log() {
+		auto* const logOutput = LogOutput::Get();
+		if (logOutput == nullptr) return Logger({});
+		return Logger([](const std::string& str){
+			LogOutput::Get()->Write(str);
+		});
 	}
 
 }
