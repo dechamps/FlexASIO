@@ -86,7 +86,7 @@ namespace flexasio {
 		}
 
 		std::vector<uint8_t> MakeInterleavedBuffer(std::vector<ASIOBufferInfo> bufferInfos, size_t sampleSize, long bufferSize, long doubleBufferIndex) {
-			const auto inputEnd = std::partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return bufferInfo.isInput;  });
+			const auto inputEnd = std::stable_partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return bufferInfo.isInput;  });
 			bufferInfos.resize(inputEnd - bufferInfos.begin());
 
 			std::vector<uint8_t> interleavedBuffer(bufferSize * bufferInfos.size() * sampleSize);
@@ -106,7 +106,7 @@ namespace flexasio {
 		}
 
 		void CopyInterleavedBufferToASIO(const std::vector<uint8_t>& interleavedBuffer, std::vector<ASIOBufferInfo> bufferInfos, const size_t sampleSize, const long doubleBufferIndex) {
-			const auto outputEnd = std::partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return !bufferInfo.isInput; });
+			const auto outputEnd = std::stable_partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return !bufferInfo.isInput; });
 			bufferInfos.resize(outputEnd - bufferInfos.begin());
 
 			if (interleavedBuffer.size() % (bufferInfos.size() * sampleSize) != 0) abort();
