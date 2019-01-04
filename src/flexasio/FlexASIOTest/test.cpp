@@ -32,6 +32,7 @@ namespace flexasio {
 	namespace {
 
 		struct Config {
+			std::optional<std::string> inputFile;
 			std::optional<std::string> outputFile;
 			std::optional<double> sampleRate;
 		};
@@ -40,6 +41,7 @@ namespace flexasio {
 			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
 			Config config;
 			options.add_options()
+				("input-file", "Play the specified audio file as untouched raw audio buffers to the ASIO driver.", cxxopts::value(config.inputFile))
 				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
 				("sample-rate", "ASIO sample rate to use; default is to use the initial sample rate of the driver", cxxopts::value(config.sampleRate));
 			try {
@@ -83,21 +85,19 @@ namespace flexasio {
 			return *sampleType;
 		}
 
-		std::vector<uint8_t> MakeInterleavedBuffer(std::vector<ASIOBufferInfo> bufferInfos, ASIOSampleType sampleType, long bufferSize, long doubleBufferIndex) {
+		std::vector<uint8_t> MakeInterleavedBuffer(std::vector<ASIOBufferInfo> bufferInfos, size_t sampleSize, long bufferSize, long doubleBufferIndex) {
 			const auto inputEnd = std::partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return bufferInfo.isInput;  });
 			bufferInfos.resize(inputEnd - bufferInfos.begin());
 
-			const auto sampleSize = GetASIOSampleSize(sampleType);
-			if (!sampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(sampleType));
-			std::vector<uint8_t> interleavedBuffer(bufferSize * bufferInfos.size() * *sampleSize);
+			std::vector<uint8_t> interleavedBuffer(bufferSize * bufferInfos.size() * sampleSize);
 
 			uint8_t* interleavedPtr = &interleavedBuffer.front();
 			while (bufferSize > 0) {
 				for (auto& bufferInfo : bufferInfos) {
 					auto& buffer = bufferInfo.buffers[doubleBufferIndex];
-					memcpy(interleavedPtr, buffer, *sampleSize);
-					buffer = static_cast<uint8_t*>(buffer) + *sampleSize;
-					interleavedPtr += *sampleSize;
+					memcpy(interleavedPtr, buffer, sampleSize);
+					buffer = static_cast<uint8_t*>(buffer) + sampleSize;
+					interleavedPtr += sampleSize;
 				}
 				--bufferSize;
 			}
@@ -105,7 +105,23 @@ namespace flexasio {
 			return interleavedBuffer;
 		}
 
-		std::optional<int> ASIOSampleTypeToSfFormat(const ASIOSampleType sampleType) {
+		void CopyInterleavedBufferToASIO(const std::vector<uint8_t>& interleavedBuffer, std::vector<ASIOBufferInfo> bufferInfos, const size_t sampleSize, const long doubleBufferIndex) {
+			const auto outputEnd = std::partition(bufferInfos.begin(), bufferInfos.end(), [](const ASIOBufferInfo& bufferInfo) { return !bufferInfo.isInput; });
+			bufferInfos.resize(outputEnd - bufferInfos.begin());
+
+			if (interleavedBuffer.size() % (bufferInfos.size() * sampleSize) != 0) abort();
+
+			for (auto interleavedBufferIt = interleavedBuffer.begin(); interleavedBufferIt < interleavedBuffer.end(); ) {
+				for (auto& bufferInfo : bufferInfos) {
+					auto& buffer = bufferInfo.buffers[doubleBufferIndex];
+					memcpy(buffer, &*interleavedBufferIt, sampleSize);
+					buffer = static_cast<uint8_t*>(buffer) + sampleSize;
+					interleavedBufferIt += sampleSize;
+				}
+			}
+		}
+
+		std::optional<int> ASIOSampleTypeToSfFormatType(const ASIOSampleType sampleType) {
 			return Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, int>>{
 				{ASIOSTInt16MSB, SF_FORMAT_PCM_16 | SF_ENDIAN_BIG},
 				{ASIOSTInt24MSB, SF_FORMAT_PCM_24 | SF_ENDIAN_BIG},
@@ -119,6 +135,52 @@ namespace flexasio {
 				{ASIOSTFloat64LSB, SF_FORMAT_DOUBLE | SF_ENDIAN_LITTLE},
 				});
 		}
+		std::optional<ASIOSampleType> SfFormatToASIOSampleType(const int sfFormat) {
+			// TODO: support big endian. Sadly, libsndfile doesn't seem to reliably report endianess when opening a file for reading.
+			return Find(sfFormat & SF_FORMAT_SUBMASK, std::initializer_list<std::pair<int, ASIOSampleType>>{
+				{SF_FORMAT_PCM_16, ASIOSTInt16LSB},
+				{SF_FORMAT_PCM_24, ASIOSTInt24LSB},
+				{SF_FORMAT_PCM_32, ASIOSTInt32LSB},
+				{SF_FORMAT_FLOAT, ASIOSTFloat32LSB},
+				{SF_FORMAT_DOUBLE, ASIOSTFloat64LSB},
+				});
+		}
+
+		struct SndfileCloser final {
+			void operator()(SNDFILE* const sndfile) {
+				const auto closeError = sf_close(sndfile);
+				if (closeError != 0) std::cerr << "Error while closing output file: " << sf_error_number(closeError) << std::endl;
+			}
+		};
+		using SndfileUniquePtr = std::unique_ptr<SNDFILE, SndfileCloser>;
+
+		class InputFile {
+		public:
+			InputFile(const std::string_view path, const int sampleRate, const int channels, const ASIOSampleType sampleType) :
+				sndfile(sf_open(std::string(path).c_str(), SFM_READ, &sfInfo)) {
+				if (sndfile == NULL) throw std::runtime_error("Unable to open input file '" + std::string(path) + "': " + sf_strerror(NULL));
+				if (sfInfo.samplerate != sampleRate) throw std::runtime_error("Input file sample rate mismatch: expected " + std::to_string(sampleRate) + ", got " + std::to_string(sfInfo.samplerate));
+				if (sfInfo.channels != channels) throw std::runtime_error("Input file channel count mismatch: expected " + std::to_string(channels) + ", got " + std::to_string(sfInfo.channels));
+				const auto fileSampleType = SfFormatToASIOSampleType(sfInfo.format);
+				if (!fileSampleType.has_value()) throw std::runtime_error("Unrecognized input file sample type");
+				if (*fileSampleType != sampleType) throw std::runtime_error("Input file sample type mismatch: expected " + GetASIOSampleTypeString(sampleType) + ", got " + GetASIOSampleTypeString(*fileSampleType));
+			}
+
+			std::vector<uint8_t> Read(size_t bytes) {
+				std::vector<uint8_t> interleavedBuffer(bytes);
+				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
+					const auto bytesToRead = interleavedBuffer.end() - bufferIt;
+					const auto bytesRead = sf_read_raw(sndfile.get(), &*bufferIt, bytesToRead);
+					if (bytesRead <= 0 || bytesRead > bytesToRead) throw std::runtime_error(std::string("Unable to read input file: ") + sf_strerror(sndfile.get()));
+					bufferIt += int(bytesRead);
+				}
+				return interleavedBuffer;
+			}
+
+		private:
+			SF_INFO sfInfo = { 0 };
+			const SndfileUniquePtr sndfile;
+		};
 
 		class OutputFile {
 		public:
@@ -131,20 +193,15 @@ namespace flexasio {
 			void Write(const std::vector<uint8_t>& interleavedBuffer) {
 				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
 					const auto bytesToWrite = interleavedBuffer.end() - bufferIt;
-					const auto bytesWritten = sf_write_raw(sndfile, const_cast<uint8_t*>(&*bufferIt), bytesToWrite);
-					if (bytesWritten <= 0 || bytesWritten > bytesToWrite) throw std::runtime_error(std::string("Unable to write to output file: ") + sf_strerror(sndfile));
+					const auto bytesWritten = sf_write_raw(sndfile.get(), const_cast<uint8_t*>(&*bufferIt), bytesToWrite);
+					if (bytesWritten <= 0 || bytesWritten > bytesToWrite) throw std::runtime_error(std::string("Unable to write to output file: ") + sf_strerror(sndfile.get()));
 					bufferIt += int(bytesWritten);
 				}
 			}
 
-			~OutputFile() {
-				const auto closeError = sf_close(sndfile);
-				if (closeError != 0) std::cerr << "Error while closing output file: " << sf_error_number(closeError) << std::endl;
-			}
-
 		private:
 			static SF_INFO GetSfInfo(const int sampleRate, const int channels, const ASIOSampleType sampleType) {
-				const auto sfFormat = ASIOSampleTypeToSfFormat(sampleType);
+				const auto sfFormat = ASIOSampleTypeToSfFormatType(sampleType);
 				if (!sfFormat.has_value()) throw std::runtime_error("ASIO sample type " + GetASIOSampleTypeString(sampleType) + " is not supported as an output file format");
 
 				SF_INFO sfInfo = { 0 };
@@ -155,7 +212,7 @@ namespace flexasio {
 			}
 
 			SF_INFO sfInfo;
-			SNDFILE* const sndfile;
+			const SndfileUniquePtr sndfile;
 		};
 
 		template <typename FunctionPointer> struct function_pointer_traits;
@@ -449,12 +506,28 @@ namespace flexasio {
 
 				Log();
 
+				std::optional<InputFile> inputFile;
+				std::optional<size_t> inputFileSampleSize;
+				if (config.inputFile.has_value()) {
+					try {
+						const auto inputSampleType = GetCommonSampleType(channelInfos, /*input=*/false);
+						inputFileSampleSize = GetASIOSampleSize(inputSampleType);
+						if (!inputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(inputSampleType));
+						inputFile.emplace(*config.inputFile, int(targetSampleRate), ioChannelCounts.second, inputSampleType);
+					}
+					catch (const std::exception& exception) {
+						throw std::runtime_error(std::string("Cannot input from file: ") + exception.what());
+					}
+				}
+
 				std::optional<OutputFile> outputFile;
-				std::optional<ASIOSampleType> outputSampleType;
+				std::optional<size_t> outputFileSampleSize;
 				if (config.outputFile.has_value()) {
 					try {
-						outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
-						outputFile.emplace(*config.outputFile, int(targetSampleRate), ioChannelCounts.first, *outputSampleType);
+						const auto outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
+						outputFileSampleSize = GetASIOSampleSize(outputSampleType);
+						if (!outputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(outputSampleType));
+						outputFile.emplace(*config.outputFile, int(targetSampleRate), ioChannelCounts.first, outputSampleType);
 					}
 					catch (const std::exception& exception) {
 						throw std::runtime_error(std::string("Cannot output to file: ") + exception.what());
@@ -499,7 +572,8 @@ namespace flexasio {
 
 				auto bufferSwitch = [&](long doubleBufferIndex) {
 					GetSamplePosition();
-					if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputSampleType, bufferSize->preferred, doubleBufferIndex));
+					if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSize->preferred, doubleBufferIndex));
+					if (inputFile.has_value()) CopyInterleavedBufferToASIO(inputFile->Read(bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize), buffers.info, *inputFileSampleSize, doubleBufferIndex);
 					incrementBufferSwitchCount();
 				};
 
