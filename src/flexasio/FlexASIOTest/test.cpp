@@ -566,23 +566,40 @@ namespace flexasio {
 				const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
 				if (buffers.info.size() == 0) return false;
 
-				std::mutex bufferSwitchCountMutex;
-				std::condition_variable bufferSwitchCountCondition;
+				enum class Outcome { SUCCESS, FAILURE };
+
+				std::mutex outcomeMutex;
+				std::optional<Outcome> outcome;
+				std::condition_variable outcomeCondition;
+				const auto setOutcome = [&](Outcome newOutcome) {
+					{
+						std::scoped_lock outcomeLock(outcomeMutex);
+						if (outcome.has_value()) return;
+						outcome = newOutcome;
+					}
+					outcomeCondition.notify_all();
+				};
+				
+				constexpr size_t bufferSwitchCountThreshold = 30;
 				size_t bufferSwitchCount = 0;
 				const auto incrementBufferSwitchCount = [&] {
-					{
-						std::scoped_lock bufferSwitchCountLock(bufferSwitchCountMutex);
-						++bufferSwitchCount;
-						Log() << "Buffer switch count: " << bufferSwitchCount;
-					}
-					bufferSwitchCountCondition.notify_all();
+					++bufferSwitchCount;
+					Log() << "Buffer switch count: " << bufferSwitchCount;
+					if (bufferSwitchCount < bufferSwitchCountThreshold) return;
+					setOutcome(Outcome::SUCCESS);
 				};
 
 				auto bufferSwitch = [&](long doubleBufferIndex) {
-					GetSamplePosition();
-					if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSize->preferred, doubleBufferIndex));
-					if (inputFile.has_value()) CopyInterleavedBufferToASIO(inputFile->Read(bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize), buffers.info, *inputFileSampleSize, doubleBufferIndex);
-					incrementBufferSwitchCount();
+					try {
+						GetSamplePosition();
+						if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSize->preferred, doubleBufferIndex));
+						if (inputFile.has_value()) CopyInterleavedBufferToASIO(inputFile->Read(bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize), buffers.info, *inputFileSampleSize, doubleBufferIndex);
+						incrementBufferSwitchCount();
+					}
+					catch (const std::exception& exception) {
+						Log() << "FATAL ERROR: " << exception.what();
+						setOutcome(Outcome::FAILURE);
+					}
 				};
 
 				callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
@@ -613,13 +630,14 @@ namespace flexasio {
 				Log();
 
 				// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
-				constexpr size_t bufferSwitchCountThreshold = 30;
+				
 				Log() << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches...";
 				Log();
 
 				{
-					std::unique_lock bufferSwitchCountLock(bufferSwitchCountMutex);
-					bufferSwitchCountCondition.wait(bufferSwitchCountLock, [&] { return bufferSwitchCount >= bufferSwitchCountThreshold;  });
+					std::unique_lock outcomeLock(outcomeMutex);
+					outcomeCondition.wait(outcomeLock, [&] { return outcome.has_value();  });
+					if (outcome != Outcome::SUCCESS) return false;
 				}
 
 				Log();
