@@ -180,7 +180,14 @@ namespace flexasio {
 				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
 					const auto bytesToRead = interleavedBuffer.end() - bufferIt;
 					const auto bytesRead = sf_read_raw(sndfile.first.get(), &*bufferIt, bytesToRead);
-					if (bytesRead <= 0 || bytesRead > bytesToRead) throw std::runtime_error(std::string("Unable to read input file: ") + sf_strerror(sndfile.first.get()));
+					if (bytesRead <= 0 || bytesRead > bytesToRead) {
+						const auto sfError = sf_error(sndfile.first.get());
+						if (sfError == SF_ERR_NO_ERROR) {
+							interleavedBuffer.resize(bufferIt - interleavedBuffer.begin());
+							break;
+						}
+						throw std::runtime_error(std::string("Unable to read input file: ") + sf_error_number(sfError));
+					}
 					bufferIt += int(bytesRead);
 				}
 				return interleavedBuffer;
@@ -593,7 +600,12 @@ namespace flexasio {
 					try {
 						GetSamplePosition();
 						if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSize->preferred, doubleBufferIndex));
-						if (inputFile.has_value()) CopyInterleavedBufferToASIO(inputFile->Read(bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize), buffers.info, *inputFileSampleSize, doubleBufferIndex);
+						if (inputFile.has_value()) {
+							const auto readSize = bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize;
+							auto interleavedBuffer = inputFile->Read(readSize);
+							interleavedBuffer.resize(readSize);
+							CopyInterleavedBufferToASIO(interleavedBuffer, buffers.info, *inputFileSampleSize, doubleBufferIndex);
+						}
 						incrementBufferSwitchCount();
 					}
 					catch (const std::exception& exception) {
