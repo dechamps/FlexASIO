@@ -32,6 +32,7 @@ namespace flexasio {
 	namespace {
 
 		struct Config {
+			size_t bufferSwitchCount = 30;
 			std::optional<std::string> inputFile;
 			std::optional<std::string> outputFile;
 			std::optional<double> sampleRate;
@@ -41,6 +42,7 @@ namespace flexasio {
 			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
 			Config config;
 			options.add_options()
+				("buffer-switch-count", "Stop after this many ASIO buffers have been switched; default is " + std::to_string(config.bufferSwitchCount), cxxopts::value(config.bufferSwitchCount))
 				("input-file", "Play the specified audio file as untouched raw audio buffers to the ASIO driver.", cxxopts::value(config.inputFile))
 				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
 				("sample-rate", "ASIO sample rate to use; default is to use the input file sample rate, if any, otherwise the initial sample rate of the driver", cxxopts::value(config.sampleRate));
@@ -587,12 +589,11 @@ namespace flexasio {
 					outcomeCondition.notify_all();
 				};
 				
-				constexpr size_t bufferSwitchCountThreshold = 30;
 				size_t bufferSwitchCount = 0;
 				const auto incrementBufferSwitchCount = [&] {
 					++bufferSwitchCount;
 					Log() << "Buffer switch count: " << bufferSwitchCount;
-					if (bufferSwitchCount < bufferSwitchCountThreshold) return;
+					if (bufferSwitchCount < config.bufferSwitchCount) return;
 					setOutcome(Outcome::SUCCESS);
 				};
 
@@ -643,7 +644,7 @@ namespace flexasio {
 
 				// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
 				
-				Log() << "Now waiting for " << bufferSwitchCountThreshold << " buffer switches...";
+				Log() << "Now waiting for " << config.bufferSwitchCount << " buffer switches...";
 				Log();
 
 				{
@@ -653,7 +654,7 @@ namespace flexasio {
 				}
 
 				Log();
-				Log() << "Reached " << bufferSwitchCountThreshold << " buffer switches, stopping";
+				Log() << "Reached " << config.bufferSwitchCount << " buffer switches, stopping";
 
 				if (!Stop()) return false;
 
