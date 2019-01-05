@@ -43,7 +43,7 @@ namespace flexasio {
 			options.add_options()
 				("input-file", "Play the specified audio file as untouched raw audio buffers to the ASIO driver.", cxxopts::value(config.inputFile))
 				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
-				("sample-rate", "ASIO sample rate to use; default is to use the initial sample rate of the driver", cxxopts::value(config.sampleRate));
+				("sample-rate", "ASIO sample rate to use; default is to use the input file sample rate, if any, otherwise the initial sample rate of the driver", cxxopts::value(config.sampleRate));
 			try {
 				options.parse(argc, argv);
 			}
@@ -156,9 +156,13 @@ namespace flexasio {
 
 		class InputFile {
 		public:
-			InputFile(const std::string_view path, const int sampleRate, const int channels, const ASIOSampleType sampleType) :
-				sndfile(sf_open(std::string(path).c_str(), SFM_READ, &sfInfo)) {
+			InputFile(const std::string_view path) : sndfile(sf_open(std::string(path).c_str(), SFM_READ, &sfInfo)) {
 				if (sndfile == NULL) throw std::runtime_error("Unable to open input file '" + std::string(path) + "': " + sf_strerror(NULL));
+			}
+
+			int SampleRate() const { return sfInfo.samplerate; }
+
+			void Validate(const int sampleRate, const int channels, const ASIOSampleType sampleType) const {
 				if (sfInfo.samplerate != sampleRate) throw std::runtime_error("Input file sample rate mismatch: expected " + std::to_string(sampleRate) + ", got " + std::to_string(sfInfo.samplerate));
 				if (sfInfo.channels != channels) throw std::runtime_error("Input file channel count mismatch: expected " + std::to_string(channels) + ", got " + std::to_string(sfInfo.channels));
 				const auto fileSampleType = SfFormatToASIOSampleType(sfInfo.format);
@@ -473,10 +477,6 @@ namespace flexasio {
 				auto initialSampleRate = GetSampleRate();
 				if (!initialSampleRate.has_value()) return false;
 
-				const auto targetSampleRate = config.sampleRate.has_value() ? *config.sampleRate : *initialSampleRate;
-
-				Log();
-
 				for (const auto sampleRate : { 44100.0, 48000.0, 96000.0, 192000.0 }) {
 					if (CanSampleRate(sampleRate)) {
 						if (!SetSampleRate(sampleRate)) return false;
@@ -486,9 +486,50 @@ namespace flexasio {
 
 				Log();
 
-				if (!CanSampleRate(targetSampleRate)) return false;
-				if (!SetSampleRate(targetSampleRate)) return false;
-				if (GetSampleRate() != targetSampleRate) return false;
+				const auto channelInfos = GetAllChannelInfo(ioChannelCounts);
+				if (long(channelInfos.size()) != ioChannelCounts.first + ioChannelCounts.second) return false;
+
+				Log();
+
+				auto targetSampleRate = config.sampleRate;
+
+				std::optional<InputFile> inputFile;
+				std::optional<size_t> inputFileSampleSize;
+				if (config.inputFile.has_value()) {
+					try {
+						const auto inputSampleType = GetCommonSampleType(channelInfos, /*input=*/false);
+						inputFileSampleSize = GetASIOSampleSize(inputSampleType);
+						if (!inputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(inputSampleType));
+						inputFile.emplace(*config.inputFile);
+						const auto inputFileSampleRate = inputFile->SampleRate();
+						if (!targetSampleRate.has_value()) targetSampleRate = inputFileSampleRate;
+						inputFile->Validate(int(*targetSampleRate), ioChannelCounts.second, inputSampleType);
+
+					}
+					catch (const std::exception& exception) {
+						throw std::runtime_error(std::string("Cannot input from file: ") + exception.what());
+					}
+				}
+
+				if (!targetSampleRate.has_value()) targetSampleRate = *initialSampleRate;
+
+				std::optional<OutputFile> outputFile;
+				std::optional<size_t> outputFileSampleSize;
+				if (config.outputFile.has_value()) {
+					try {
+						const auto outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
+						outputFileSampleSize = GetASIOSampleSize(outputSampleType);
+						if (!outputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(outputSampleType));
+						outputFile.emplace(*config.outputFile, int(*targetSampleRate), ioChannelCounts.first, outputSampleType);
+					}
+					catch (const std::exception& exception) {
+						throw std::runtime_error(std::string("Cannot output to file: ") + exception.what());
+					}
+				}
+
+				if (!CanSampleRate(*targetSampleRate)) return false;
+				if (!SetSampleRate(*targetSampleRate)) return false;
+				if (GetSampleRate() != *targetSampleRate) return false;
 
 				Log();
 
@@ -500,39 +541,6 @@ namespace flexasio {
 				OutputReady();
 
 				Log();
-
-				const auto channelInfos = GetAllChannelInfo(ioChannelCounts);
-				if (long(channelInfos.size()) != ioChannelCounts.first + ioChannelCounts.second) return false;
-
-				Log();
-
-				std::optional<InputFile> inputFile;
-				std::optional<size_t> inputFileSampleSize;
-				if (config.inputFile.has_value()) {
-					try {
-						const auto inputSampleType = GetCommonSampleType(channelInfos, /*input=*/false);
-						inputFileSampleSize = GetASIOSampleSize(inputSampleType);
-						if (!inputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(inputSampleType));
-						inputFile.emplace(*config.inputFile, int(targetSampleRate), ioChannelCounts.second, inputSampleType);
-					}
-					catch (const std::exception& exception) {
-						throw std::runtime_error(std::string("Cannot input from file: ") + exception.what());
-					}
-				}
-
-				std::optional<OutputFile> outputFile;
-				std::optional<size_t> outputFileSampleSize;
-				if (config.outputFile.has_value()) {
-					try {
-						const auto outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
-						outputFileSampleSize = GetASIOSampleSize(outputSampleType);
-						if (!outputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(outputSampleType));
-						outputFile.emplace(*config.outputFile, int(targetSampleRate), ioChannelCounts.first, outputSampleType);
-					}
-					catch (const std::exception& exception) {
-						throw std::runtime_error(std::string("Cannot output to file: ") + exception.what());
-					}
-				}
 
 				Callbacks callbacks;
 				callbacks.bufferSwitch = [&](long doubleBufferIndex, ASIOBool directProcess) {
