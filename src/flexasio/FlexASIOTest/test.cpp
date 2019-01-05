@@ -154,18 +154,23 @@ namespace flexasio {
 		};
 		using SndfileUniquePtr = std::unique_ptr<SNDFILE, SndfileCloser>;
 
+		using SndfileWithInfo = std::pair<SndfileUniquePtr, SF_INFO>;
+		SndfileWithInfo OpenSndfile(const std::string_view path, int mode, SF_INFO sfInfo = { 0 }) {
+			SndfileUniquePtr sndfile(sf_open(std::string(path).c_str(), mode, &sfInfo));
+			if (sndfile == NULL) throw std::runtime_error("Unable to open sound file '" + std::string(path) + "': " + sf_strerror(NULL));
+			return { std::move(sndfile), sfInfo };
+		}
+
 		class InputFile {
 		public:
-			InputFile(const std::string_view path) : sndfile(sf_open(std::string(path).c_str(), SFM_READ, &sfInfo)) {
-				if (sndfile == NULL) throw std::runtime_error("Unable to open input file '" + std::string(path) + "': " + sf_strerror(NULL));
-			}
+			InputFile(const std::string_view path) : sndfile(OpenSndfile(path, SFM_READ)) {}
 
-			int SampleRate() const { return sfInfo.samplerate; }
+			int SampleRate() const { return sndfile.second.samplerate; }
 
 			void Validate(const int sampleRate, const int channels, const ASIOSampleType sampleType) const {
-				if (sfInfo.samplerate != sampleRate) throw std::runtime_error("Input file sample rate mismatch: expected " + std::to_string(sampleRate) + ", got " + std::to_string(sfInfo.samplerate));
-				if (sfInfo.channels != channels) throw std::runtime_error("Input file channel count mismatch: expected " + std::to_string(channels) + ", got " + std::to_string(sfInfo.channels));
-				const auto fileSampleType = SfFormatToASIOSampleType(sfInfo.format);
+				if (sndfile.second.samplerate != sampleRate) throw std::runtime_error("Input file sample rate mismatch: expected " + std::to_string(sampleRate) + ", got " + std::to_string(sndfile.second.samplerate));
+				if (sndfile.second.channels != channels) throw std::runtime_error("Input file channel count mismatch: expected " + std::to_string(channels) + ", got " + std::to_string(sndfile.second.channels));
+				const auto fileSampleType = SfFormatToASIOSampleType(sndfile.second.format);
 				if (!fileSampleType.has_value()) throw std::runtime_error("Unrecognized input file sample type");
 				if (*fileSampleType != sampleType) throw std::runtime_error("Input file sample type mismatch: expected " + GetASIOSampleTypeString(sampleType) + ", got " + GetASIOSampleTypeString(*fileSampleType));
 			}
@@ -174,31 +179,27 @@ namespace flexasio {
 				std::vector<uint8_t> interleavedBuffer(bytes);
 				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
 					const auto bytesToRead = interleavedBuffer.end() - bufferIt;
-					const auto bytesRead = sf_read_raw(sndfile.get(), &*bufferIt, bytesToRead);
-					if (bytesRead <= 0 || bytesRead > bytesToRead) throw std::runtime_error(std::string("Unable to read input file: ") + sf_strerror(sndfile.get()));
+					const auto bytesRead = sf_read_raw(sndfile.first.get(), &*bufferIt, bytesToRead);
+					if (bytesRead <= 0 || bytesRead > bytesToRead) throw std::runtime_error(std::string("Unable to read input file: ") + sf_strerror(sndfile.first.get()));
 					bufferIt += int(bytesRead);
 				}
 				return interleavedBuffer;
 			}
 
 		private:
-			SF_INFO sfInfo = { 0 };
-			const SndfileUniquePtr sndfile;
+			const SndfileWithInfo sndfile;
 		};
 
 		class OutputFile {
 		public:
 			OutputFile(const std::string_view path, const int sampleRate, const int channels, const ASIOSampleType sampleType) :
-				sfInfo(GetSfInfo(sampleRate, channels, sampleType)),
-				sndfile(sf_open(std::string(path).c_str(), SFM_WRITE, &sfInfo)) {
-				if (sndfile == NULL) throw std::runtime_error("Unable to open output file '" + std::string(path) + "': " + sf_strerror(NULL));
-			}
+				sndfile(OpenSndfile(path, SFM_WRITE, GetSfInfo(sampleRate, channels, sampleType))) {}
 
 			void Write(const std::vector<uint8_t>& interleavedBuffer) {
 				for (auto bufferIt = interleavedBuffer.begin(); bufferIt < interleavedBuffer.end(); ) {
 					const auto bytesToWrite = interleavedBuffer.end() - bufferIt;
-					const auto bytesWritten = sf_write_raw(sndfile.get(), const_cast<uint8_t*>(&*bufferIt), bytesToWrite);
-					if (bytesWritten <= 0 || bytesWritten > bytesToWrite) throw std::runtime_error(std::string("Unable to write to output file: ") + sf_strerror(sndfile.get()));
+					const auto bytesWritten = sf_write_raw(sndfile.first.get(), const_cast<uint8_t*>(&*bufferIt), bytesToWrite);
+					if (bytesWritten <= 0 || bytesWritten > bytesToWrite) throw std::runtime_error(std::string("Unable to write to output file: ") + sf_strerror(sndfile.first.get()));
 					bufferIt += int(bytesWritten);
 				}
 			}
@@ -215,8 +216,7 @@ namespace flexasio {
 				return sfInfo;
 			}
 
-			SF_INFO sfInfo;
-			const SndfileUniquePtr sndfile;
+			const SndfileWithInfo sndfile;
 		};
 
 		template <typename FunctionPointer> struct function_pointer_traits;
