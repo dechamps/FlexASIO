@@ -90,24 +90,29 @@ namespace flexasio {
 			throw std::runtime_error(std::string("PortAudio host API '") + std::string(name) + "' not found");
 		}
 
-		Device SelectDeviceByName(const PaHostApiIndex hostApiIndex, const std::string_view name) {
+		Device SelectDeviceByName(const PaHostApiIndex hostApiIndex, const std::string_view name, const int minimumInputChannelCount, const int minimumOutputChannelCount) {
 			Log() << "Searching for a PortAudio device named '" << name << "' with host API index " << hostApiIndex;
 			const auto deviceCount = Pa_GetDeviceCount();
 
 			for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
 				const Device device(deviceIndex);
-				if (device.info.hostApi == hostApiIndex && device.info.name == name) return device;
+				if (device.info.hostApi == hostApiIndex && device.info.name == name && device.info.maxInputChannels >= minimumInputChannelCount && device.info.maxOutputChannels >= minimumOutputChannelCount) return device;
 			}
-			throw std::runtime_error(std::string("PortAudio device '") + std::string(name) + "' not found within specified backend");
+			throw std::runtime_error(std::string("PortAudio device '") + std::string(name) + "' not found within specified backend (minimum channel count: " + std::to_string(minimumInputChannelCount) + " input, " + std::to_string(minimumOutputChannelCount) + " output)");
 		}
 
-		std::optional<Device> SelectDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDeviceIndex, std::optional<std::string_view> name) {
+		std::optional<Device> SelectDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDeviceIndex, std::optional<std::string_view> name, const int minimumInputChannelCount, const int minimumOutputChannelCount) {
 			if (!name.has_value()) {
 				if (defaultDeviceIndex == paNoDevice) {
 					Log() << "No default device";
 					return std::nullopt;
 				}
 				Log() << "Using default device with index " << defaultDeviceIndex;
+				const Device device(defaultDeviceIndex);
+				if (device.info.maxInputChannels < minimumInputChannelCount || device.info.maxOutputChannels < minimumOutputChannelCount) {
+					Log() << "Cannot use default device " << device << " because we need at least " << minimumInputChannelCount << " input channels and " << minimumOutputChannelCount << " output channels";
+					return std::nullopt;
+				}
 				return Device(defaultDeviceIndex);
 			}
 			if (name->empty()) {
@@ -115,7 +120,7 @@ namespace flexasio {
 				return std::nullopt;
 			}
 
-			return SelectDeviceByName(hostApiIndex, *name);
+			return SelectDeviceByName(hostApiIndex, *name, minimumInputChannelCount, minimumOutputChannelCount);
 		}
 
 		std::string GetPaStreamCallbackResultString(PaStreamCallbackResult result) {
@@ -274,26 +279,16 @@ namespace flexasio {
 	}()),
 		inputDevice([&] {
 		Log() << "Selecting input device";
-		auto device = SelectDevice(hostApi.index, hostApi.info.defaultInputDevice, config.input.device);
-		if (device.has_value()) {
-			Log() << "Selected input device: " << *device;
-			if (device->info.maxInputChannels < 1) throw std::runtime_error("Selected input device has no input channels");
-		}
-		else {
-			Log() << "No input device, proceeding without input";
-		}
+		auto device = SelectDevice(hostApi.index, hostApi.info.defaultInputDevice, config.input.device, 1, 0);
+		if (device.has_value()) Log() << "Selected input device: " << *device;
+		else Log() << "No input device, proceeding without input";
 		return device;
 	}()),
 		outputDevice([&] {
 		Log() << "Selecting output device";
-		auto device = SelectDevice(hostApi.index, hostApi.info.defaultOutputDevice, config.output.device);
-		if (device.has_value()) {
-			Log() << "Selected output device: " << *device;
-			if (device->info.maxOutputChannels < 1)	throw std::runtime_error("Selected output device has no output channels");
-		}
-		else {
-			Log() << "No output device, proceeding without output";
-		}
+		auto device = SelectDevice(hostApi.index, hostApi.info.defaultOutputDevice, config.output.device, 0, 1);
+		if (device.has_value()) Log() << "Selected output device: " << *device;
+		else Log() << "No output device, proceeding without output";
 		return device;
 	}()),
 		inputFormat(inputDevice.has_value() ? GetDeviceDefaultFormat(hostApi.info.type, inputDevice->index) : std::nullopt),
