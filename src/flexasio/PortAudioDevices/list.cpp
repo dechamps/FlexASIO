@@ -24,7 +24,7 @@ namespace flexasio {
 			const auto device = Pa_GetDeviceInfo(deviceIndex);
 			if (device == nullptr) throw std::runtime_error("Pa_GetDeviceInfo() returned NULL");
 
-			std::cout << "Device name: " << device->name << std::endl;
+			std::cout << "Device name: \"" << device->name << "\"" << std::endl;
 			std::cout << "Default sample rate: " << device->defaultSampleRate << std::endl;
 			std::cout << "Input: max channel count " << device->maxInputChannels << ", default latency " << device->defaultLowInputLatency << "s (low) " << device->defaultHighInputLatency << "s (high)" << std::endl;
 			std::cout << "Output: max channel count " << device->maxOutputChannels << ", default latency " << device->defaultLowOutputLatency << "s (low) " << device->defaultHighOutputLatency << "s (high)" << std::endl;
