@@ -35,6 +35,7 @@ namespace flexasio {
 			// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
 			static constexpr size_t defaultBufferSwitchCount = 30;
 
+			std::optional<long> bufferSizeFrames;
 			std::optional<size_t> bufferSwitchCount;
 			std::optional<std::string> inputFile;
 			std::optional<std::string> outputFile;
@@ -45,6 +46,7 @@ namespace flexasio {
 			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
 			Config config;
 			options.add_options()
+				("buffer-size-frames", "ASIO buffer size to use, in frames; default is to use the preferred size suggested by the driver", cxxopts::value(config.bufferSizeFrames))
 				("buffer-switch-count", "Stop after this many ASIO buffers have been switched; default is to stop when reaching the end of the input file, if any; otherwise, " + std::to_string(config.defaultBufferSwitchCount), cxxopts::value(config.bufferSwitchCount))
 				("input-file", "Play the specified audio file as untouched raw audio buffers to the ASIO driver.", cxxopts::value(config.inputFile))
 				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
@@ -547,6 +549,7 @@ namespace flexasio {
 
 				const auto bufferSize = GetBufferSize();
 				if (!bufferSize.has_value()) return false;
+				const auto bufferSizeFrames = config.bufferSizeFrames.has_value() ? *config.bufferSizeFrames : bufferSize->preferred;
 
 				Log();
 
@@ -575,7 +578,7 @@ namespace flexasio {
 					return result;
 				};
 				
-				const auto buffers = CreateBuffers(ioChannelCounts, bufferSize->preferred, callbacks.GetASIOCallbacks());
+				const auto buffers = CreateBuffers(ioChannelCounts, bufferSizeFrames, callbacks.GetASIOCallbacks());
 				if (buffers.info.size() == 0) return false;
 
 				enum class Outcome { SUCCESS, FAILURE };
@@ -608,9 +611,9 @@ namespace flexasio {
 				auto bufferSwitch = [&](long doubleBufferIndex) {
 					try {
 						GetSamplePosition();
-						if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSize->preferred, doubleBufferIndex));
+						if (outputFile.has_value()) outputFile->Write(MakeInterleavedBuffer(buffers.info, *outputFileSampleSize, bufferSizeFrames, doubleBufferIndex));
 						if (inputFile.has_value()) {
-							const auto readSize = bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize;
+							const auto readSize = bufferSizeFrames * ioChannelCounts.second * *inputFileSampleSize;
 							auto interleavedBuffer = inputFile->Read(readSize);
 							if (interleavedBuffer.size() < readSize) {
 								Log() << "Reached end of input file";
