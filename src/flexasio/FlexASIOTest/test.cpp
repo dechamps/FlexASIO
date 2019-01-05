@@ -32,7 +32,10 @@ namespace flexasio {
 	namespace {
 
 		struct Config {
-			size_t bufferSwitchCount = 30;
+			// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
+			static constexpr size_t defaultBufferSwitchCount = 30;
+
+			std::optional<size_t> bufferSwitchCount;
 			std::optional<std::string> inputFile;
 			std::optional<std::string> outputFile;
 			std::optional<double> sampleRate;
@@ -42,7 +45,7 @@ namespace flexasio {
 			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
 			Config config;
 			options.add_options()
-				("buffer-switch-count", "Stop after this many ASIO buffers have been switched; default is " + std::to_string(config.bufferSwitchCount), cxxopts::value(config.bufferSwitchCount))
+				("buffer-switch-count", "Stop after this many ASIO buffers have been switched; default is to stop when reaching the end of the input file, if any; otherwise, " + std::to_string(config.defaultBufferSwitchCount), cxxopts::value(config.bufferSwitchCount))
 				("input-file", "Play the specified audio file as untouched raw audio buffers to the ASIO driver.", cxxopts::value(config.inputFile))
 				("output-file", "Output recorded untouched raw audio buffers from the ASIO driver to the specified WAV file.", cxxopts::value(config.outputFile))
 				("sample-rate", "ASIO sample rate to use; default is to use the input file sample rate, if any, otherwise the initial sample rate of the driver", cxxopts::value(config.sampleRate));
@@ -589,11 +592,16 @@ namespace flexasio {
 					outcomeCondition.notify_all();
 				};
 				
+				std::optional<size_t> maxBufferSwitchCount;
+				if (config.bufferSwitchCount.has_value()) maxBufferSwitchCount = *config.bufferSwitchCount;
+				else if (!inputFile.has_value()) maxBufferSwitchCount = config.defaultBufferSwitchCount;
+
 				size_t bufferSwitchCount = 0;
 				const auto incrementBufferSwitchCount = [&] {
 					++bufferSwitchCount;
 					Log() << "Buffer switch count: " << bufferSwitchCount;
-					if (bufferSwitchCount < config.bufferSwitchCount) return;
+					if (!maxBufferSwitchCount.has_value() || bufferSwitchCount < *maxBufferSwitchCount) return;
+					Log() << "Reached buffer switch count limit (" << *maxBufferSwitchCount << ")";
 					setOutcome(Outcome::SUCCESS);
 				};
 
@@ -604,7 +612,11 @@ namespace flexasio {
 						if (inputFile.has_value()) {
 							const auto readSize = bufferSize->preferred * ioChannelCounts.second * *inputFileSampleSize;
 							auto interleavedBuffer = inputFile->Read(readSize);
-							interleavedBuffer.resize(readSize);
+							if (interleavedBuffer.size() < readSize) {
+								Log() << "Reached end of input file";
+								interleavedBuffer.resize(readSize);
+								if (!maxBufferSwitchCount.has_value()) setOutcome(Outcome::SUCCESS);
+							}
 							CopyInterleavedBufferToASIO(interleavedBuffer, buffers.info, *inputFileSampleSize, doubleBufferIndex);
 						}
 						incrementBufferSwitchCount();
@@ -642,11 +654,6 @@ namespace flexasio {
 
 				Log();
 
-				// Run enough buffer switches such that we can trigger failure modes like https://github.com/dechamps/FlexASIO/issues/29.
-				
-				Log() << "Now waiting for " << config.bufferSwitchCount << " buffer switches...";
-				Log();
-
 				{
 					std::unique_lock outcomeLock(outcomeMutex);
 					outcomeCondition.wait(outcomeLock, [&] { return outcome.has_value();  });
@@ -654,7 +661,6 @@ namespace flexasio {
 				}
 
 				Log();
-				Log() << "Reached " << config.bufferSwitchCount << " buffer switches, stopping";
 
 				if (!Stop()) return false;
 
