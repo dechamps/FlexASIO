@@ -68,7 +68,11 @@ namespace flexasio {
 			}
 			void getErrorMessage(char* string) throw() final {
 				Enter("getErrorMessage()", [&] {
-					strcpy_s(string, 124, lastError.c_str());
+					std::string_view error(lastError);
+					constexpr auto maxSize = 123;
+					if (error.size() > maxSize) error.remove_suffix(error.size() - maxSize);
+					std::copy(error.begin(), error.end(), string);
+					string[error.size()] = '\0';
 				});
 			}
 			ASIOError getClockSources(ASIOClockSource* clocks, long* numSources) throw() final;
