@@ -9,7 +9,7 @@
 
 #include <windows.h>
 
-namespace flexasio {
+namespace dechamps_cpplog {
 
 	namespace {
 

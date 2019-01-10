@@ -10,7 +10,7 @@ namespace flexasio {
 
 	namespace {
 
-		class FlexASIOLogSink final : public LogSink {
+		class FlexASIOLogSink final : public ::dechamps_cpplog::LogSink {
 			public:
 				static std::unique_ptr<FlexASIOLogSink> Open() {
 					const auto userDirectory = GetUserDirectory();
@@ -30,19 +30,19 @@ namespace flexasio {
 				}
 
 				FlexASIOLogSink(const std::filesystem::path& path) : file_sink(path) {
-					Logger(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
+					::dechamps_cpplog::Logger(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << version << " built on " << buildTime;
 				}
 
 				void Write(const std::string_view str) override { return preamble_sink.Write(str); }
 
 			private:
-				FileLogSink file_sink;
-				ThreadSafeLogSink thread_safe_sink{ file_sink };
-				PreambleLogSink preamble_sink{ thread_safe_sink };
+				::dechamps_cpplog::FileLogSink file_sink;
+				::dechamps_cpplog::ThreadSafeLogSink thread_safe_sink{ file_sink };
+				::dechamps_cpplog::PreambleLogSink preamble_sink{ thread_safe_sink };
 		};
 
 	}
 
-	Logger Log() { return Logger(FlexASIOLogSink::Get()); }
+	::dechamps_cpplog::Logger Log() { return ::dechamps_cpplog::Logger(FlexASIOLogSink::Get()); }
 
 }

@@ -4,6 +4,6 @@
 
 namespace flexasio {
 
-	Logger Log();
+	::dechamps_cpplog::Logger Log();
 
 }

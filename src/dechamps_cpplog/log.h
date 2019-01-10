@@ -9,7 +9,7 @@
 #include <sstream>
 #include <string_view>
 
-namespace flexasio {
+namespace dechamps_cpplog {
 
 	class LogSink {
 	public:

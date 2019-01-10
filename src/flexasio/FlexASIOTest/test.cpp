@@ -67,17 +67,17 @@ namespace flexasio {
 
 		class LogState final {
 		public:
-			LogSink& sink() { return preamble_sink;  }
+			::dechamps_cpplog::LogSink& sink() { return preamble_sink;  }
 
 		private:
-			StreamLogSink stream_sink{ std::cout };
-			AsyncLogSink thread_safe_sink{ stream_sink };
-			PreambleLogSink preamble_sink{ thread_safe_sink };
+			::dechamps_cpplog::StreamLogSink stream_sink{ std::cout };
+			::dechamps_cpplog::AsyncLogSink thread_safe_sink{ stream_sink };
+			::dechamps_cpplog::PreambleLogSink preamble_sink{ thread_safe_sink };
 		};
 
-		Logger Log() {
+		::dechamps_cpplog::Logger Log() {
 			static LogState logState;
-			return Logger(&logState.sink());
+			return ::dechamps_cpplog::Logger(&logState.sink());
 		}
 
 		ASIOSampleType GetCommonSampleType(const std::vector<ASIOChannelInfo>& channelInfos, const bool input) {
