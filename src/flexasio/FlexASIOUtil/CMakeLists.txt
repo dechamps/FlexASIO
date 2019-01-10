@@ -5,8 +5,6 @@ target_link_libraries(FlexASIOUtil_asio
 	PRIVATE dechamps_cpputil::string
 )
 
-add_library(FlexASIOUtil_log STATIC log.cpp)
-
 add_library(FlexASIOUtil_portaudio STATIC portaudio.cpp)
 target_link_libraries(FlexASIOUtil_portaudio
 	PUBLIC portaudio::portaudio

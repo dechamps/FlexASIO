@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../FlexASIOUtil/log.h"
+#include <dechamps_cpplog/log.h>
 
 namespace flexasio {
 

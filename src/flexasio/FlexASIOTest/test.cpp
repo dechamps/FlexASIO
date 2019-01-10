@@ -22,7 +22,8 @@
 #include <dechamps_cpputil/find.h>
 #include <dechamps_cpputil/string.h>
 
-#include "../FlexASIOUtil/log.h"
+#include <dechamps_cpplog/log.h>
+
 #include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
 

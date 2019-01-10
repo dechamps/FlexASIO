@@ -14,6 +14,7 @@ find_package(tinytoml REQUIRED)
 find_package(cxxopts REQUIRED)
 find_package(sndfile REQUIRED)
 find_package(portaudio REQUIRED)
+find_package(dechamps_cpplog CONFIG REQUIRED)
 find_package(dechamps_cpputil CONFIG REQUIRED)
 find_package(Git)
 
