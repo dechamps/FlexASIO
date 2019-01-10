@@ -130,7 +130,7 @@ namespace flexasio {
 		}
 
 		std::optional<int> ASIOSampleTypeToSfFormatType(const ASIOSampleType sampleType) {
-			return Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, int>>{
+			return ::dechamps_cpputil::Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, int>>{
 				{ASIOSTInt16MSB, SF_FORMAT_PCM_16 | SF_ENDIAN_BIG},
 				{ASIOSTInt24MSB, SF_FORMAT_PCM_24 | SF_ENDIAN_BIG},
 				{ASIOSTInt32MSB, SF_FORMAT_PCM_32 | SF_ENDIAN_BIG},
@@ -145,7 +145,7 @@ namespace flexasio {
 		}
 		std::optional<ASIOSampleType> SfFormatToASIOSampleType(const int sfFormat) {
 			// TODO: support big endian. Sadly, libsndfile doesn't seem to reliably report endianess when opening a file for reading.
-			return Find(sfFormat & SF_FORMAT_SUBMASK, std::initializer_list<std::pair<int, ASIOSampleType>>{
+			return ::dechamps_cpputil::Find(sfFormat & SF_FORMAT_SUBMASK, std::initializer_list<std::pair<int, ASIOSampleType>>{
 				{SF_FORMAT_PCM_16, ASIOSTInt16LSB},
 				{SF_FORMAT_PCM_24, ASIOSTInt24LSB},
 				{SF_FORMAT_PCM_32, ASIOSTInt32LSB},
@@ -257,7 +257,7 @@ namespace flexasio {
 
 		long HandleSelectorSupportedMessage(long, long value, void*, double*) {
 			Log() << "Being queried for message selector " << GetASIOMessageSelectorString(value);
-			return Find(value, message_selector_handlers).has_value() ? 1 : 0;
+			return ::dechamps_cpputil::Find(value, message_selector_handlers).has_value() ? 1 : 0;
 		}
 
 		class FlexASIOTest {
@@ -437,7 +437,7 @@ namespace flexasio {
 			}
 
 			long HandleASIOMessage(long selector, long value, void* message, double* opt) {
-				const auto handler = Find(selector, message_selector_handlers);
+				const auto handler = ::dechamps_cpputil::Find(selector, message_selector_handlers);
 				if (!handler.has_value()) return 0;
 				return (*handler)(selector, value, message, opt);
 			}

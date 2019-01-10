@@ -125,7 +125,7 @@ namespace flexasio {
 		}
 
 		std::string GetPaStreamCallbackResultString(PaStreamCallbackResult result) {
-			return EnumToString(result, {
+			return ::dechamps_cpputil::EnumToString(result, {
 				{paContinue, "paContinue"},
 				{paComplete, "paComplete"},
 				{paAbort, "paAbort"},
@@ -222,9 +222,9 @@ namespace flexasio {
 	};
 
 	FlexASIO::SampleType FlexASIO::ParseSampleType(const std::string_view str) {
-		const auto sampleType = Find(str, sampleTypes);
+		const auto sampleType = ::dechamps_cpputil::Find(str, sampleTypes);
 		if (!sampleType.has_value()) {
-			throw std::runtime_error(std::string("Invalid '") + std::string(str) + "' sample type - valid values are " + Join(sampleTypes, ", ", [](const auto& item) { return std::string("'") + std::string(item.first) + "'"; }));
+			throw std::runtime_error(std::string("Invalid '") + std::string(str) + "' sample type - valid values are " + ::dechamps_cpputil::Join(sampleTypes, ", ", [](const auto& item) { return std::string("'") + std::string(item.first) + "'"; }));
 		}
 		return *sampleType;
 	}

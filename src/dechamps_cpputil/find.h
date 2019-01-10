@@ -2,7 +2,7 @@
 
 #include <optional>
 
-namespace flexasio {
+namespace dechamps_cpputil {
 
 	template <typename Key, typename KeyValues> auto Find(const Key& key, const KeyValues& keyValues) -> std::optional<decltype(begin(keyValues)->second)> {
 		for (const auto& keyValue : keyValues) {

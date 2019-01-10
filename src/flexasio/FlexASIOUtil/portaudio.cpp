@@ -63,7 +63,7 @@ namespace flexasio {
 	PortAudioDebugRedirector::Write PortAudioDebugRedirector::write;
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId) {
-		return EnumToString(hostApiTypeId, {
+		return ::dechamps_cpputil::EnumToString(hostApiTypeId, {
 			{ paInDevelopment, "In development" },
 			{ paDirectSound, "DirectSound" },
 			{ paMME, "MME" },
@@ -82,7 +82,7 @@ namespace flexasio {
 	}
 
 	std::string GetSampleFormatString(PaSampleFormat sampleFormat) {
-		auto result = BitfieldToString(sampleFormat, {
+		auto result = ::dechamps_cpputil::BitfieldToString(sampleFormat, {
 			{ paFloat32, "Float32" },
 			{ paInt32, "Int32" },
 			{ paInt24, "Int24" },
@@ -96,7 +96,7 @@ namespace flexasio {
 	}
 
 	std::string GetStreamFlagsString(PaStreamFlags streamFlags) {
-		return BitfieldToString(streamFlags, {
+		return ::dechamps_cpputil::BitfieldToString(streamFlags, {
 			{ paClipOff, "ClipOff" },
 			{ paDitherOff, "DitherOff" },
 			{ paNeverDropInput, "NeverDropInput" },
@@ -105,7 +105,7 @@ namespace flexasio {
 	}
 
 	std::string GetWasapiFlagsString(PaWasapiFlags wasapiFlags) {
-		return BitfieldToString(wasapiFlags, {
+		return ::dechamps_cpputil::BitfieldToString(wasapiFlags, {
 			{ paWinWasapiExclusive, "Exclusive" },
 			{ paWinWasapiRedirectHostProcessor, "RedirectHostProcessor" },
 			{ paWinWasapiUseChannelMask, "UseChannelMask" },
@@ -115,7 +115,7 @@ namespace flexasio {
 	}
 
 	std::string GetWasapiThreadPriorityString(PaWasapiThreadPriority threadPriority) {
-		return EnumToString(threadPriority, {
+		return ::dechamps_cpputil::EnumToString(threadPriority, {
 			{ eThreadPriorityNone, "None" },
 			{ eThreadPriorityAudio, "Audio" },
 			{ eThreadPriorityCapture, "Capture" },
@@ -128,7 +128,7 @@ namespace flexasio {
 	}
 
 	std::string GetWasapiStreamCategoryString(PaWasapiStreamCategory streamCategory) {
-		return EnumToString(streamCategory, {
+		return ::dechamps_cpputil::EnumToString(streamCategory, {
 			{ eAudioCategoryOther, "Other" },
 			{ eAudioCategoryCommunications, "Communications" },
 			{ eAudioCategoryAlerts, "Alerts" },
@@ -143,7 +143,7 @@ namespace flexasio {
 	}
 
 	std::string GetWasapiStreamOptionString(PaWasapiStreamOption streamOption) {
-		return EnumToString(streamOption, {
+		return ::dechamps_cpputil::EnumToString(streamOption, {
 			{ eStreamOptionNone, "None" },
 			{ eStreamOptionRaw, "Raw" },
 			{ eStreamOptionMatchFormat, "MatchFormat" },
@@ -151,7 +151,7 @@ namespace flexasio {
 	}
 
 	std::string GetStreamCallbackFlagsString(PaStreamCallbackFlags streamCallbackFlags) {
-		return BitfieldToString(streamCallbackFlags, {
+		return ::dechamps_cpputil::BitfieldToString(streamCallbackFlags, {
 			{ paInputUnderflow, "InputUnderflow" },
 			{ paInputOverflow, "InputOverflow" },
 			{ paOutputUnderflow, "OutputUnderflow" },
@@ -201,7 +201,7 @@ namespace flexasio {
 	}
 
 	std::string GetWaveFormatTagString(WORD formatTag) {
-		return EnumToString(int(formatTag), {
+		return ::dechamps_cpputil::EnumToString(int(formatTag), {
 			{ WAVE_FORMAT_EXTENSIBLE, "EXTENSIBLE" },
 			{ WAVE_FORMAT_MPEG, "MPEG" },
 			{ WAVE_FORMAT_MPEGLAYER3, "MPEGLAYER3" },
@@ -209,7 +209,7 @@ namespace flexasio {
 	}
 
 	std::string GetWaveFormatChannelMaskString(DWORD channelMask) {
-		return BitfieldToString(channelMask, {
+		return ::dechamps_cpputil::BitfieldToString(channelMask, {
 			{SPEAKER_FRONT_LEFT, "Front Left"},
 			{SPEAKER_FRONT_RIGHT, "Front Right"},
 			{SPEAKER_FRONT_CENTER, "Front Center"},
@@ -232,7 +232,7 @@ namespace flexasio {
 	}
 
 	std::string GetWaveSubFormatString(const GUID& subFormat) {
-		return EnumToString(subFormat, {
+		return ::dechamps_cpputil::EnumToString(subFormat, {
 			{ KSDATAFORMAT_SUBTYPE_ADPCM, "ADPCM" },
 			{ KSDATAFORMAT_SUBTYPE_ALAW, "A-law" },
 			{ KSDATAFORMAT_SUBTYPE_DRM, "DRM" },

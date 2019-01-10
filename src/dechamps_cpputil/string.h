@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-namespace flexasio {
+namespace dechamps_cpputil {
 
 	struct DefaultRender {
 		template <typename T> auto operator()(T&& val) { return std::forward<T>(val); }

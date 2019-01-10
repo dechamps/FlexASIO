@@ -34,7 +34,7 @@ namespace flexasio {
 	template ASIOSamples Int64ToASIO<ASIOSamples>(int64_t);
 
 	std::string GetASIOErrorString(ASIOError error) {
-		return EnumToString(error, {
+		return ::dechamps_cpputil::EnumToString(error, {
 			{ASE_OK, "ASE_OK"},
 			{ASE_SUCCESS, "ASE_SUCCESS"},
 			{ASE_NotPresent, "ASE_NotPresent"},
@@ -48,7 +48,7 @@ namespace flexasio {
 	}
 
 	std::string GetASIOSampleTypeString(ASIOSampleType sampleType) {
-		return EnumToString(sampleType, {
+		return ::dechamps_cpputil::EnumToString(sampleType, {
 			{ASIOSTInt16MSB, "ASIOSTInt16MSB"},
 			{ASIOSTInt24MSB, "ASIOSTInt24MSB"},
 			{ASIOSTInt32MSB, "ASIOSTInt32MSB"},
@@ -74,7 +74,7 @@ namespace flexasio {
 	}
 
 	std::optional<size_t> GetASIOSampleSize(ASIOSampleType sampleType) {
-		return Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, size_t>>{
+		return ::dechamps_cpputil::Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, size_t>>{
 			{ASIOSTInt16MSB, 2},
 			{ ASIOSTInt24MSB, 3 },
 			{ ASIOSTInt32MSB, 4 },
@@ -97,7 +97,7 @@ namespace flexasio {
 	}
 
 	std::string GetASIOFutureSelectorString(long selector) {
-		return EnumToString(selector, {
+		return ::dechamps_cpputil::EnumToString(selector, {
 			{kAsioEnableTimeCodeRead, "EnableTimeCodeRead"},
 			{kAsioDisableTimeCodeRead, "DisableTimeCodeRead"},
 			{kAsioSetInputMonitor, "SetInputMonitor"},
@@ -124,7 +124,7 @@ namespace flexasio {
 	}
 
 	std::string GetASIOMessageSelectorString(long selector) {
-		return EnumToString(selector, {
+		return ::dechamps_cpputil::EnumToString(selector, {
 			{kAsioSelectorSupported, "kAsioSelectorSupported"},
 			{kAsioEngineVersion, "kAsioEngineVersion"},
 			{kAsioResetRequest, "kAsioResetRequest"},
@@ -144,7 +144,7 @@ namespace flexasio {
 	}
 
 	std::string GetAsioTimeInfoFlagsString(unsigned long timeInfoFlags) {
-		return BitfieldToString(timeInfoFlags, {
+		return ::dechamps_cpputil::BitfieldToString(timeInfoFlags, {
 			{kSystemTimeValid, "kSystemTimeValid"},
 			{kSamplePositionValid, "kSamplePositionValid"},
 			{kSampleRateValid, "kSampleRateValid"},
@@ -155,7 +155,7 @@ namespace flexasio {
 	}
 
 	std::string GetASIOTimeCodeFlagsString(unsigned long timeCodeFlags) {
-		return BitfieldToString(timeCodeFlags, {
+		return ::dechamps_cpputil::BitfieldToString(timeCodeFlags, {
 			{kTcValid, "kTcValid"},
 			{kTcRunning, "kTcRunning"},
 			{kTcReverse, "kTcReverse"},
@@ -172,7 +172,7 @@ namespace flexasio {
 			<< ASIOToInt64(asioTimeInfo.samplePosition) << ", sample rate "
 			<< asioTimeInfo.sampleRate << " Hz, flags "
 			<< GetAsioTimeInfoFlagsString(asioTimeInfo.flags) << ", reserved "
-			<< Join(asioTimeInfo.reserved, " ", CharAsNumber());
+			<< ::dechamps_cpputil::Join(asioTimeInfo.reserved, " ", ::dechamps_cpputil::CharAsNumber());
 		return result.str();
 	}
 
@@ -181,13 +181,13 @@ namespace flexasio {
 		result << "ASIO time code with speed " << asioTimeCode.speed << ", samples "
 			<< ASIOToInt64(asioTimeCode.timeCodeSamples) << ", flags "
 			<< GetASIOTimeCodeFlagsString(asioTimeCode.flags) << ", future "
-			<< Join(asioTimeCode.future, " ", CharAsNumber());
+			<< ::dechamps_cpputil::Join(asioTimeCode.future, " ", ::dechamps_cpputil::CharAsNumber());
 		return result.str();
 	}
 
 	std::string DescribeASIOTime(const ASIOTime& asioTime) {
 		std::stringstream result;
-		result << "ASIO time with reserved " << Join(asioTime.reserved, " ") << ", time info ("
+		result << "ASIO time with reserved " << ::dechamps_cpputil::Join(asioTime.reserved, " ") << ", time info ("
 			<< DescribeASIOTimeInfo(asioTime.timeInfo) << "), time code ("
 			<< DescribeASIOTimeCode(asioTime.timeCode) << ")";
 		return result.str();
