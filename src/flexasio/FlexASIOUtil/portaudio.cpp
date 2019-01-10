@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <string_view>
 
-#include "string.h"
+#include <dechamps_cpputil/string.h>
 
 // From pa_debugprint.h. The PortAudio DLL exports this function, but sadly it is not exposed in a public header file.
 extern "C" {

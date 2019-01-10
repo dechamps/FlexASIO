@@ -65,13 +65,22 @@ ExternalProject_Add(
 )
 
 ExternalProject_Add(
+    dechamps_cpputil
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/dechamps_cpputil"
+    BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+    CMAKE_ARGS ${CMAKE_ARGS}
+	EXCLUDE_FROM_ALL
+)
+
+ExternalProject_Add(
     FlexASIO
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/flexasio"
     USES_TERMINAL_CONFIGURE TRUE
     BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
     INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
     CMAKE_ARGS ${CMAKE_ARGS}
-    DEPENDS tinytoml cxxopts libsndfile portaudio
+    DEPENDS tinytoml cxxopts libsndfile portaudio dechamps_cpputil
 )
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")

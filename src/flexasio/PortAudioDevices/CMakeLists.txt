@@ -4,6 +4,7 @@ target_link_libraries(PortAudioDevices
 	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIOUtil_log
 	PRIVATE FlexASIOUtil_portaudio
+	PRIVATE dechamps_cpputil::string
 	PRIVATE portaudio::portaudio
 )
 install(TARGETS PortAudioDevices RUNTIME DESTINATION bin)

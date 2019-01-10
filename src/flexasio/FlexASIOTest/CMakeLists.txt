@@ -7,6 +7,8 @@ target_link_libraries(FlexASIOTest
 	PRIVATE FlexASIO_version_stamp
 	PRIVATE FlexASIOUtil_asio
 	PRIVATE FlexASIOUtil_log
+	PRIVATE dechamps_cpputil::find
+	PRIVATE dechamps_cpputil::string
 	PRIVATE cxxopts::cxxopts
 	PRIVATE SndFile::sndfile
 )

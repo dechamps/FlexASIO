@@ -1,7 +1,8 @@
 #include "asio.h"
 
 #include "endian.h"
-#include "string.h"
+
+#include <dechamps_cpputil/string.h>
 
 #include <cstring>
 #include <utility>

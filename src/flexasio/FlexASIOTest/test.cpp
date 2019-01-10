@@ -19,11 +19,12 @@
 #include <cxxopts.hpp>
 #pragma warning(pop)
 
+#include <dechamps_cpputil/find.h>
+#include <dechamps_cpputil/string.h>
+
 #include "../FlexASIOUtil/log.h"
 #include "..\FlexASIO\cflexasio.h"
 #include "..\FlexASIOUtil\asio.h"
-#include "..\FlexASIOUtil\find.h"
-#include "..\FlexASIOUtil\string.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;

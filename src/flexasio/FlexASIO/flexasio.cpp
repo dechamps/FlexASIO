@@ -10,13 +10,14 @@
 
 #include <MMReg.h>
 
+#include <dechamps_cpputil/string.h>
+
 #include "portaudio.h"
 #include "pa_win_wasapi.h"
 
 #include "endian.h"
 #include "log.h"
 #include "../FlexASIOUtil/asio.h"
-#include "../FlexASIOUtil/string.h"
 #include "../version/version.h"
 
 namespace flexasio {

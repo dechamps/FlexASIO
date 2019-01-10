@@ -6,8 +6,9 @@
 #include <iostream>
 #include <string>
 
+#include <dechamps_cpputil/string.h>
+
 #include "../FlexASIOUtil/portaudio.h"
-#include "../FlexASIOUtil/string.h"
 
 namespace flexasio {
 	namespace {

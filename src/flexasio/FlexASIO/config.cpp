@@ -7,7 +7,6 @@
 #include <toml/toml.h>
 
 #include "log.h"
-#include "../FlexASIOUtil/find.h"
 #include "../FlexASIOUtil/shell.h"
 
 namespace flexasio {
