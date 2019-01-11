@@ -8,11 +8,10 @@
 @rem instead, but command line quoting/escaping issues makes that surprisingly
 @rem hard to do in practice.
 
-@set DECHAMPS_CMAKEUTILS_BUILD_ARCH=%1 || goto :error
 @set DECHAMPS_CMAKEUTILS_INSTALL_DIR=%cd%\install || goto :error
 @mkdir build || goto :error
 @cd build || goto :error
-call "%DECHAMPS_CMAKEUTILS_VISUALSTUDIO_VSDEVCMD%" -arch=%DECHAMPS_CMAKEUTILS_BUILD_ARCH% || goto :error
+call "%DECHAMPS_CMAKEUTILS_VISUALSTUDIO_VSDEVCMD%" -arch=%DECHAMPS_CMAKEUTILS_ARCH% || goto :error
 @echo on
 "%DECHAMPS_CMAKEUTILS_VISUALSTUDIO_CMAKE%" -G Ninja -DCMAKE_BUILD_TYPE="Release" -DCMAKE_INSTALL_PREFIX:PATH="%DECHAMPS_CMAKEUTILS_INSTALL_DIR%" "%DECHAMPS_CMAKEUTILS_SOURCE_DIR%" || goto :error
 "%DECHAMPS_CMAKEUTILS_VISUALSTUDIO_CMAKE%" --build . --target install || goto :error
