@@ -11,7 +11,7 @@ VS_VERSION_INFO VERSIONINFO
 			VALUE "FileDescription", PROJECT_DESCRIPTION " (" BUILD_CONFIGURATION " " BUILD_PLATFORM ")"
 			VALUE "LegalCopyright", "MIT License, Copyright (c) 2018 Etienne Dechamps <etienne@edechamps.fr>"
 			VALUE "ProductName", "FlexASIO https://github.com/dechamps/FlexASIO"
-			VALUE "ProductVersion", FLEXASIO_VERSION " built on " FLEXASIO_BUILD_TIMESTR
+			VALUE "ProductVersion", FLEXASIO_GIT_DESCRIPTION_DIRTY " built on " FLEXASIO_BUILD_TIMESTR
 		}
 	}
 	BLOCK "VarFileInfo"

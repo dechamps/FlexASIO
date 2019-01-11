@@ -4,6 +4,6 @@
 
 namespace flexasio {
 	const char git_description[] = FLEXASIO_GIT_DESCRIPTION;
-	const char version[] = FLEXASIO_VERSION;
+	const char git_description_dirty[] = FLEXASIO_GIT_DESCRIPTION_DIRTY;
 	const char buildTime[] = FLEXASIO_BUILD_TIMESTR;
 }
