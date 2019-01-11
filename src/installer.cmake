@@ -1,4 +1,4 @@
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/dechamps_CMakeUtils")
 find_package(VisualStudio_VsDevCmd REQUIRED)
 find_package(VisualStudio_cmake REQUIRED)
 find_package(InnoSetup REQUIRED)
