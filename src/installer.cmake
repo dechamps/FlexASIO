@@ -14,7 +14,7 @@ message(STATUS "FlexASIO build root directory: ${FLEXASIO_BUILD_ROOT_DIR}")
 
 file(MAKE_DIRECTORY "${FLEXASIO_BUILD_ROOT_DIR}/x64" "${FLEXASIO_BUILD_ROOT_DIR}/x86")
 
-include(build_msvc.cmake)
+include(build_msvc)
 build_msvc(SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}" BUILD_DIR "${FLEXASIO_BUILD_ROOT_DIR}/x64" ARCH amd64)
 build_msvc(SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}" BUILD_DIR "${FLEXASIO_BUILD_ROOT_DIR}/x86" ARCH x86)
 

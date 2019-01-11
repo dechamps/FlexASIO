@@ -1,7 +1,8 @@
+set(DECHAMPS_CMAKEUTILS_DIR "${CMAKE_CURRENT_LIST_DIR}")
+
 function(build_msvc)
 	cmake_parse_arguments(BUILD_MSVC "" "SOURCE_DIR;BUILD_DIR;ARCH" "" ${ARGN})
 
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/dechamps_CMakeUtils")
 	find_package(VisualStudio_VsDevCmd REQUIRED)
 	find_package(VisualStudio_cmake REQUIRED)
 
@@ -13,7 +14,7 @@ function(build_msvc)
 	set(ENV{FLEXASIO_SOURCE_DIR} "${BUILD_MSVC_SOURCE_DIR}")
 
 	execute_process_or_die(
-		COMMAND cmd /D /C "${CMAKE_CURRENT_LIST_DIR}/build_msvc.bat" "${BUILD_MSVC_ARCH}"
+		COMMAND cmd /D /C "${DECHAMPS_CMAKEUTILS_DIR}/build_msvc.bat" "${BUILD_MSVC_ARCH}"
 		WORKING_DIRECTORY "${BUILD_MSVC_BUILD_DIR}"
 	)
 
