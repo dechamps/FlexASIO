@@ -1,6 +1,7 @@
 add_library(FlexASIOUtil_asio STATIC asio.cpp)
 target_link_libraries(FlexASIOUtil_asio
-	PUBLIC asiosdk_headers
+	PUBLIC dechamps_ASIOUtil::asiosdk_asio
+	PUBLIC dechamps_ASIOUtil::asiosdk_asiosys
 	PRIVATE FlexASIO_endian
 	PRIVATE dechamps_cpputil::string
 )

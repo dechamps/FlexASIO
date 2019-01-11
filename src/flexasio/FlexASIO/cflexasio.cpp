@@ -7,7 +7,7 @@
 #include "../FlexASIOUtil/asio.h"
 #include "log.h"
 
-#include <common\iasiodrv.h>
+#include <dechamps_ASIOUtil/asiosdk/iasiodrv.h>
 
 #pragma warning(push)
 #pragma warning(disable:6011 6387)

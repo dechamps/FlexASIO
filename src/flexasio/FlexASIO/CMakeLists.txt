@@ -25,7 +25,7 @@ target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_idl
 	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
-	PRIVATE asiosdk_headers
+	PRIVATE dechamps_ASIOUtil::asiosdk_iasiodrv
 )
 
 add_library(FlexASIO_comdll STATIC EXCLUDE_FROM_ALL comdll.cpp)
@@ -52,7 +52,8 @@ target_link_libraries(FlexASIO_portaudio
 
 add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)
 target_link_libraries(FlexASIO_flexasio
-	PUBLIC asiosdk_headers
+	PUBLIC dechamps_ASIOUtil::asiosdk_asioh
+	PUBLIC dechamps_ASIOUtil::asiosdk_asiosys
 	PUBLIC FlexASIO_config
 	PUBLIC FlexASIOUtil_portaudio
 	PRIVATE FlexASIOUtil_asio

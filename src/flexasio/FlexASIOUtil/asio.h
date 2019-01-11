@@ -1,7 +1,7 @@
 #pragma once
 
-#include <common\asiosys.h>
-#include <common\asio.h>
+#include <dechamps_ASIOUtil/asiosdk/asiosys.h>
+#include <dechamps_ASIOUtil/asiosdk/asio.h>
 
 #include <cstdint>
 #include <string>

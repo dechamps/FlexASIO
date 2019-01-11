@@ -11,8 +11,8 @@
 
 #include <sndfile.h>
 
-#include <host\ginclude.h>
-#include <common\asio.h>
+#include <dechamps_ASIOUtil/asiosdk/ginclude.h>
+#include <dechamps_ASIOUtil/asiosdk/asio.h>
 
 #pragma warning(push)
 #pragma warning(disable:4018 4267)

@@ -5,8 +5,8 @@
 #include "portaudio.h"
 #include "../FlexASIOUtil/portaudio.h"
 
-#include <common\asiosys.h>
-#include <common\asio.h>
+#include <dechamps_ASIOUtil/asiosdk/asiosys.h>
+#include <dechamps_ASIOUtil/asiosdk/asio.h>
 
 #include <portaudio.h>
 
