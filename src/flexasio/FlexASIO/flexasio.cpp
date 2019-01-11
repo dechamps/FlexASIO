@@ -871,7 +871,7 @@ namespace flexasio {
 	}
 
 	void FlexASIO::ControlPanel() {
-		const auto url = std::string("https://github.com/dechamps/FlexASIO/blob/") + ::dechamps_CMakeUtils::git_description + "/CONFIGURATION.md";
+		const auto url = std::string("https://github.com/dechamps/FlexASIO/blob/") + ::dechamps_CMakeUtils_gitDescription + "/CONFIGURATION.md";
 		Log() << "Opening URL: " << url;
 		const auto result = ShellExecuteA(windowHandle, NULL, url.c_str(), NULL, NULL, SW_SHOWNORMAL);
 		Log() << "ShellExecuteA() result: " << result;

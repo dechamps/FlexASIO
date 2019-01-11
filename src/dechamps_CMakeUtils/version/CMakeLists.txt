@@ -14,7 +14,7 @@ target_include_directories(dechamps_CMakeUtils_version_stamp
 	INTERFACE "${DECHAMPS_CMAKEUTILS_INCLUDE_DIR}"
 )
 
-add_library(dechamps_CMakeUtils_version STATIC version.cpp)
+add_library(dechamps_CMakeUtils_version STATIC version.c)
 target_link_libraries(dechamps_CMakeUtils_version PRIVATE dechamps_CMakeUtils_version_stamp)
 target_include_directories(dechamps_CMakeUtils_version
 	PUBLIC "${DECHAMPS_CMAKEUTILS_INCLUDE_DIR}"

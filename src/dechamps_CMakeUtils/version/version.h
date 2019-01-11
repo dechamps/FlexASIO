@@ -1,7 +1,13 @@
 #pragma once
 
-namespace dechamps_CMakeUtils {
-	extern const char git_description[];
-	extern const char git_description_dirty[];
-	extern const char buildTime[];
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern const char dechamps_CMakeUtils_gitDescription[];
+extern const char dechamps_CMakeUtils_gitDescriptionDirty[];
+extern const char dechamps_CMakeUtils_buildTime[];
+
+#ifdef __cplusplus
 }
+#endif
