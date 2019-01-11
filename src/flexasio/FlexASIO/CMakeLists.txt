@@ -58,8 +58,8 @@ target_link_libraries(FlexASIO_flexasio
 	PUBLIC FlexASIOUtil_portaudio
 	PRIVATE FlexASIOUtil_asio
 	PRIVATE FlexASIO_log
-	PRIVATE FlexASIO_endian
 	PRIVATE FlexASIO_version
+	PRIVATE dechamps_cpputil::endian
 	PRIVATE dechamps_cpputil::string
 	PRIVATE portaudio::portaudio
 	PRIVATE winmm

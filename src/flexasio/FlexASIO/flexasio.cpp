@@ -10,12 +10,12 @@
 
 #include <MMReg.h>
 
+#include <dechamps_cpputil/endian.h>
 #include <dechamps_cpputil/string.h>
 
 #include "portaudio.h"
 #include "pa_win_wasapi.h"
 
-#include "endian.h"
 #include "log.h"
 #include "../FlexASIOUtil/asio.h"
 #include "../version/version.h"
@@ -210,10 +210,10 @@ namespace flexasio {
 
 	}
 
-	constexpr FlexASIO::SampleType FlexASIO::float32 = { endianness == Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
-	constexpr FlexASIO::SampleType FlexASIO::int32 = { endianness == Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
-	constexpr FlexASIO::SampleType FlexASIO::int24 = { endianness == Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
-	constexpr FlexASIO::SampleType FlexASIO::int16 = { endianness == Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
+	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
+	constexpr FlexASIO::SampleType FlexASIO::int32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
+	constexpr FlexASIO::SampleType FlexASIO::int24 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
+	constexpr FlexASIO::SampleType FlexASIO::int16 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
 	constexpr std::pair<std::string_view, FlexASIO::SampleType> FlexASIO::sampleTypes[] = {
 			{"Float32", float32},
 			{"Int32", int32},

@@ -42,6 +42,5 @@ add_subdirectory(FlexASIOUtil EXCLUDE_FROM_ALL)
 add_subdirectory(FlexASIO)
 add_subdirectory(FlexASIOTest)
 add_subdirectory(PortAudioDevices)
-add_subdirectory(endian)
 add_subdirectory(version)
 
