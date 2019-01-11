@@ -31,7 +31,7 @@ namespace flexasio {
 				}
 
 				FlexASIOLogSink(const std::filesystem::path& path) : file_sink(path) {
-					::dechamps_cpplog::Logger(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << git_description_dirty << " built on " << buildTime;
+					::dechamps_cpplog::Logger(this) << "FlexASIO " << BUILD_CONFIGURATION << " " << BUILD_PLATFORM << " " << ::dechamps_CMakeUtils::git_description_dirty << " built on " << ::dechamps_CMakeUtils::buildTime;
 				}
 
 				void Write(const std::string_view str) override { return preamble_sink.Write(str); }

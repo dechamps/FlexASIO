@@ -5,7 +5,7 @@ find_package(InnoSetup REQUIRED)
 
 find_package(Git REQUIRED)
 include(dechamps_CMakeUtils/version/version.cmake)
-string(REGEX REPLACE "^flexasio-" "" FLEXASIO_VERSION "${FLEXASIO_GIT_DESCRIPTION_DIRTY}")
+string(REGEX REPLACE "^flexasio-" "" FLEXASIO_VERSION "${DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION_DIRTY}")
 
 string(TIMESTAMP FLEXASIO_BUILD_TIMESTAMP "%Y-%m-%dT%H%M%SZ" UTC)
 string(RANDOM FLEXASIO_BUILD_ID)

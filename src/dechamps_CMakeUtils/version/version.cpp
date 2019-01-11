@@ -2,8 +2,8 @@
 
 #include <dechamps_CMakeUtils/version_stamp.h>
 
-namespace flexasio {
-	const char git_description[] = FLEXASIO_GIT_DESCRIPTION;
-	const char git_description_dirty[] = FLEXASIO_GIT_DESCRIPTION_DIRTY;
-	const char buildTime[] = FLEXASIO_BUILD_TIMESTR;
+namespace dechamps_CMakeUtils {
+	const char git_description[] = DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION;
+	const char git_description_dirty[] = DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION_DIRTY;
+	const char buildTime[] = DECHAMPS_CMAKEUTILS_BUILD_TIME;
 }
