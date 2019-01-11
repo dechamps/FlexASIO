@@ -13,11 +13,13 @@
 #include <dechamps_cpputil/endian.h>
 #include <dechamps_cpputil/string.h>
 
+#include <dechamps_ASIOUtil/asio.h>
+
 #include "portaudio.h"
 #include "pa_win_wasapi.h"
 
 #include "log.h"
-#include "../FlexASIOUtil/asio.h"
+
 #include "../version/version.h"
 
 namespace flexasio {

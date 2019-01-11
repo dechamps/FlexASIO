@@ -90,6 +90,7 @@ ExternalProject_Add(
     INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
     CMAKE_ARGS ${CMAKE_ARGS}
 	EXCLUDE_FROM_ALL
+	DEPENDS dechamps_cpputil
 )
 
 ExternalProject_Add(

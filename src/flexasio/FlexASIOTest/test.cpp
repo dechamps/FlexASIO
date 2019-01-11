@@ -13,6 +13,7 @@
 
 #include <dechamps_ASIOUtil/asiosdk/ginclude.h>
 #include <dechamps_ASIOUtil/asiosdk/asio.h>
+#include <dechamps_ASIOUtil/asio.h>
 
 #pragma warning(push)
 #pragma warning(disable:4018 4267)
@@ -25,7 +26,6 @@
 #include <dechamps_cpplog/log.h>
 
 #include "..\FlexASIO\cflexasio.h"
-#include "..\FlexASIOUtil\asio.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;

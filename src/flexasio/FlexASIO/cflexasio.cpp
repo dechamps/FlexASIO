@@ -4,10 +4,10 @@
 #include "flexasio.rc.h"
 #include "flexasio_h.h"
 
-#include "../FlexASIOUtil/asio.h"
 #include "log.h"
 
 #include <dechamps_ASIOUtil/asiosdk/iasiodrv.h>
+#include <dechamps_ASIOUtil/asio.h>
 
 #pragma warning(push)
 #pragma warning(disable:6011 6387)

@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.11)
 project(dechamps_ASIOUtil)
 
+find_package(dechamps_cpputil CONFIG REQUIRED)
+
 include(FetchContent)
 set(FETCHCONTENT_QUIET FALSE)
 FetchContent_Declare(asiosdk
@@ -12,6 +14,9 @@ FetchContent_GetProperties(asiosdk)
 if(NOT asiosdk_POPULATED)
   FetchContent_Populate(asiosdk)
 endif()
+
+set(CMAKE_CXX_STANDARD 17)
+add_definitions(-DDECHAMPS_ASIOUTIL_BUILD)
 
 add_library(asiosdk_ginclude INTERFACE)
 target_include_directories(asiosdk_ginclude INTERFACE "$<INSTALL_INTERFACE:include>")
@@ -47,6 +52,23 @@ target_include_directories(asiosdk_asio
 	INTERFACE "$<INSTALL_INTERFACE:include>"
 )
 
+add_library(asio STATIC asio.cpp)
+target_link_libraries(asio
+	PUBLIC asiosdk_asioh
+	PUBLIC asiosdk_asiosys
+	PRIVATE dechamps_cpputil::endian
+	PRIVATE dechamps_cpputil::string
+)
+target_include_directories(asio
+	PUBLIC "$<BUILD_INTERFACE:${asiosdk_SOURCE_DIR}>"
+	PUBLIC "$<INSTALL_INTERFACE:include>"
+)
+target_compile_options(asio PRIVATE /WX /W4 /permissive- /analyze)
+
 install(FILES "${asiosdk_SOURCE_DIR}/host/ginclude.h" "${asiosdk_SOURCE_DIR}/common/asio.h" "${asiosdk_SOURCE_DIR}/common/asiosys.h" "${asiosdk_SOURCE_DIR}/common/iasiodrv.h" DESTINATION include/dechamps_ASIOUtil/asiosdk)
 install(TARGETS asiosdk_ginclude asiosdk_asioh asiosdk_asiosys asiosdk_iasiodrv asiosdk_asiolist asiosdk_asiodrivers asiosdk_asio EXPORT dechamps_ASIOUtil-config ARCHIVE DESTINATION lib/dechamps_ASIOUtil)
+
+install(FILES asio.h DESTINATION include/dechamps_ASIOUtil)
+install(TARGETS asio EXPORT dechamps_ASIOUtil-config ARCHIVE DESTINATION lib/dechamps_ASIOUtil)
+
 install(EXPORT dechamps_ASIOUtil-config NAMESPACE dechamps_ASIOUtil:: DESTINATION lib/cmake/dechamps_ASIOUtil)

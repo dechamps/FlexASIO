@@ -1,7 +1,12 @@
 #pragma once
 
+#ifdef DECHAMPS_ASIOUTIL_BUILD
+#include <common/asiosys.h>
+#include <common/asio.h>
+#else
 #include <dechamps_ASIOUtil/asiosdk/asiosys.h>
 #include <dechamps_ASIOUtil/asiosdk/asio.h>
+#endif
 
 #include <cstdint>
 #include <string>

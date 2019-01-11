@@ -21,11 +21,11 @@ target_include_directories(FlexASIO_idl INTERFACE "${CMAKE_CURRENT_BINARY_DIR}")
 add_library(FlexASIO_cflexasio STATIC EXCLUDE_FROM_ALL cflexasio.cpp)
 target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_flexasio
-	PRIVATE FlexASIOUtil_asio
 	PRIVATE FlexASIO_idl
 	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
 	PRIVATE dechamps_ASIOUtil::asiosdk_iasiodrv
+	PRIVATE dechamps_ASIOUtil::asio
 )
 
 add_library(FlexASIO_comdll STATIC EXCLUDE_FROM_ALL comdll.cpp)
@@ -56,7 +56,7 @@ target_link_libraries(FlexASIO_flexasio
 	PUBLIC dechamps_ASIOUtil::asiosdk_asiosys
 	PUBLIC FlexASIO_config
 	PUBLIC FlexASIOUtil_portaudio
-	PRIVATE FlexASIOUtil_asio
+	PRIVATE dechamps_ASIOUtil::asio
 	PRIVATE FlexASIO_log
 	PRIVATE FlexASIO_version
 	PRIVATE dechamps_cpputil::endian
