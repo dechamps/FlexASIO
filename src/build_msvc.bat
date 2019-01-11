@@ -1,5 +1,5 @@
 @rem Batch script for building FlexASIO in a specific configuration.
-@rem Meant to be called as part of installer.cmake, which will set the
+@rem Meant to be called as part of build_msvc.cmake, which will set the
 @rem appropriate environment variables.
 @rem
 @rem The reason why this needs to be run by cmd.exe is because VsDevCmd.bat sets
