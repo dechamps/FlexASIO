@@ -15,12 +15,12 @@
 
 #include <dechamps_ASIOUtil/asio.h>
 
+#include <dechamps_CMakeUtils/version.h>
+
 #include "portaudio.h"
 #include "pa_win_wasapi.h"
 
 #include "log.h"
-
-#include "../version/version.h"
 
 namespace flexasio {
 

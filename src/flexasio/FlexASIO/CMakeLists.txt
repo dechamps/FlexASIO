@@ -42,6 +42,7 @@ add_library(FlexASIO_log STATIC EXCLUDE_FROM_ALL log.cpp)
 target_link_libraries(FlexASIO_log
 	PUBLIC dechamps_cpplog::log
 	PRIVATE FlexASIOUtil_shell
+	PRIVATE dechamps_CMakeUtils_version
 )
 
 add_library(FlexASIO_portaudio STATIC EXCLUDE_FROM_ALL portaudio.cpp)
@@ -58,9 +59,9 @@ target_link_libraries(FlexASIO_flexasio
 	PUBLIC FlexASIOUtil_portaudio
 	PRIVATE dechamps_ASIOUtil::asio
 	PRIVATE FlexASIO_log
-	PRIVATE FlexASIO_version
 	PRIVATE dechamps_cpputil::endian
 	PRIVATE dechamps_cpputil::string
+	PRIVATE dechamps_CMakeUtils_version
 	PRIVATE portaudio::portaudio
 	PRIVATE winmm
 )
@@ -71,7 +72,7 @@ target_compile_definitions(FlexASIO PRIVATE PROJECT_DESCRIPTION="FlexASIO ASIO D
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
 	PRIVATE FlexASIO_portaudio
-	PRIVATE FlexASIO_version_stamp
+	PRIVATE dechamps_CMakeUtils_version_stamp
 	PRIVATE FlexASIO_comdll
 	PRIVATE FlexASIO_idl
 )

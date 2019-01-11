@@ -5,7 +5,7 @@ target_link_libraries(FlexASIOTest
 	PRIVATE dechamps_ASIOUtil::asiosdk_asio
 	PRIVATE dechamps_ASIOUtil::asio
 	PRIVATE FlexASIO
-	PRIVATE FlexASIO_version_stamp
+	PRIVATE dechamps_CMakeUtils_version_stamp
 	PRIVATE dechamps_cpplog::log
 	PRIVATE dechamps_cpputil::find
 	PRIVATE dechamps_cpputil::string

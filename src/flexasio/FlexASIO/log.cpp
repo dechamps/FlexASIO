@@ -3,8 +3,9 @@
 #include <shlobj.h>
 #include <windows.h>
 
+#include <dechamps_CMakeUtils/version.h>
+
 #include "../FlexASIOUtil/shell.h"
-#include "../version/version.h"
 
 namespace flexasio {
 

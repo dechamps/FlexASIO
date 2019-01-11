@@ -1,6 +1,6 @@
 #include <winver.h>  // Required, otherwise VERSIONINFO doesn't work
 
-#include "version_stamp.h"
+#include <dechamps_CMakeUtils/version_stamp.h>
 
 VS_VERSION_INFO VERSIONINFO
 {
