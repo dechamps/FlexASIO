@@ -127,7 +127,7 @@ namespace flexasio {
 			}
 			ASIOError future(long selector, void *) throw() final {
 				return Enter("future()", [&] {
-					Log() << "Requested future selector: " << GetASIOFutureSelectorString(selector);
+					Log() << "Requested future selector: " << ::dechamps_ASIOUtil::GetASIOFutureSelectorString(selector);
 					throw ASIOException(ASE_InvalidParameter, "future() is not supported");
 				});
 			}
@@ -172,7 +172,7 @@ namespace flexasio {
 				Log() << "--- EXITING CONTEXT: " << context << " [OK]";
 			}
 			else {
-				Log() << "--- EXITING CONTEXT: " << context << " (" << GetASIOErrorString(result) << " " << lastError << ")";
+				Log() << "--- EXITING CONTEXT: " << context << " (" << ::dechamps_ASIOUtil::GetASIOErrorString(result) << " " << lastError << ")";
 			}
 			return result;
 		}

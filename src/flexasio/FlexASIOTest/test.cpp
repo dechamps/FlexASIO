@@ -88,7 +88,7 @@ namespace flexasio {
 					sampleType = channelInfo.type;
 					continue;
 				}
-				if (*sampleType != channelInfo.type) throw std::runtime_error(std::string(input ? "Input" : "Output") + " channels don't have the same sample type (found " + GetASIOSampleTypeString(*sampleType) + " and " + GetASIOSampleTypeString(channelInfo.type));
+				if (*sampleType != channelInfo.type) throw std::runtime_error(std::string(input ? "Input" : "Output") + " channels don't have the same sample type (found " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(*sampleType) + " and " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(channelInfo.type));
 			}
 			if (!sampleType.has_value()) throw std::runtime_error(std::string("No ") + (input ? "input" : "output") + " channels");
 			return *sampleType;
@@ -181,7 +181,7 @@ namespace flexasio {
 				if (sndfile.second.channels != channels) throw std::runtime_error("Input file channel count mismatch: expected " + std::to_string(channels) + ", got " + std::to_string(sndfile.second.channels));
 				const auto fileSampleType = SfFormatToASIOSampleType(sndfile.second.format);
 				if (!fileSampleType.has_value()) throw std::runtime_error("Unrecognized input file sample type");
-				if (*fileSampleType != sampleType) throw std::runtime_error("Input file sample type mismatch: expected " + GetASIOSampleTypeString(sampleType) + ", got " + GetASIOSampleTypeString(*fileSampleType));
+				if (*fileSampleType != sampleType) throw std::runtime_error("Input file sample type mismatch: expected " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(sampleType) + ", got " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(*fileSampleType));
 			}
 
 			std::vector<uint8_t> Read(size_t bytes) {
@@ -223,7 +223,7 @@ namespace flexasio {
 		private:
 			static SF_INFO GetSfInfo(const int sampleRate, const int channels, const ASIOSampleType sampleType) {
 				const auto sfFormat = ASIOSampleTypeToSfFormatType(sampleType);
-				if (!sfFormat.has_value()) throw std::runtime_error("ASIO sample type " + GetASIOSampleTypeString(sampleType) + " is not supported as an output file format");
+				if (!sfFormat.has_value()) throw std::runtime_error("ASIO sample type " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(sampleType) + " is not supported as an output file format");
 
 				SF_INFO sfInfo = { 0 };
 				sfInfo.samplerate = sampleRate;
@@ -241,7 +241,7 @@ namespace flexasio {
 		};
 
 		ASIOError PrintError(ASIOError error) {
-			Log() << "-> " << GetASIOErrorString(error);
+			Log() << "-> " << ::dechamps_ASIOUtil::GetASIOErrorString(error);
 			return error;
 		}
 
@@ -257,7 +257,7 @@ namespace flexasio {
 		};
 
 		long HandleSelectorSupportedMessage(long, long value, void*, double*) {
-			Log() << "Being queried for message selector " << GetASIOMessageSelectorString(value);
+			Log() << "Being queried for message selector " << ::dechamps_ASIOUtil::GetASIOMessageSelectorString(value);
 			return ::dechamps_cpputil::Find(value, message_selector_handlers).has_value() ? 1 : 0;
 		}
 
@@ -356,7 +356,7 @@ namespace flexasio {
 				channelInfo.channel = channel;
 				channelInfo.isInput = isInput;
 				if (PrintError(ASIOGetChannelInfo(&channelInfo)) != ASE_OK) return std::nullopt;
-				Log() << "isActive = " << channelInfo.isActive << " channelGroup = " << channelInfo.channelGroup << " type = " << GetASIOSampleTypeString(channelInfo.type) << " name = " << channelInfo.name;
+				Log() << "isActive = " << channelInfo.isActive << " channelGroup = " << channelInfo.channelGroup << " type = " << ::dechamps_ASIOUtil::GetASIOSampleTypeString(channelInfo.type) << " name = " << channelInfo.name;
 				return channelInfo;
 			}
 
@@ -434,7 +434,7 @@ namespace flexasio {
 				ASIOSamples samples;
 				ASIOTimeStamp timeStamp;
 				if (PrintError(ASIOGetSamplePosition(&samples, &timeStamp)) != ASE_OK) return;
-				Log() << "Sample position: " << ASIOToInt64(samples) << " timestamp: " << ASIOToInt64(timeStamp);
+				Log() << "Sample position: " << ::dechamps_ASIOUtil::ASIOToInt64(samples) << " timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(timeStamp);
 			}
 
 			long HandleASIOMessage(long selector, long value, void* message, double* opt) {
@@ -514,8 +514,8 @@ namespace flexasio {
 				if (config.inputFile.has_value()) {
 					try {
 						const auto inputSampleType = GetCommonSampleType(channelInfos, /*input=*/false);
-						inputFileSampleSize = GetASIOSampleSize(inputSampleType);
-						if (!inputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(inputSampleType));
+						inputFileSampleSize = ::dechamps_ASIOUtil::GetASIOSampleSize(inputSampleType);
+						if (!inputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(inputSampleType));
 						inputFile.emplace(*config.inputFile);
 						const auto inputFileSampleRate = inputFile->SampleRate();
 						if (!targetSampleRate.has_value()) targetSampleRate = inputFileSampleRate;
@@ -534,8 +534,8 @@ namespace flexasio {
 				if (config.outputFile.has_value()) {
 					try {
 						const auto outputSampleType = GetCommonSampleType(channelInfos, /*input=*/true);
-						outputFileSampleSize = GetASIOSampleSize(outputSampleType);
-						if (!outputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + GetASIOSampleTypeString(outputSampleType));
+						outputFileSampleSize = ::dechamps_ASIOUtil::GetASIOSampleSize(outputSampleType);
+						if (!outputFileSampleSize.has_value()) throw std::runtime_error("Cannot determine size of sample type " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(outputSampleType));
 						outputFile.emplace(*config.outputFile, int(*targetSampleRate), ioChannelCounts.first, outputSampleType);
 					}
 					catch (const std::exception& exception) {
@@ -565,7 +565,7 @@ namespace flexasio {
 					Log() << "<- ";
 				};
 				callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
-					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ") called before start!";
+					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ") called before start!";
 					Log() << "<- nullptr";
 					return nullptr;
 				};
@@ -574,7 +574,7 @@ namespace flexasio {
 					Log() << "<-";
 				};
 				callbacks.asioMessage = [&](long selector, long value, void* message, double* opt) {
-					Log() << "asioMessage(selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")";
+					Log() << "asioMessage(selector = " << ::dechamps_ASIOUtil::GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt << ")";
 					const auto result = HandleASIOMessage(selector, value, message, opt);
 					Log() << "<- " << result;
 					return result;
@@ -638,7 +638,7 @@ namespace flexasio {
 					Log() << "<-";
 				};
 				callbacks.bufferSwitchTimeInfo = [&](ASIOTime* params, long doubleBufferIndex, ASIOBool directProcess) {
-					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
+					Log() << "bufferSwitchTimeInfo(params = (" << (params == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*params)) << "), doubleBufferIndex = " << doubleBufferIndex << ", directProcess = " << directProcess << ")";
 					bufferSwitch(doubleBufferIndex);
 					Log() << "<- nullptr";
 					return nullptr;

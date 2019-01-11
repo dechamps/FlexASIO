@@ -6,7 +6,7 @@
 #include <cstring>
 #include <utility>
 
-namespace flexasio {
+namespace dechamps_ASIOUtil {
 	// Somewhat surprisingly, ASIO 64-bit integer data types store the most significant 32 bits half *first*, even on little endian architectures. See the ASIO SDK documentation.
 	// On x86, which is little endian, that means we can't simply represent the value as an int64_t - we need to swap the two halves first.
 

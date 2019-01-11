@@ -171,7 +171,7 @@ namespace flexasio {
 		}
 
 		long Message(decltype(ASIOCallbacks::asioMessage) asioMessage, long selector, long value, void* message, double* opt) {
-			Log() << "Sending message: selector = " << GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt;
+			Log() << "Sending message: selector = " << ::dechamps_ASIOUtil::GetASIOMessageSelectorString(selector) << ", value = " << value << ", message = " << message << ", opt = " << opt;
 			const auto result = asioMessage(selector, value, message, opt);
 			Log() << "Result: " << result;
 			return result;
@@ -185,7 +185,7 @@ namespace flexasio {
 				kAsioResyncRequest, kAsioLatenciesChanged, kAsioSupportsTimeInfo, kAsioSupportsTimeCode,
 				kAsioMMCCommand, kAsioSupportsInputMonitor, kAsioSupportsInputGain, kAsioSupportsInputMeter,
 				kAsioSupportsOutputGain, kAsioSupportsOutputMeter, kAsioOverload }) {
-				Log() << "Probing for message selector: " << GetASIOMessageSelectorString(selector);
+				Log() << "Probing for message selector: " << ::dechamps_ASIOUtil::GetASIOMessageSelectorString(selector);
 				if (Message(asioMessage, kAsioSelectorSupported, selector, nullptr, nullptr) != 1) continue;
 
 				switch (selector) {
@@ -262,7 +262,7 @@ namespace flexasio {
 	}
 
 	std::string FlexASIO::DescribeSampleType(const SampleType& sampleType) {
-		return "ASIO " + GetASIOSampleTypeString(sampleType.asio) + ", PortAudio " + GetSampleFormatString(sampleType.pa) + ", size " + std::to_string(sampleType.size);
+		return "ASIO " + ::dechamps_ASIOUtil::GetASIOSampleTypeString(sampleType.asio) + ", PortAudio " + GetSampleFormatString(sampleType.pa) + ", size " + std::to_string(sampleType.size);
 	}
 
 	FlexASIO::FlexASIO(void* sysHandle) :
@@ -457,7 +457,7 @@ namespace flexasio {
 		std::stringstream channel_string;
 		channel_string << (info->isInput ? "IN" : "OUT") << " " << getChannelName(info->channel, info->isInput ? GetInputChannelMask() : GetOutputChannelMask());
 		strcpy_s(info->name, 32, channel_string.str().c_str());
-		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << GetASIOSampleTypeString(info->type);
+		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << ::dechamps_ASIOUtil::GetASIOSampleTypeString(info->type);
 	}
 
 	Stream FlexASIO::OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
@@ -831,16 +831,16 @@ namespace flexasio {
 			time.timeInfo.samplePosition = currentSamplePosition.samples;
 			time.timeInfo.systemTime = currentSamplePosition.timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
-			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << DescribeASIOTime(time) << ")";
+			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
-			Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : DescribeASIOTime(*timeResult));
+			Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
 
 		std::swap(locked_buffer_index, our_buffer_index);
-		currentSamplePosition.samples = Int64ToASIO<ASIOSamples>(ASIOToInt64(currentSamplePosition.samples) + frameCount);
-		currentSamplePosition.timestamp = Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
+		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
+		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
 		samplePosition.store(currentSamplePosition);
-		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ASIOToInt64(currentSamplePosition.timestamp);
+		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
 
 		return paContinue;
 	}
@@ -861,7 +861,7 @@ namespace flexasio {
 		const auto currentSamplePosition = samplePosition.load();
 		*sPos = currentSamplePosition.samples;
 		*tStamp = currentSamplePosition.timestamp;
-		Log() << "Returning: sample position " << ASIOToInt64(*sPos) << ", timestamp " << ASIOToInt64(*tStamp);
+		Log() << "Returning: sample position " << ::dechamps_ASIOUtil::ASIOToInt64(*sPos) << ", timestamp " << ::dechamps_ASIOUtil::ASIOToInt64(*tStamp);
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
