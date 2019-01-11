@@ -5,7 +5,7 @@ function(build_msvc)
 	find_package(VisualStudio_VsDevCmd REQUIRED)
 	find_package(VisualStudio_cmake REQUIRED)
 
-	include(dechamps_CMakeUtils/execute_process_or_die.cmake)
+	include(execute_process_or_die)
 
 	# Used by build_msvc.bat
 	set(ENV{FLEXASIO_VISUALSTUDIO_VSDEVCMD} "${VisualStudio_VsDevCmd_EXECUTABLE}")

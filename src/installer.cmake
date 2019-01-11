@@ -2,7 +2,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/dechamps_CMakeUtils")
 find_package(InnoSetup REQUIRED)
 
 find_package(Git REQUIRED)
-include(dechamps_CMakeUtils/version/version.cmake)
+include(version/version)
 string(REGEX REPLACE "^flexasio-" "" FLEXASIO_VERSION "${DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION_DIRTY}")
 
 string(TIMESTAMP FLEXASIO_BUILD_TIMESTAMP "%Y-%m-%dT%H%M%SZ" UTC)
@@ -22,7 +22,7 @@ file(GLOB FLEXASIO_DOC_FILES LIST_DIRECTORIES FALSE "${CMAKE_CURRENT_LIST_DIR}/.
 file(INSTALL ${FLEXASIO_DOC_FILES} DESTINATION "${FLEXASIO_BUILD_ROOT_DIR}")
 
 configure_file("${CMAKE_CURRENT_LIST_DIR}/installer.in.iss" "${FLEXASIO_BUILD_ROOT_DIR}/installer.iss" @ONLY)
-include(dechamps_CMakeUtils/execute_process_or_die.cmake)
+include(execute_process_or_die)
 execute_process_or_die(
     COMMAND "${InnoSetup_iscc_EXECUTABLE}" "${FLEXASIO_BUILD_ROOT_DIR}/installer.iss" /O. /FFlexASIO-${FLEXASIO_VERSION}
     WORKING_DIRECTORY "${FLEXASIO_BUILD_ROOT_DIR}"
