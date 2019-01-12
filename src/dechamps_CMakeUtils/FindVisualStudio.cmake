@@ -1,4 +1,4 @@
-find_package(vswhere REQUIRED)
+find_package(vswhere MODULE REQUIRED)
 
 execute_process(
     COMMAND "${vswhere_EXECUTABLE}" -requires Microsoft.VisualStudio.Workload.NativeDesktop -format value -property installationPath

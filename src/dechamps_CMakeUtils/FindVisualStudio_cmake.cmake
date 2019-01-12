@@ -1,4 +1,4 @@
-find_package(VisualStudio REQUIRED)
+find_package(VisualStudio MODULE REQUIRED)
 
 find_program(VisualStudio_cmake_EXECUTABLE cmake
     HINTS "${VisualStudio_ROOT_DIR}/Common7/IDE/CommonExtensions/Microsoft/CMake/CMake/bin"

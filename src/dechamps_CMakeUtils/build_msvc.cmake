@@ -3,8 +3,8 @@ set(DECHAMPS_CMAKEUTILS_DIR "${CMAKE_CURRENT_LIST_DIR}")
 function(build_msvc)
 	cmake_parse_arguments(BUILD_MSVC "" "SOURCE_DIR;BUILD_DIR;ARCH" "" ${ARGN})
 
-	find_package(VisualStudio_VsDevCmd REQUIRED)
-	find_package(VisualStudio_cmake REQUIRED)
+	find_package(VisualStudio_VsDevCmd MODULE REQUIRED)
+	find_package(VisualStudio_cmake MODULE REQUIRED)
 
 	include(execute_process_or_die)
 
