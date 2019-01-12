@@ -17,6 +17,7 @@ find_package(portaudio MODULE REQUIRED)
 find_package(dechamps_cpplog CONFIG REQUIRED)
 find_package(dechamps_cpputil CONFIG REQUIRED)
 find_package(dechamps_ASIOUtil CONFIG REQUIRED)
+find_package(ASIOTest CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(

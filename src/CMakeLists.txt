@@ -94,12 +94,22 @@ ExternalProject_Add(
 )
 
 ExternalProject_Add(
+    ASIOTest
+    SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/ASIOTest"
+    BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
+    INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
+    CMAKE_ARGS ${CMAKE_ARGS}
+	EXCLUDE_FROM_ALL
+	DEPENDS cxxopts dechamps_cpputil dechamps_cpplog dechamps_ASIOUtil libsndfile
+)
+
+ExternalProject_Add(
     FlexASIO
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/flexasio"
     BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
     INSTALL_DIR "${INTERNAL_INSTALL_PREFIX}"
     CMAKE_ARGS ${CMAKE_ARGS}
-    DEPENDS tinytoml cxxopts libsndfile portaudio dechamps_cpputil dechamps_cpplog dechamps_ASIOUtil
+    DEPENDS tinytoml portaudio dechamps_cpputil dechamps_cpplog dechamps_ASIOUtil ASIOTest
 )
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")

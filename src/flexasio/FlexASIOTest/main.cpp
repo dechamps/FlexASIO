@@ -1,4 +1,4 @@
-#include "test.h"
+#include <ASIOTest/test.h>
 
 #include "..\FlexASIO\cflexasio.h"
 
