@@ -74,6 +74,7 @@ ExternalProject_Add(
 	EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(dechamps_cpplog)
 ExternalProject_Add(
     dechamps_cpplog
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/dechamps_cpplog"

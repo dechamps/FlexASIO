@@ -13,3 +13,6 @@
 [submodule "src/dechamps_cpputil"]
 	path = src/dechamps_cpputil
 	url = https://github.com/dechamps/cpputil.git
+[submodule "src/dechamps_cpplog"]
+	path = src/dechamps_cpplog
+	url = https://github.com/dechamps/cpplog.git
