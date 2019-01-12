@@ -67,7 +67,7 @@ namespace ASIOTest {
 
 		class LogState final {
 		public:
-			::dechamps_cpplog::LogSink& sink() { return preamble_sink;  }
+			::dechamps_cpplog::LogSink& sink() { return preamble_sink; }
 
 		private:
 			::dechamps_cpplog::StreamLogSink stream_sink{ std::cout };
@@ -133,26 +133,26 @@ namespace ASIOTest {
 		std::optional<int> ASIOSampleTypeToSfFormatType(const ASIOSampleType sampleType) {
 			return ::dechamps_cpputil::Find(sampleType, std::initializer_list<std::pair<ASIOSampleType, int>>{
 				{ASIOSTInt16MSB, SF_FORMAT_PCM_16 | SF_ENDIAN_BIG},
-				{ASIOSTInt24MSB, SF_FORMAT_PCM_24 | SF_ENDIAN_BIG},
-				{ASIOSTInt32MSB, SF_FORMAT_PCM_32 | SF_ENDIAN_BIG},
-				{ASIOSTFloat32MSB, SF_FORMAT_FLOAT | SF_ENDIAN_BIG},
-				{ASIOSTFloat64MSB, SF_FORMAT_DOUBLE | SF_ENDIAN_BIG},
-				{ASIOSTInt16LSB, SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE},
-				{ASIOSTInt24LSB, SF_FORMAT_PCM_24 | SF_ENDIAN_LITTLE},
-				{ASIOSTInt32LSB, SF_FORMAT_PCM_32 | SF_ENDIAN_LITTLE},
-				{ASIOSTFloat32LSB, SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE},
-				{ASIOSTFloat64LSB, SF_FORMAT_DOUBLE | SF_ENDIAN_LITTLE},
-				});
+				{ ASIOSTInt24MSB, SF_FORMAT_PCM_24 | SF_ENDIAN_BIG },
+				{ ASIOSTInt32MSB, SF_FORMAT_PCM_32 | SF_ENDIAN_BIG },
+				{ ASIOSTFloat32MSB, SF_FORMAT_FLOAT | SF_ENDIAN_BIG },
+				{ ASIOSTFloat64MSB, SF_FORMAT_DOUBLE | SF_ENDIAN_BIG },
+				{ ASIOSTInt16LSB, SF_FORMAT_PCM_16 | SF_ENDIAN_LITTLE },
+				{ ASIOSTInt24LSB, SF_FORMAT_PCM_24 | SF_ENDIAN_LITTLE },
+				{ ASIOSTInt32LSB, SF_FORMAT_PCM_32 | SF_ENDIAN_LITTLE },
+				{ ASIOSTFloat32LSB, SF_FORMAT_FLOAT | SF_ENDIAN_LITTLE },
+				{ ASIOSTFloat64LSB, SF_FORMAT_DOUBLE | SF_ENDIAN_LITTLE },
+			});
 		}
 		std::optional<ASIOSampleType> SfFormatToASIOSampleType(const int sfFormat) {
 			// TODO: support big endian. Sadly, libsndfile doesn't seem to reliably report endianess when opening a file for reading.
 			return ::dechamps_cpputil::Find(sfFormat & SF_FORMAT_SUBMASK, std::initializer_list<std::pair<int, ASIOSampleType>>{
 				{SF_FORMAT_PCM_16, ASIOSTInt16LSB},
-				{SF_FORMAT_PCM_24, ASIOSTInt24LSB},
-				{SF_FORMAT_PCM_32, ASIOSTInt32LSB},
-				{SF_FORMAT_FLOAT, ASIOSTFloat32LSB},
-				{SF_FORMAT_DOUBLE, ASIOSTFloat64LSB},
-				});
+				{ SF_FORMAT_PCM_24, ASIOSTInt24LSB },
+				{ SF_FORMAT_PCM_32, ASIOSTInt32LSB },
+				{ SF_FORMAT_FLOAT, ASIOSTFloat32LSB },
+				{ SF_FORMAT_DOUBLE, ASIOSTFloat64LSB },
+			});
 		}
 
 		struct SndfileCloser final {
@@ -564,7 +564,7 @@ namespace ASIOTest {
 					Log() << "<- " << result;
 					return result;
 				};
-				
+
 				const auto buffers = CreateBuffers(ioChannelCounts, bufferSizeFrames, callbacks.GetASIOCallbacks());
 				if (buffers.info.size() == 0) return false;
 
@@ -581,7 +581,7 @@ namespace ASIOTest {
 					}
 					outcomeCondition.notify_all();
 				};
-				
+
 				std::optional<size_t> maxBufferSwitchCount;
 				if (config.bufferSwitchCount.has_value()) maxBufferSwitchCount = *config.bufferSwitchCount;
 				else if (!inputFile.has_value()) maxBufferSwitchCount = config.defaultBufferSwitchCount;
@@ -665,18 +665,20 @@ namespace ASIOTest {
 		ASIOTest::Callbacks* ASIOTest::Callbacks::global = nullptr;
 
 	}
+}
 
-	int RunTest(IASIO& asioDriver, int& argc, char**& argv) {
-		const auto config = GetConfig(argc, argv);
-		if (!config.has_value()) return 2;
+int ASIOTest_RunTest(IASIO* const asioDriver, int& argc, char**& argv) {
+	if (asioDriver == nullptr) abort();
 
-		// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
-		// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
-		// as opposed to whatever ASIO driver might be currently installed on the system.
-		theAsioDriver = &asioDriver;
-		const auto result = ASIOTest(*config).Run();
-		theAsioDriver = nullptr;
+	const auto config = ::ASIOTest::GetConfig(argc, argv);
+	if (!config.has_value()) return 2;
 
-		return result ? 0 : 1;
-	}
+	// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
+	// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
+	// as opposed to whatever ASIO driver might be currently installed on the system.
+	theAsioDriver = asioDriver;
+	const auto result = ::ASIOTest::ASIOTest(*config).Run();
+	theAsioDriver = nullptr;
+
+	return result ? 0 : 1;
 }

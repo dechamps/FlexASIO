@@ -22,8 +22,8 @@ add_compile_options(
 	/wd4458 /wd4456
 )
 
-add_library(test STATIC test.cpp)
-target_link_libraries(test
+add_library(ASIOTest SHARED test.cpp dll.def)
+target_link_libraries(ASIOTest
 	PRIVATE dechamps_ASIOUtil::asiosdk_ginclude
 	PRIVATE dechamps_ASIOUtil::asiosdk_asio
 	PRIVATE dechamps_ASIOUtil::asio
@@ -34,8 +34,8 @@ target_link_libraries(test
 	PRIVATE SndFile::sndfile
 )
 
-target_include_directories(test INTERFACE "$<INSTALL_INTERFACE:include>")
+target_include_directories(ASIOTest INTERFACE "$<INSTALL_INTERFACE:include>")
 
 install(FILES test.h DESTINATION include/ASIOTest)
-install(TARGETS test EXPORT ASIOTest-config ARCHIVE DESTINATION lib/ASIOTest)
+install(TARGETS ASIOTest EXPORT ASIOTest-config RUNTIME DESTINATION bin ARCHIVE DESTINATION lib)
 install(EXPORT ASIOTest-config NAMESPACE ASIOTest:: DESTINATION lib/cmake/ASIOTest)
