@@ -19,3 +19,6 @@
 [submodule "src/dechamps_ASIOUtil"]
 	path = src/dechamps_ASIOUtil
 	url = https://github.com/dechamps/ASIOUtil.git
+[submodule "src/ASIOTest"]
+	path = src/ASIOTest
+	url = https://github.com/dechamps/ASIOTest.git

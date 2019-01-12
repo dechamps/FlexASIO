@@ -96,6 +96,7 @@ ExternalProject_Add(
 	DEPENDS dechamps_cpputil
 )
 
+check_git_submodule(ASIOTest)
 ExternalProject_Add(
     ASIOTest
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/ASIOTest"

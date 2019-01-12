@@ -1,4 +1,0 @@
-LIBRARY
-
-EXPORTS
-	ASIOTest_RunTest
