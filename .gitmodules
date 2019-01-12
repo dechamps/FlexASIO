@@ -22,3 +22,6 @@
 [submodule "src/ASIOTest"]
 	path = src/ASIOTest
 	url = https://github.com/dechamps/ASIOTest.git
+[submodule "src/dechamps_CMakeUtils"]
+	path = src/dechamps_CMakeUtils
+	url = https://github.com/dechamps/CMakeUtils.git

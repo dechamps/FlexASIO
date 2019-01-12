@@ -1,6 +1,0 @@
-function(execute_process_or_die)
-	execute_process(${ARGV} RESULT_VARIABLE EXECUTE_PROCESS_RESULT)
-	if(NOT(EXECUTE_PROCESS_RESULT EQUAL 0))
-		message(FATAL_ERROR "Process failed: ${ARGV}")
-	endif()
-endfunction()

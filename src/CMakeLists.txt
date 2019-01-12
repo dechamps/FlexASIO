@@ -21,6 +21,8 @@ function(check_git_submodule DIR)
 	endif()
 endfunction()
 
+check_git_submodule(dechamps_CMakeUtils)
+
 check_git_submodule(tinytoml)
 ExternalProject_Add(
     tinytoml
