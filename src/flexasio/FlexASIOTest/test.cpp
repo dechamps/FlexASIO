@@ -1,3 +1,5 @@
+#include "test.h"
+
 #include <algorithm>
 #include <condition_variable>
 #include <iostream>
@@ -24,8 +26,6 @@
 #include <dechamps_cpputil/string.h>
 
 #include <dechamps_cpplog/log.h>
-
-#include "..\FlexASIO\cflexasio.h"
 
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
@@ -664,29 +664,19 @@ namespace flexasio {
 
 		FlexASIOTest::Callbacks* FlexASIOTest::Callbacks::global = nullptr;
 
-		int RunTest(IASIO& asioDriver, int& argc, char**& argv) {
-			const auto config = ::flexasio::GetConfig(argc, argv);
-			if (!config.has_value()) return 2;
-
-			// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
-			// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
-			// as opposed to whatever ASIO driver might be currently installed on the system.
-			theAsioDriver = &asioDriver;
-			const auto result = ::flexasio::FlexASIOTest(*config).Run();
-			theAsioDriver = nullptr;
-
-			return result ? 0 : 1;
-		}
-
 	}
-}
 
-int main(int argc, char** argv) {
-	auto* const asioDriver = CreateFlexASIO();
-	if (asioDriver == nullptr) abort();
+	int RunTest(IASIO& asioDriver, int& argc, char**& argv) {
+		const auto config = ::flexasio::GetConfig(argc, argv);
+		if (!config.has_value()) return 2;
 
-	const auto result = ::flexasio::RunTest(asioDriver, argc, argv);
+		// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
+		// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
+		// as opposed to whatever ASIO driver might be currently installed on the system.
+		theAsioDriver = &asioDriver;
+		const auto result = ::flexasio::FlexASIOTest(*config).Run();
+		theAsioDriver = nullptr;
 
-	ReleaseFlexASIO(asioDriver);
-	return result;
+		return result ? 0 : 1;
+	}
 }
