@@ -84,6 +84,7 @@ ExternalProject_Add(
 	EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(dechamps_ASIOUtil)
 ExternalProject_Add(
     dechamps_ASIOUtil
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/dechamps_ASIOUtil"

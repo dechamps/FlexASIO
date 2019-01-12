@@ -16,3 +16,6 @@
 [submodule "src/dechamps_cpplog"]
 	path = src/dechamps_cpplog
 	url = https://github.com/dechamps/cpplog.git
+[submodule "src/dechamps_ASIOUtil"]
+	path = src/dechamps_ASIOUtil
+	url = https://github.com/dechamps/ASIOUtil.git
