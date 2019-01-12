@@ -2,7 +2,7 @@
 
 struct IASIO;
 
-namespace flexasio {
+namespace ASIOTest {
 
 	int RunTest(IASIO& asioDriver, int& argc, char**& argv);
 

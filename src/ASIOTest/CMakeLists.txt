@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.11)
-project(FlexASIO DESCRIPTION "Generic ASIO Test Suite")
+project(ASIOTest DESCRIPTION "Generic ASIO Test Suite")
 
 find_package(cxxopts CONFIG REQUIRED)
 find_package(dechamps_cpputil CONFIG REQUIRED)

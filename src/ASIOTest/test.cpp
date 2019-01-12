@@ -30,7 +30,7 @@
 // The global ASIO driver pointer that the ASIO host library internally uses.
 extern IASIO* theAsioDriver;
 
-namespace flexasio {
+namespace ASIOTest {
 	namespace {
 
 		struct Config {
@@ -45,7 +45,7 @@ namespace flexasio {
 		};
 
 		std::optional<Config> GetConfig(int& argc, char**& argv) {
-			cxxopts::Options options("FlexASIOTest", "FlexASIO universal ASIO driver test program");
+			cxxopts::Options options("ASIOTest", "ASIO driver test program");
 			Config config;
 			options.add_options()
 				("buffer-size-frames", "ASIO buffer size to use, in frames; default is to use the preferred size suggested by the driver", cxxopts::value(config.bufferSizeFrames))
@@ -261,9 +261,9 @@ namespace flexasio {
 			return ::dechamps_cpputil::Find(value, message_selector_handlers).has_value() ? 1 : 0;
 		}
 
-		class FlexASIOTest {
+		class ASIOTest {
 		public:
-			FlexASIOTest(Config config) : config(std::move(config)) {}
+			ASIOTest(Config config) : config(std::move(config)) {}
 
 			bool Run() {
 				try {
@@ -662,19 +662,19 @@ namespace flexasio {
 			const Config config;
 		};
 
-		FlexASIOTest::Callbacks* FlexASIOTest::Callbacks::global = nullptr;
+		ASIOTest::Callbacks* ASIOTest::Callbacks::global = nullptr;
 
 	}
 
 	int RunTest(IASIO& asioDriver, int& argc, char**& argv) {
-		const auto config = ::flexasio::GetConfig(argc, argv);
+		const auto config = GetConfig(argc, argv);
 		if (!config.has_value()) return 2;
 
 		// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
 		// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
 		// as opposed to whatever ASIO driver might be currently installed on the system.
 		theAsioDriver = &asioDriver;
-		const auto result = ::flexasio::FlexASIOTest(*config).Run();
+		const auto result = ASIOTest(*config).Run();
 		theAsioDriver = nullptr;
 
 		return result ? 0 : 1;
