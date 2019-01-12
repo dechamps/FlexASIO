@@ -10,3 +10,6 @@
 [submodule "src/libsndfile"]
 	path = src/libsndfile
 	url = https://github.com/erikd/libsndfile.git
+[submodule "src/dechamps_cpputil"]
+	path = src/dechamps_cpputil
+	url = https://github.com/dechamps/cpputil.git

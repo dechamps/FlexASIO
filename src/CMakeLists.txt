@@ -64,6 +64,7 @@ ExternalProject_Add(
 	EXCLUDE_FROM_ALL
 )
 
+check_git_submodule(dechamps_cpputil)
 ExternalProject_Add(
     dechamps_cpputil
     SOURCE_DIR "${CMAKE_CURRENT_LIST_DIR}/dechamps_cpputil"
