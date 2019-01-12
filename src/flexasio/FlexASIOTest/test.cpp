@@ -267,22 +267,7 @@ namespace flexasio {
 
 			bool Run() {
 				try {
-					// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
-					// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
-					// as opposed to whatever ASIO driver might be currently installed on the system.
-					theAsioDriver = CreateFlexASIO();
-
-					const bool result = RunInitialized();
-
-					// There are cases in which the ASIO host library will nullify the driver pointer.
-					// For example, it does that if the driver fails to initialize.
-					// (Sadly the ASIO host library won't call Release() in that case, because memory leaks are fun!)
-					if (theAsioDriver != nullptr) {
-						ReleaseFlexASIO(theAsioDriver);
-						theAsioDriver = nullptr;
-					}
-
-					return result;
+					return RunInitialized();
 				}
 				catch (const std::exception& exception) {
 					Log() << "FATAL ERROR: " << exception.what();
@@ -679,12 +664,29 @@ namespace flexasio {
 
 		FlexASIOTest::Callbacks* FlexASIOTest::Callbacks::global = nullptr;
 
+		int RunTest(IASIO& asioDriver, int& argc, char**& argv) {
+			const auto config = ::flexasio::GetConfig(argc, argv);
+			if (!config.has_value()) return 2;
+
+			// This basically does an end run around the ASIO host library driver loading system, simulating what loadAsioDriver() does.
+			// This allows us to trick the ASIO host library into using a specific instance of an ASIO driver (the one this program is linked against),
+			// as opposed to whatever ASIO driver might be currently installed on the system.
+			theAsioDriver = &asioDriver;
+			const auto result = ::flexasio::FlexASIOTest(*config).Run();
+			theAsioDriver = nullptr;
+
+			return result ? 0 : 1;
+		}
+
 	}
 }
 
 int main(int argc, char** argv) {
-	const auto config = ::flexasio::GetConfig(argc, argv);
-	if (!config.has_value()) return 2;
-	if (!::flexasio::FlexASIOTest(*config).Run()) return 1;
-	return 0;
+	auto* const asioDriver = CreateFlexASIO();
+	if (asioDriver == nullptr) abort();
+
+	const auto result = ::flexasio::RunTest(asioDriver, argc, argv);
+
+	ReleaseFlexASIO(asioDriver);
+	return result;
 }
