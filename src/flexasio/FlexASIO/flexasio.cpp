@@ -623,14 +623,14 @@ namespace flexasio {
 		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
-	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSize, size_t outputSampleSize) :
-		bufferSetCount(bufferSetCount), inputChannelCount(inputChannelCount), outputChannelCount(outputChannelCount), bufferSizeInFrames(bufferSizeInFrames), inputSampleSize(inputSampleSize), outputSampleSize(outputSampleSize),
-		buffers(bufferSetCount * bufferSizeInFrames * (inputChannelCount * inputSampleSize + outputChannelCount * outputSampleSize)) {
+	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSizeInBytes, size_t outputSampleSizeInBytes) :
+		bufferSetCount(bufferSetCount), inputChannelCount(inputChannelCount), outputChannelCount(outputChannelCount), bufferSizeInFrames(bufferSizeInFrames), inputSampleSizeInBytes(inputSampleSizeInBytes), outputSampleSizeInBytes(outputSampleSizeInBytes),
+		buffers(bufferSetCount * bufferSizeInFrames * (inputChannelCount * inputSampleSizeInBytes + outputChannelCount * outputSampleSizeInBytes)) {
 		Log() << "Allocated "
 			<< bufferSetCount << " buffer sets, "
 			<< inputChannelCount << "/" << outputChannelCount << " (I/O) channels per buffer set, "
 			<< bufferSizeInFrames << " samples per channel, "
-			<< inputSampleSize << "/" << outputSampleSize << " (I/O) bytes per sample, memory range: "
+			<< inputSampleSizeInBytes << "/" << outputSampleSizeInBytes << " (I/O) bytes per sample, memory range: "
 			<< static_cast<const void*>(buffers.data()) << "-" << static_cast<const void*>(buffers.data() + buffers.size());
 	}
 
@@ -790,14 +790,14 @@ namespace flexasio {
 		if (statusFlags & paOutputUnderflow && IsLoggingEnabled())
 			Log() << "OUTPUT UNDERFLOW detected (gaps were inserted in the output)";
 
-		const auto inputSampleSize = preparedState.buffers.inputSampleSize;
-		const auto outputSampleSize = preparedState.buffers.outputSampleSize;
+		const auto inputSampleSizeInBytes = preparedState.buffers.inputSampleSizeInBytes;
+		const auto outputSampleSizeInBytes = preparedState.buffers.outputSampleSizeInBytes;
 		const void* const* input_samples = static_cast<const void* const*>(input);
 		void* const* output_samples = static_cast<void* const*>(output);
 
 		if (output_samples) {
 			for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
-				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSize);
+				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
@@ -807,12 +807,12 @@ namespace flexasio {
 			void* buffer = bufferInfo.buffers[our_buffer_index];
 			if (bufferInfo.isInput) {
 				if(input_samples == nullptr) abort();
-				memcpy(buffer, input_samples[bufferInfo.channelNum], frameCount * inputSampleSize);
+				memcpy(buffer, input_samples[bufferInfo.channelNum], frameCount * inputSampleSizeInBytes);
 			}
 			else
 			{
 				if(output_samples == nullptr) abort();
-				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * outputSampleSize);
+				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * outputSampleSizeInBytes);
 			}
 		}
 

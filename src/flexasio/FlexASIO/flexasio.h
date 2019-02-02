@@ -92,20 +92,20 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSize, size_t outputSampleSize);
+				Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSizeInBytes, size_t outputSampleSizeInBytes);
 				~Buffers();
 				uint8_t* GetInputBuffer(size_t bufferSetIndex, size_t channelIndex) { return buffers.data() + bufferSetIndex * GetBufferSetSizeInBytes() + channelIndex * GetInputBufferSizeInBytes(); }
 				uint8_t* GetOutputBuffer(size_t bufferSetIndex, size_t channelIndex) { return GetInputBuffer(bufferSetIndex, inputChannelCount) + channelIndex * GetOutputBufferSizeInBytes(); }
 				size_t GetBufferSetSizeInBytes() const { return buffers.size() / bufferSetCount; }
-				size_t GetInputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * inputSampleSize; }
-				size_t GetOutputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * outputSampleSize; }
+				size_t GetInputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * inputSampleSizeInBytes; }
+				size_t GetOutputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * outputSampleSizeInBytes; }
 
 				const size_t bufferSetCount;
 				const size_t inputChannelCount;
 				const size_t outputChannelCount;
 				const size_t bufferSizeInFrames;
-				const size_t inputSampleSize;
-				const size_t outputSampleSize;
+				const size_t inputSampleSizeInBytes;
+				const size_t outputSampleSizeInBytes;
 
 				// This is a giant buffer containing all ASIO buffers. It is organized as follows:
 				// [ input channel 0 buffer 0 ] [ input channel 1 buffer 0 ] ... [ input channel N buffer 0 ] [ output channel 0 buffer 0 ] [ output channel 1 buffer 0 ] .. [ output channel N buffer 0 ]
