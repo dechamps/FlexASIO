@@ -109,4 +109,5 @@ ExternalProject_Add(
 )
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(SCRIPT dechamps_CMakeUtils/InstallPdbFiles.cmake)
 include(InstallRequiredSystemLibraries)
