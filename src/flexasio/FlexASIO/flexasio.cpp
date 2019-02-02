@@ -726,6 +726,10 @@ namespace flexasio {
 		// The latency that PortAudio reports appears to take the buffer size into account already.
 		*inputLatency = (long)(stream_info->inputLatency * sampleRate);
 		*outputLatency = (long)(stream_info->outputLatency * sampleRate);
+
+		// FlexASIO does not support OutputReady - once bufferSwitch(X) is called, it takes a full buffer period for output buffer X to make it to PortAudio.
+		*outputLatency += long(buffers.bufferSizeInFrames);
+
 		Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
 	}
 
