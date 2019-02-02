@@ -623,13 +623,13 @@ namespace flexasio {
 		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
-	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInSamples, size_t inputSampleSize, size_t outputSampleSize) :
-		bufferSetCount(bufferSetCount), inputChannelCount(inputChannelCount), outputChannelCount(outputChannelCount), bufferSizeInSamples(bufferSizeInSamples), inputSampleSize(inputSampleSize), outputSampleSize(outputSampleSize),
-		buffers(bufferSetCount * bufferSizeInSamples * (inputChannelCount * inputSampleSize + outputChannelCount * outputSampleSize)) {
+	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSize, size_t outputSampleSize) :
+		bufferSetCount(bufferSetCount), inputChannelCount(inputChannelCount), outputChannelCount(outputChannelCount), bufferSizeInFrames(bufferSizeInFrames), inputSampleSize(inputSampleSize), outputSampleSize(outputSampleSize),
+		buffers(bufferSetCount * bufferSizeInFrames * (inputChannelCount * inputSampleSize + outputChannelCount * outputSampleSize)) {
 		Log() << "Allocated "
 			<< bufferSetCount << " buffer sets, "
 			<< inputChannelCount << "/" << outputChannelCount << " (I/O) channels per buffer set, "
-			<< bufferSizeInSamples << " samples per channel, "
+			<< bufferSizeInFrames << " samples per channel, "
 			<< inputSampleSize << "/" << outputSampleSize << " (I/O) bytes per sample, memory range: "
 			<< static_cast<const void*>(buffers.data()) << "-" << static_cast<const void*>(buffers.data() + buffers.size());
 	}
@@ -638,12 +638,12 @@ namespace flexasio {
 		Log() << "Destroying buffers";
 	}
 
-	FlexASIO::PreparedState::PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInSamples, ASIOCallbacks* callbacks) :
+	FlexASIO::PreparedState::PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInFrames, ASIOCallbacks* callbacks) :
 		flexASIO(flexASIO), sampleRate(sampleRate), callbacks(*callbacks),
 		buffers(
 			2,
 			GetBufferInfosChannelCount(asioBufferInfos, numChannels, true), GetBufferInfosChannelCount(asioBufferInfos, numChannels, false),
-			bufferSizeInSamples,
+			bufferSizeInFrames,
 			flexASIO.inputSampleType.has_value() ? flexASIO.inputSampleType->size : 0, flexASIO.outputSampleType.has_value() ? flexASIO.outputSampleType->size : 0),
 		bufferInfos([&] {
 		std::vector<ASIOBufferInfo> bufferInfos;
@@ -678,7 +678,7 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), stream(flexASIO.OpenStream(buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, unsigned long(bufferSizeInSamples), &PreparedState::StreamCallback, this)) {
+	}()), stream(flexASIO.OpenStream(buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, unsigned long(bufferSizeInFrames), &PreparedState::StreamCallback, this)) {
 		if (callbacks->asioMessage) ProbeHostMessages(callbacks->asioMessage);
 	}
 
@@ -775,9 +775,9 @@ namespace flexasio {
 			<< (timeInfo == nullptr ? "none" : DescribeStreamCallbackTimeInfo(*timeInfo)) << "), flags "
 			<< GetStreamCallbackFlagsString(statusFlags);
 
-		if (frameCount != preparedState.buffers.bufferSizeInSamples)
+		if (frameCount != preparedState.buffers.bufferSizeInFrames)
 		{
-			if (IsLoggingEnabled()) Log() << "Expected " << preparedState.buffers.bufferSizeInSamples << " frames, got " << frameCount << " instead, aborting";
+			if (IsLoggingEnabled()) Log() << "Expected " << preparedState.buffers.bufferSizeInFrames << " frames, got " << frameCount << " instead, aborting";
 			return paContinue;
 		}
 

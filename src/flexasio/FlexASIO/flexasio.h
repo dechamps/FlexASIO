@@ -75,7 +75,7 @@ namespace flexasio {
 
 		class PreparedState {
 		public:
-			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInSamples, ASIOCallbacks* callbacks);
+			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInFrames, ASIOCallbacks* callbacks);
 			PreparedState(const PreparedState&) = delete;
 			PreparedState(PreparedState&&) = delete;
 
@@ -92,18 +92,18 @@ namespace flexasio {
 		private:
 			struct Buffers
 			{
-				Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInSamples, size_t inputSampleSize, size_t outputSampleSize);
+				Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSize, size_t outputSampleSize);
 				~Buffers();
 				uint8_t* GetInputBuffer(size_t bufferSetIndex, size_t channelIndex) { return buffers.data() + bufferSetIndex * GetBufferSetSizeInBytes() + channelIndex * GetInputBufferSizeInBytes(); }
 				uint8_t* GetOutputBuffer(size_t bufferSetIndex, size_t channelIndex) { return GetInputBuffer(bufferSetIndex, inputChannelCount) + channelIndex * GetOutputBufferSizeInBytes(); }
 				size_t GetBufferSetSizeInBytes() const { return buffers.size() / bufferSetCount; }
-				size_t GetInputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInSamples * inputSampleSize; }
-				size_t GetOutputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInSamples * outputSampleSize; }
+				size_t GetInputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * inputSampleSize; }
+				size_t GetOutputBufferSizeInBytes() const { if (buffers.empty()) return 0; return bufferSizeInFrames * outputSampleSize; }
 
 				const size_t bufferSetCount;
 				const size_t inputChannelCount;
 				const size_t outputChannelCount;
-				const size_t bufferSizeInSamples;
+				const size_t bufferSizeInFrames;
 				const size_t inputSampleSize;
 				const size_t outputSampleSize;
 
