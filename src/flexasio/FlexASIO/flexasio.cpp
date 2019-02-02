@@ -210,7 +210,7 @@ namespace flexasio {
 			return result;
 		}
 
-		void CopyFromPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const size_t doubleBufferIndex, const void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+		void CopyFromPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, const void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
 			for (const auto& bufferInfo : bufferInfos)
 			{
 				if (!bufferInfo.isInput) continue;
@@ -218,7 +218,7 @@ namespace flexasio {
 				memcpy(asioBuffer, portAudioBuffers[bufferInfo.channelNum], bufferSizeInBytes);
 			}
 		}
-		void CopyToPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const size_t doubleBufferIndex, void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+		void CopyToPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
 			for (const auto& bufferInfo : bufferInfos)
 			{
 				if (bufferInfo.isInput) continue;
@@ -742,7 +742,6 @@ namespace flexasio {
 
 	FlexASIO::PreparedState::RunningState::RunningState(PreparedState& preparedState) :
 		preparedState(preparedState),
-		our_buffer_index(0),
 		host_supports_timeinfo([&] {
 		Log() << "Checking if the host supports time info";
 		const bool result = preparedState.callbacks.asioMessage &&
@@ -817,17 +816,16 @@ namespace flexasio {
 				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
 
-		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
-		if (IsLoggingEnabled()) Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
-		CopyFromPortAudioBuffers(preparedState.bufferInfos, our_buffer_index, input_samples, frameCount * inputSampleSizeInBytes);
-		CopyToPortAudioBuffers(preparedState.bufferInfos, our_buffer_index, output_samples, frameCount * outputSampleSizeInBytes);
+		if (IsLoggingEnabled()) Log() << "Transferring between PortAudio and buffer #" << driverBufferIndex;
+		CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
+		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
 
 		auto currentSamplePosition = samplePosition.load();
 
 		if (!host_supports_timeinfo)
 		{
-			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << our_buffer_index;
-			preparedState.callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
+			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
+			preparedState.callbacks.bufferSwitch(driverBufferIndex, ASIOFalse);
 			if (IsLoggingEnabled()) Log() << "bufferSwitch() complete";
 		}
 		else
@@ -837,16 +835,16 @@ namespace flexasio {
 			time.timeInfo.samplePosition = currentSamplePosition.samples;
 			time.timeInfo.systemTime = currentSamplePosition.timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
-			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
-			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
+			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << driverBufferIndex << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
+			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOFalse);
 			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
 
-		std::swap(locked_buffer_index, our_buffer_index);
+		driverBufferIndex = (driverBufferIndex + 1) % 2;
 		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
 		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
 		samplePosition.store(currentSamplePosition);
-		if (IsLoggingEnabled()) Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
+		if (IsLoggingEnabled()) Log() << "Updated buffer index: " << driverBufferIndex << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
 
 		return paContinue;
 	}
