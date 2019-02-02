@@ -727,8 +727,10 @@ namespace flexasio {
 		*inputLatency = (long)(stream_info->inputLatency * sampleRate);
 		*outputLatency = (long)(stream_info->outputLatency * sampleRate);
 
-		// FlexASIO does not support OutputReady - once bufferSwitch(X) is called, it takes a full buffer period for output buffer X to make it to PortAudio.
-		*outputLatency += long(buffers.bufferSizeInFrames);
+		if (!flexASIO.hostSupportsOutputReady) {
+			Log() << buffers.bufferSizeInFrames << " samples added to output latency due to the ASIO Host Application not supporting OutputReady";
+			*outputLatency += long(buffers.bufferSizeInFrames);
+		}
 
 		Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
 	}
@@ -754,6 +756,7 @@ namespace flexasio {
 		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
 		return result;
 	}()),
+		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady),
 		activeStream(StartStream(preparedState.stream.get())) {}
 
 	void FlexASIO::Stop() {
@@ -845,10 +848,23 @@ namespace flexasio {
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOFalse);
 			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
-		driverBufferIndex = (driverBufferIndex + 1) % 2;
+
+		if (!hostSupportsOutputReady) {
+			driverBufferIndex = (driverBufferIndex + 1) % 2;
+		}
+		else {
+			std::unique_lock outputReadyLock(outputReadyMutex);
+			if (!outputReady) {
+				if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady";
+				outputReadyCondition.wait(outputReadyLock, [&] { return outputReady; });
+				outputReady = false;
+			}
+		}
 
 		if (IsLoggingEnabled()) Log() << "Transferring output buffers from buffer index #" << driverBufferIndex << " to PortAudio";
 		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
+
+		if (hostSupportsOutputReady) driverBufferIndex = (driverBufferIndex + 1) % 2;
 
 		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
 		samplePosition.store(currentSamplePosition);
@@ -873,6 +889,26 @@ namespace flexasio {
 		*sPos = currentSamplePosition.samples;
 		*tStamp = currentSamplePosition.timestamp;
 		if (IsLoggingEnabled()) Log() << "Returning: sample position " << ::dechamps_ASIOUtil::ASIOToInt64(*sPos) << ", timestamp " << ::dechamps_ASIOUtil::ASIOToInt64(*tStamp);
+	}
+
+	void FlexASIO::OutputReady() {
+		if (!hostSupportsOutputReady) {
+			Log() << "Host supports OutputReady";
+			hostSupportsOutputReady = true;
+		}
+		if (preparedState.has_value()) preparedState->OutputReady();
+	}
+
+	void FlexASIO::PreparedState::OutputReady() {
+		if (runningState != nullptr) runningState->OutputReady();
+	}
+
+	void FlexASIO::PreparedState::RunningState::OutputReady() {
+		{
+			std::scoped_lock outputReadyLock(outputReadyMutex);
+			outputReady = true;
+		}
+		outputReadyCondition.notify_all();
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {

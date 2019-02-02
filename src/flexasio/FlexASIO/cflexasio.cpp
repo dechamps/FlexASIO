@@ -133,11 +133,7 @@ namespace flexasio {
 			}
 
 			ASIOError outputReady() throw() final {
-				// We do not use Enter() and throw here, because this can be called in a real-time code path, and the cost
-				// of throwing exceptions is high and highly variable. When Enter() + throw was used here, this method could
-				// take as much as ~10 ms to run in the long tail.
-				if (IsLoggingEnabled()) Log() << "outputReady() called, returning ASE_NotPresent";
-				return ASE_NotPresent;
+				return EnterWithMethod("outputReady()", &FlexASIO::OutputReady);
 			}
 
 		private:

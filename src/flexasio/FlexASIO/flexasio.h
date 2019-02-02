@@ -15,6 +15,7 @@
 #include <atomic>
 #include <optional>
 #include <stdexcept>
+#include <mutex>
 #include <vector>
 
 namespace flexasio {
@@ -46,6 +47,7 @@ namespace flexasio {
 		void Start();
 		void Stop();
 		void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
+		void OutputReady();
 
 		void ControlPanel();
 
@@ -86,6 +88,7 @@ namespace flexasio {
 			void Stop();
 
 			void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp);
+			void OutputReady();
 
 			void RequestReset();
 
@@ -119,6 +122,7 @@ namespace flexasio {
 				RunningState(PreparedState& preparedState);
 
 				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) const;
+				void OutputReady();
 
 				PaStreamCallbackResult StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags);
 
@@ -144,9 +148,15 @@ namespace flexasio {
 
 				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
+				const bool hostSupportsOutputReady;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				long driverBufferIndex = 0;
 				std::atomic<SamplePosition> samplePosition;
+
+				std::mutex outputReadyMutex;
+				std::condition_variable outputReadyCondition;
+				bool outputReady = false;
+
 				Win32HighResolutionTimer win32HighResolutionTimer;
 				Registration registration{ preparedState.runningState, *this };
 				const ActiveStream activeStream;
@@ -207,6 +217,7 @@ namespace flexasio {
 
 		ASIOSampleRate sampleRate = 0;
 		bool sampleRateWasAccessed = false;
+		bool hostSupportsOutputReady = false;
 
 		std::optional<PreparedState> preparedState;
 	};
