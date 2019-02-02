@@ -834,7 +834,7 @@ namespace flexasio {
 		if (!host_supports_timeinfo)
 		{
 			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
-			preparedState.callbacks.bufferSwitch(driverBufferIndex, ASIOFalse);
+			preparedState.callbacks.bufferSwitch(driverBufferIndex, ASIOTrue);
 			if (IsLoggingEnabled()) Log() << "bufferSwitch() complete";
 		}
 		else
@@ -845,7 +845,7 @@ namespace flexasio {
 			time.timeInfo.systemTime = currentSamplePosition.timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
 			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << driverBufferIndex << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
-			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOFalse);
+			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOTrue);
 			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
 
