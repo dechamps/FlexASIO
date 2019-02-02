@@ -785,6 +785,11 @@ namespace flexasio {
 
 	PaStreamCallbackResult FlexASIO::PreparedState::RunningState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
+		auto currentSamplePosition = samplePosition.load();
+		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
+		samplePosition.store(currentSamplePosition);
+		if (IsLoggingEnabled()) Log() << "Updated timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
+
 		if (IsLoggingEnabled()) Log() << "PortAudio stream callback with input " << input << ", output "
 			<< output << ", "
 			<< frameCount << " frames, time info ("
@@ -820,8 +825,6 @@ namespace flexasio {
 		CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
 		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
 
-		auto currentSamplePosition = samplePosition.load();
-
 		if (!host_supports_timeinfo)
 		{
 			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
@@ -842,10 +845,8 @@ namespace flexasio {
 
 		driverBufferIndex = (driverBufferIndex + 1) % 2;
 		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
-		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
 		samplePosition.store(currentSamplePosition);
-		if (IsLoggingEnabled()) Log() << "Updated buffer index: " << driverBufferIndex << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
-
+		if (IsLoggingEnabled()) Log() << "Updated driver buffer index: " << driverBufferIndex << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << " samples";
 		return paContinue;
 	}
 
