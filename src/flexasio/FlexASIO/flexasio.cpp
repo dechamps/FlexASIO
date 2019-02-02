@@ -828,6 +828,8 @@ namespace flexasio {
 				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
 
+		// See dechamps_ASIOUtil/BUFFERS.md for the gory details of how ASIO buffer management works.
+
 		if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
 		CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
 
