@@ -210,6 +210,23 @@ namespace flexasio {
 			return result;
 		}
 
+		void CopyFromPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const size_t doubleBufferIndex, const void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+			for (const auto& bufferInfo : bufferInfos)
+			{
+				if (!bufferInfo.isInput) continue;
+				void* asioBuffer = bufferInfo.buffers[doubleBufferIndex];
+				memcpy(asioBuffer, portAudioBuffers[bufferInfo.channelNum], bufferSizeInBytes);
+			}
+		}
+		void CopyToPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const size_t doubleBufferIndex, void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+			for (const auto& bufferInfo : bufferInfos)
+			{
+				if (bufferInfo.isInput) continue;
+				void* asioBuffer = bufferInfo.buffers[doubleBufferIndex];
+				memcpy(portAudioBuffers[bufferInfo.channelNum], asioBuffer, bufferSizeInBytes);
+			}
+		}
+
 	}
 
 	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
@@ -802,19 +819,8 @@ namespace flexasio {
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
 		if (IsLoggingEnabled()) Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
-		for (const auto& bufferInfo : preparedState.bufferInfos)
-		{
-			void* buffer = bufferInfo.buffers[our_buffer_index];
-			if (bufferInfo.isInput) {
-				if(input_samples == nullptr) abort();
-				memcpy(buffer, input_samples[bufferInfo.channelNum], frameCount * inputSampleSizeInBytes);
-			}
-			else
-			{
-				if(output_samples == nullptr) abort();
-				memcpy(output_samples[bufferInfo.channelNum], buffer, frameCount * outputSampleSizeInBytes);
-			}
-		}
+		CopyFromPortAudioBuffers(preparedState.bufferInfos, our_buffer_index, input_samples, frameCount * inputSampleSizeInBytes);
+		CopyToPortAudioBuffers(preparedState.bufferInfos, our_buffer_index, output_samples, frameCount * outputSampleSizeInBytes);
 
 		auto currentSamplePosition = samplePosition.load();
 
