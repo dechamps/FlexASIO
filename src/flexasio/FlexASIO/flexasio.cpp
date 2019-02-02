@@ -825,9 +825,8 @@ namespace flexasio {
 				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
 
-		if (IsLoggingEnabled()) Log() << "Transferring between PortAudio and buffer #" << driverBufferIndex;
+		if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
 		CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
-		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
 
 		if (!host_supports_timeinfo)
 		{
@@ -846,8 +845,11 @@ namespace flexasio {
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOFalse);
 			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
-
 		driverBufferIndex = (driverBufferIndex + 1) % 2;
+
+		if (IsLoggingEnabled()) Log() << "Transferring output buffers from buffer index #" << driverBufferIndex << " to PortAudio";
+		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
+
 		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
 		samplePosition.store(currentSamplePosition);
 		if (IsLoggingEnabled()) Log() << "Updated driver buffer index: " << driverBufferIndex << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << " samples";
