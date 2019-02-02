@@ -44,6 +44,7 @@ namespace flexasio {
 
 	}
 
+	bool IsLoggingEnabled() { return FlexASIOLogSink::Get() != nullptr; }
 	::dechamps_cpplog::Logger Log() { return ::dechamps_cpplog::Logger(FlexASIOLogSink::Get()); }
 
 }

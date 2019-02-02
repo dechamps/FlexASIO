@@ -136,7 +136,7 @@ namespace flexasio {
 				// We do not use Enter() and throw here, because this can be called in a real-time code path, and the cost
 				// of throwing exceptions is high and highly variable. When Enter() + throw was used here, this method could
 				// take as much as ~10 ms to run in the long tail.
-				Log() << "outputReady() called, returning ASE_NotPresent";
+				if (IsLoggingEnabled()) Log() << "outputReady() called, returning ASE_NotPresent";
 				return ASE_NotPresent;
 			}
 
@@ -152,7 +152,7 @@ namespace flexasio {
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
 		template <typename Functor> ASIOError CFlexASIO::Enter(std::string_view context, Functor functor) {
-			Log() << "--- ENTERING CONTEXT: " << context;
+			if (IsLoggingEnabled()) Log() << "--- ENTERING CONTEXT: " << context;
 			ASIOError result;
 			try {
 				functor();
@@ -171,10 +171,10 @@ namespace flexasio {
 				result = ASE_HWMalfunction;
 			}
 			if (result == ASE_OK) {
-				Log() << "--- EXITING CONTEXT: " << context << " [OK]";
+				if (IsLoggingEnabled()) Log() << "--- EXITING CONTEXT: " << context << " [OK]";
 			}
 			else {
-				Log() << "--- EXITING CONTEXT: " << context << " (" << ::dechamps_ASIOUtil::GetASIOErrorString(result) << " " << lastError << ")";
+				if (IsLoggingEnabled()) Log() << "--- EXITING CONTEXT: " << context << " (" << ::dechamps_ASIOUtil::GetASIOErrorString(result) << " " << lastError << ")";
 			}
 			return result;
 		}

@@ -272,7 +272,7 @@ namespace flexasio {
 		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
 		return *config;
 	}()),
-	portAudioDebugRedirector([](std::string_view str) { Log() << "[PortAudio] " << str; }),
+	portAudioDebugRedirector([](std::string_view str) { if (IsLoggingEnabled()) Log() << "[PortAudio] " << str; }),
 	hostApi([&] {
 		LogPortAudioApiList();
 		auto hostApi = config.backend.has_value() ? SelectHostApiByName(*config.backend) : SelectDefaultHostApi();
@@ -748,7 +748,7 @@ namespace flexasio {
 	}
 
 	int FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
-		Log() << "--- ENTERING STREAM CALLBACK";
+		if (IsLoggingEnabled()) Log() << "--- ENTERING STREAM CALLBACK";
 		PaStreamCallbackResult result = paContinue;
 		try {
 			auto& preparedState = *static_cast<PreparedState*>(userData);
@@ -758,18 +758,18 @@ namespace flexasio {
 			result = preparedState.runningState->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
 		}
 		catch (const std::exception& exception) {
-			Log() << "Caught exception in stream callback: " << exception.what();
+			if (IsLoggingEnabled()) Log() << "Caught exception in stream callback: " << exception.what();
 		}
 		catch (...) {
-			Log() << "Caught unknown exception in stream callback";
+			if (IsLoggingEnabled()) Log() << "Caught unknown exception in stream callback";
 		}
-		Log() << "--- EXITING STREAM CALLBACK (" << GetPaStreamCallbackResultString(result) << ")";
+		if (IsLoggingEnabled()) Log() << "--- EXITING STREAM CALLBACK (" << GetPaStreamCallbackResultString(result) << ")";
 		return result;
 	}
 
 	PaStreamCallbackResult FlexASIO::PreparedState::RunningState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
 	{
-		Log() << "PortAudio stream callback with input " << input << ", output "
+		if (IsLoggingEnabled()) Log() << "PortAudio stream callback with input " << input << ", output "
 			<< output << ", "
 			<< frameCount << " frames, time info ("
 			<< (timeInfo == nullptr ? "none" : DescribeStreamCallbackTimeInfo(*timeInfo)) << "), flags "
@@ -777,17 +777,17 @@ namespace flexasio {
 
 		if (frameCount != preparedState.buffers.bufferSizeInSamples)
 		{
-			Log() << "Expected " << preparedState.buffers.bufferSizeInSamples << " frames, got " << frameCount << " instead, aborting";
+			if (IsLoggingEnabled()) Log() << "Expected " << preparedState.buffers.bufferSizeInSamples << " frames, got " << frameCount << " instead, aborting";
 			return paContinue;
 		}
 
-		if (statusFlags & paInputOverflow)
+		if (statusFlags & paInputOverflow && IsLoggingEnabled())
 			Log() << "INPUT OVERFLOW detected (some input data was discarded)";
-		if (statusFlags & paInputUnderflow)
+		if (statusFlags & paInputUnderflow && IsLoggingEnabled())
 			Log() << "INPUT UNDERFLOW detected (gaps were inserted in the input)";
-		if (statusFlags & paOutputOverflow)
+		if (statusFlags & paOutputOverflow && IsLoggingEnabled())
 			Log() << "OUTPUT OVERFLOW detected (some output data was discarded)";
-		if (statusFlags & paOutputUnderflow)
+		if (statusFlags & paOutputUnderflow && IsLoggingEnabled())
 			Log() << "OUTPUT UNDERFLOW detected (gaps were inserted in the output)";
 
 		const auto inputSampleSize = preparedState.buffers.inputSampleSize;
@@ -801,7 +801,7 @@ namespace flexasio {
 		}
 
 		size_t locked_buffer_index = (our_buffer_index + 1) % 2; // The host is currently busy with locked_buffer_index and is not touching our_buffer_index.
-		Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
+		if (IsLoggingEnabled()) Log() << "Transferring between PortAudio and buffer #" << our_buffer_index;
 		for (const auto& bufferInfo : preparedState.bufferInfos)
 		{
 			void* buffer = bufferInfo.buffers[our_buffer_index];
@@ -820,9 +820,9 @@ namespace flexasio {
 
 		if (!host_supports_timeinfo)
 		{
-			Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << our_buffer_index;
+			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << our_buffer_index;
 			preparedState.callbacks.bufferSwitch(long(our_buffer_index), ASIOFalse);
-			Log() << "bufferSwitch() complete";
+			if (IsLoggingEnabled()) Log() << "bufferSwitch() complete";
 		}
 		else
 		{
@@ -831,16 +831,16 @@ namespace flexasio {
 			time.timeInfo.samplePosition = currentSamplePosition.samples;
 			time.timeInfo.systemTime = currentSamplePosition.timestamp;
 			time.timeInfo.sampleRate = preparedState.sampleRate;
-			Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
+			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << our_buffer_index << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
 			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, long(our_buffer_index), ASIOFalse);
-			Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
+			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
 		}
 
 		std::swap(locked_buffer_index, our_buffer_index);
 		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
 		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
 		samplePosition.store(currentSamplePosition);
-		Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
+		if (IsLoggingEnabled()) Log() << "Updated buffer index: " << our_buffer_index << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << ", timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
 
 		return paContinue;
 	}
@@ -861,7 +861,7 @@ namespace flexasio {
 		const auto currentSamplePosition = samplePosition.load();
 		*sPos = currentSamplePosition.samples;
 		*tStamp = currentSamplePosition.timestamp;
-		Log() << "Returning: sample position " << ::dechamps_ASIOUtil::ASIOToInt64(*sPos) << ", timestamp " << ::dechamps_ASIOUtil::ASIOToInt64(*tStamp);
+		if (IsLoggingEnabled()) Log() << "Returning: sample position " << ::dechamps_ASIOUtil::ASIOToInt64(*sPos) << ", timestamp " << ::dechamps_ASIOUtil::ASIOToInt64(*tStamp);
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
