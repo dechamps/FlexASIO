@@ -552,7 +552,7 @@ namespace flexasio {
 		auto stream = flexasio::OpenStream(
 			inputEnabled ? &input_parameters : NULL,
 			outputEnabled ? &output_parameters : NULL,
-			sampleRate, framesPerBuffer, paNoFlag, callback, callbackUserData);
+			sampleRate, framesPerBuffer, paPrimeOutputBuffersUsingStreamCallback, callback, callbackUserData);
 		if (stream != nullptr) {
 			const auto streamInfo = Pa_GetStreamInfo(stream.get());
 			if (streamInfo == nullptr) {
