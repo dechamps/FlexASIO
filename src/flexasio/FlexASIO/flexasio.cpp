@@ -227,6 +227,10 @@ namespace flexasio {
 			}
 		}
 
+		template <typename Enum> void IncrementEnum(Enum& value) {
+			value = static_cast<Enum>(std::underlying_type_t<Enum>(value) + 1);
+		}
+
 	}
 
 	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
@@ -794,8 +798,9 @@ namespace flexasio {
 	{
 		auto currentSamplePosition = samplePosition.load();
 		currentSamplePosition.timestamp = ::dechamps_ASIOUtil::Int64ToASIO<ASIOTimeStamp>(((long long int) win32HighResolutionTimer.GetTimeMilliseconds()) * 1000000);
+		if (state == State::STEADYSTATE) currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
 		samplePosition.store(currentSamplePosition);
-		if (IsLoggingEnabled()) Log() << "Updated timestamp: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp);
+		if (IsLoggingEnabled()) Log() << "Updated sample position: timestamp " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.timestamp) << ", " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << " samples";
 
 		if (IsLoggingEnabled()) Log() << "PortAudio stream callback with input " << input << ", output "
 			<< output << ", "
@@ -830,25 +835,27 @@ namespace flexasio {
 
 		// See dechamps_ASIOUtil/BUFFERS.md for the gory details of how ASIO buffer management works.
 
-		if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
-		CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
+		if (state != State::PRIMING) {
+			if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
+			CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
 
-		if (!host_supports_timeinfo)
-		{
-			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
-			preparedState.callbacks.bufferSwitch(driverBufferIndex, ASIOTrue);
-			if (IsLoggingEnabled()) Log() << "bufferSwitch() complete";
-		}
-		else
-		{
-			ASIOTime time = { 0 };
-			time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid;
-			time.timeInfo.samplePosition = currentSamplePosition.samples;
-			time.timeInfo.systemTime = currentSamplePosition.timestamp;
-			time.timeInfo.sampleRate = preparedState.sampleRate;
-			if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << driverBufferIndex << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
-			const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOTrue);
-			if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
+			if (!host_supports_timeinfo)
+			{
+				if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
+				preparedState.callbacks.bufferSwitch(driverBufferIndex, ASIOTrue);
+				if (IsLoggingEnabled()) Log() << "bufferSwitch() complete";
+			}
+			else
+			{
+				ASIOTime time = { 0 };
+				time.timeInfo.flags = kSystemTimeValid | kSamplePositionValid | kSampleRateValid;
+				time.timeInfo.samplePosition = currentSamplePosition.samples;
+				time.timeInfo.systemTime = currentSamplePosition.timestamp;
+				time.timeInfo.sampleRate = preparedState.sampleRate;
+				if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitchTimeInfo() callback with buffer index: " << driverBufferIndex << ", time info: (" << ::dechamps_ASIOUtil::DescribeASIOTime(time) << ")";
+				const auto timeResult = preparedState.callbacks.bufferSwitchTimeInfo(&time, driverBufferIndex, ASIOTrue);
+				if (IsLoggingEnabled()) Log() << "bufferSwitchTimeInfo() complete, returned time info: " << (timeResult == nullptr ? "none" : ::dechamps_ASIOUtil::DescribeASIOTime(*timeResult));
+			}
 		}
 
 		if (!hostSupportsOutputReady) {
@@ -868,9 +875,7 @@ namespace flexasio {
 
 		if (hostSupportsOutputReady) driverBufferIndex = (driverBufferIndex + 1) % 2;
 
-		currentSamplePosition.samples = ::dechamps_ASIOUtil::Int64ToASIO<ASIOSamples>(::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) + frameCount);
-		samplePosition.store(currentSamplePosition);
-		if (IsLoggingEnabled()) Log() << "Updated driver buffer index: " << driverBufferIndex << ", position: " << ::dechamps_ASIOUtil::ASIOToInt64(currentSamplePosition.samples) << " samples";
+		if (state != State::STEADYSTATE) IncrementEnum(state);
 		return paContinue;
 	}
 
