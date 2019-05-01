@@ -1,5 +1,5 @@
 #pragma warning(push)
-#pragma warning(disable:6011 6387)
+#pragma warning(disable:28204 6011 6387)
 #include <atlbase.h>
 #pragma warning(pop)
 #include <atlcom.h>
