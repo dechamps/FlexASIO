@@ -1,3 +1,4 @@
 # Visual Studio 2017 files
 .vs/
 CMakeSettings.json
+out/
