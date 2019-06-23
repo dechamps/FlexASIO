@@ -27,7 +27,14 @@ cmake -P installer.cmake
 
 Note that for this command to work, you need to have [Inno Setup][] installed.
 
+## Troubleshooting
+
+### VC runtime DLLs are not included in the installation
+
+See this [Visual Studio 2019 bug][InstallRequiredSystemLibraries].
+
 [ASIO SDK]: http://www.steinberg.net/en/company/developer.html
 [Inno Setup]: http://www.jrsoftware.org/isdl.php
+[InstallRequiredSystemLibraries]: https://developercommunity.visualstudio.com/content/problem/618084/cmake-installrequiredsystemlibraries-broken-in-lat.html
 [PortAudio]: http://www.portaudio.com/
 [tinytoml]: https://github.com/mayah/tinytoml

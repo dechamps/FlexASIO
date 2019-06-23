@@ -110,4 +110,10 @@ ExternalProject_Add(
 
 install(DIRECTORY "${INTERNAL_INSTALL_PREFIX}/" DESTINATION "${CMAKE_INSTALL_PREFIX}")
 install(SCRIPT dechamps_CMakeUtils/InstallPdbFiles.cmake)
+
+# Work around https://developercommunity.visualstudio.com/content/problem/618088/cmake-msvc-toolset-version-is-incorrect-in-visual.html
+# Note that for InstallRequiredSystemLibraries to work you might also need to work around https://developercommunity.visualstudio.com/content/problem/618084/cmake-installrequiredsystemlibraries-broken-in-lat.html
+if (MSVC_VERSION EQUAL 1921 AND MSVC_TOOLSET_VERSION EQUAL 141)
+	set(MSVC_TOOLSET_VERSION 142)
+endif()
 include(InstallRequiredSystemLibraries)
