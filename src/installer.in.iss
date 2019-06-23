@@ -1,5 +1,7 @@
 ; Note: this Inno Setup installer script is meant to run as part of
 ; installer.cmake. It will not work on its own.
+;
+; Inno Setup 6 or later is required for this script to work.
 
 [Setup]
 AppID=FlexASIO
@@ -12,8 +14,9 @@ AppSupportURL=https://github.com/dechamps/FlexASIO/issues
 AppUpdatesURL=https://github.com/dechamps/FlexASIO/releases
 AppReadmeFile=https://github.com/dechamps/FlexASIO/blob/@DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION@/README.md
 AppContact=etienne@edechamps.fr
+WizardStyle=modern
 
-DefaultDirName={pf}\FlexASIO
+DefaultDirName={autopf}\FlexASIO
 AppendDefaultDirName=no
 ArchitecturesInstallIn64BitMode=x64
 
