@@ -67,7 +67,7 @@ target_link_libraries(FlexASIO_flexasio
 )
 
 # Note: this is SHARED, not MODULE, otherwise CMake refuses to link that in FlexASIOTest.
-add_library(FlexASIO SHARED dll.def flexasio.rc ../versioninfo.rc)
+add_library(FlexASIO SHARED dll.def flexasio.rc ../versioninfo.rc flexasio.manifest)
 target_compile_definitions(FlexASIO PRIVATE PROJECT_DESCRIPTION="FlexASIO ASIO Driver DLL")
 target_link_libraries(FlexASIO
 	PRIVATE FlexASIO_cflexasio
