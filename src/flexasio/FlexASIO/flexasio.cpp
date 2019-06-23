@@ -521,6 +521,10 @@ namespace flexasio {
 				if (config.input.wasapiExclusiveMode) {
 					input_wasapi_stream_info.flags |= paWinWasapiExclusive;
 				}
+				Log() << (config.input.wasapiAutoConvert ? "Enabling" : "Disabling") << " auto-conversion for input WASAPI stream";
+				if (config.input.wasapiAutoConvert) {
+					input_wasapi_stream_info.flags |= paWinWasapiAutoConvert;
+				}
 				input_parameters.hostApiSpecificStreamInfo = &input_wasapi_stream_info;
 			}
 		}
@@ -544,6 +548,10 @@ namespace flexasio {
 				Log() << "Using " << (config.output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
 				if (config.output.wasapiExclusiveMode) {
 					output_wasapi_stream_info.flags |= paWinWasapiExclusive;
+				}
+				Log() << (config.output.wasapiAutoConvert ? "Enabling" : "Disabling") << " auto-conversion for output WASAPI stream";
+				if (config.output.wasapiAutoConvert) {
+					output_wasapi_stream_info.flags |= paWinWasapiAutoConvert;
 				}
 				output_parameters.hostApiSpecificStreamInfo = &output_wasapi_stream_info;
 			}

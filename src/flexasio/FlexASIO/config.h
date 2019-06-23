@@ -15,6 +15,7 @@ namespace flexasio {
 			std::optional<std::string> sampleType;
 			std::optional<double> suggestedLatencySeconds;
 			bool wasapiExclusiveMode = false;
+			bool wasapiAutoConvert = true;
 		};
 		Stream input;
 		Stream output;

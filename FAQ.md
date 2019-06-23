@@ -40,7 +40,18 @@ settings. Here are some common issues:
 
  - **Invalid values for configuration options** (e.g. wrong type, typos in
    backend names or device names) will result in initialization failures.
- - **When using WASAPI Shared…**
+ - **When using an exclusive backend (i.e. WASAPI Exclusive, WDM-KS)…**
+   - The **sample rate** selected in the ASIO Host Application must be natively
+     supported by the hardware audio device.
+   - The **channel count** that FlexASIO is configured to use must be natively
+     supported by the hardware audio device.
+ - **WDM-KS will fail to initialize if the selected device is already in use**
+   by any other application, even if no audio is actually playing. This means
+   that WDM-KS is unlikely to initialize successfully on the Windows default
+   devices; this can be worked around using the
+   [`device` configuration option][device].
+ - **When using WASAPI Shared with the [`wasapiAutoConvert` configuration
+   option][wasapiAutoConvert] disabled…**
    - **Only one sample rate is supported**: the one configured in the Windows
      audio device settings for the input *and* output devices.
      - If the ASIO Host Application uses any other sample rate, FlexASIO will
@@ -52,17 +63,6 @@ settings. Here are some common issues:
      audio device settings for the selected device.
      - FlexASIO will fail to initialize if it is configured to use any other
        channel count.
-   - These limitations are [inherent to WASAPI itself][wasapisr].
- - **When using an exclusive backend (i.e. WASAPI Exclusive, WDM-KS)…**
-   - The **sample rate** selected in the ASIO Host Application must be natively
-     supported by the hardware audio device.
-   - The **channel count** that FlexASIO is configured to use must be natively
-     supported by the hardware audio device.
- - **WDM-KS will fail to initialize if the selected device is already in use**
-   by any other application, even if no audio is actually playing. This means
-   that WDM-KS is unlikely to initialize successfully on the Windows default
-   devices; this can be worked around using the
-   [`device` configuration option][device].
  - A **FlexASIO (or PortAudio) bug**. If you believe that is the case, please
    [file a report][report].
    - In particular, please do file a report if FlexASIO fails to initialize with
@@ -231,4 +231,4 @@ wasapiExclusiveMode = true
 [report]: README.md#reporting-issues-feedback-feature-requests
 [sampleType]: CONFIGURATION.md#option-sampleType
 [suggestedLatencySeconds]: CONFIGURATION.md#option-suggestedLatencySeconds
-[wasapisr]: https://docs.microsoft.com/windows/desktop/CoreAudio/device-formats
+[wasapiAutoConvert]: CONFIGURATION.md#option-wasapiAutoConvert

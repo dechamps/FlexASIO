@@ -320,6 +320,42 @@ wasapiExclusiveMode = true
 
 The default behaviour is to open the stream in *shared* mode.
 
+#### Option `wasapiAutoConvert`
+
+*Boolean*-typed option that determines if WASAPI Shared is allowed to convert
+the sample rate and channel count of the audio stream.
+
+This option is ignored if the backend is not WASAPI. See the
+[`backend` option][backend]. Furthermore, it is only effective when WASAPI is
+used in *Shared mode*; WASAPI never converts *Exclusive mode* streams. See the
+[`wasapiExclusiveMode` option][wasapiExclusiveMode].
+
+If set to `true`, WASAPI will automatically convert the stream's sample rate
+and channel count (upmixing/downmixing) if it doesn't match the *shared format*,
+i.e. the format configured in the Windows audio control panel for that device.
+
+If set to `false`, WASAPI will not do any sample rate and channel count
+conversions and will only accept streams whose sample rate and channel count
+match the one configured in the Windows audio control panel for that device. If
+the sample rate or channel count don't match, FlexASIO will fail to initialize.
+Note that WASAPI Shared might still do additional processing besides sample rate
+and channel count conversion (e.g. sample format conversions, mixing, APOs).
+
+Example:
+
+```toml
+backend = "Windows WASAPI"
+
+[output]
+wasapiAutoConvert = false
+```
+
+The default behaviour is to allow conversions.
+
+(Note: as explained in [BACKENDS][], in modern versions of Windows, DirectSound
+and MME use WASAPI Shared behind the scenes, and they implicitly enable the same
+automatic conversion mechanism as the one this option controls.)
+
 [backend]: #option-backend
 [BACKENDS]: BACKENDS.md
 [bufferSizeSamples]: #option-bufferSizeSamples
@@ -334,3 +370,4 @@ The default behaviour is to open the stream in *shared* mode.
 [suggestedLatencySeconds]: #option-suggestedLatencySeconds
 [TOML]: https://en.wikipedia.org/wiki/TOML
 [WASAPI]: BACKENDS.md#wasapi-backend
+[wasapiExclusiveMode]: #option-wasapiExclusiveMode
