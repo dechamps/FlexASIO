@@ -40,6 +40,10 @@ settings. Here are some common issues:
 
  - **Invalid values for configuration options** (e.g. wrong type, typos in
    backend names or device names) will result in initialization failures.
+ - **Windows might deny access to the audio device...**
+   -  …if it is already in use by another exclusive mode application.
+   -  …if your Windows privacy settings are set to deny access to the input
+      device (microphone).
  - **When using an exclusive backend (i.e. WASAPI Exclusive, WDM-KS)…**
    - The **sample rate** selected in the ASIO Host Application must be natively
      supported by the hardware audio device.
