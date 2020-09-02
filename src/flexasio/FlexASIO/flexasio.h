@@ -58,6 +58,11 @@ namespace flexasio {
 			size_t size;
 		};
 
+		struct OpenStreamResult {
+			Stream stream;
+			bool exclusive;
+		};
+
 		class PortAudioHandle {
 		public:
 			PortAudioHandle();
@@ -80,6 +85,8 @@ namespace flexasio {
 			PreparedState(FlexASIO& flexASIO, ASIOSampleRate sampleRate, ASIOBufferInfo* asioBufferInfos, long numChannels, long bufferSizeInFrames, ASIOCallbacks* callbacks);
 			PreparedState(const PreparedState&) = delete;
 			PreparedState(PreparedState&&) = delete;
+
+			bool IsExclusive() const { return openStreamResult.exclusive;  }
 
 			bool IsChannelActive(bool isInput, long channel) const;
 
@@ -178,7 +185,7 @@ namespace flexasio {
 			Buffers buffers;
 			const std::vector<ASIOBufferInfo> bufferInfos;
 
-			const Stream stream;
+			const OpenStreamResult openStreamResult;
 
 			// RunningState will set runningState before ownedRunningState has finished constructing.
 			// This allows PreparedState to properly forward stream callbacks that might fire before RunningState construction is fully complete.
@@ -203,7 +210,7 @@ namespace flexasio {
 		DWORD GetInputChannelMask() const;
 		DWORD GetOutputChannelMask() const;
 
-		Stream OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
+		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
 		const HWND windowHandle = nullptr;
 		const Config config;
