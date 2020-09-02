@@ -387,7 +387,10 @@ namespace flexasio {
 		}
 		else {
 			Log() << "Calculating default buffer size based on " << sampleRate << " Hz sample rate";
-			*minSize = long(sampleRate * 0.001); // 1 ms, there's basically no chance we'll get glitch-free streaming below this
+			*minSize = long(sampleRate * (hostApi.info.type == paDirectSound && inputDevice.has_value() ?
+				0.010 :  // Cap the min buffer size to 10 ms when using DirectSound with an input device to work around https://github.com/dechamps/FlexASIO/issues/50
+				0.001    // 1 ms, there's basically no chance we'll get glitch-free streaming below this
+			)); 
 			*maxSize = long(sampleRate); // 1 second, more would be silly
 			*preferredSize = long(sampleRate * 0.02); // 20 ms
 			*granularity = 1; // Don't care

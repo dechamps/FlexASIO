@@ -132,9 +132,12 @@ bufferSizeSamples = 1920 # 40 ms at 48 kHz
 ```
 
 The default behaviour is to advertise minimum, preferred and maximum buffer
-sizes of 1 ms, 20 ms and 1 s, respectively. The resulting sizes in samples are
-computed based on whatever sample rate the driver is set to when the application
-enquires.
+sizes of 1 ms, 20 ms and 1 s, respectively. However, in practice the minimum
+buffer size will be advertised as 10 ms as long as the (default) DirectSound
+backend is used and the input device isn't disabled; this is to work around a
+[known issue](https://github.com/dechamps/FlexASIO/issues/50) with DirectSound
+and small input buffer sizes. The resulting sizes in samples are computed based
+on whatever sample rate the driver is set to when the application enquires.
 
 ### `[input]` and `[output]` sections
 
