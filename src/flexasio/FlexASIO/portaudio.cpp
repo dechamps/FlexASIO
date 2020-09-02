@@ -3,7 +3,24 @@
 #include "log.h"
 #include "../FlexASIOUtil/portaudio.h"
 
+#include <Objbase.h>
+#include <comdef.h>
+
 namespace flexasio {
+
+	namespace {
+
+		class COMInitializer {
+		public:
+			COMInitializer() {
+				::_com_util::CheckError(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+			}
+			~COMInitializer() {
+				CoUninitialize();
+			}
+		};
+
+	}
 
 	void StreamDeleter::operator()(PaStream* stream) throw() {
 		Log() << "Closing PortAudio stream " << stream;
@@ -28,19 +45,65 @@ namespace flexasio {
 		return Stream(stream);
 	}
 
-	void StreamStopper::operator()(PaStream* stream) throw() {
+	ActiveStream::ActiveStream(PaStream* stream) : stream(stream), startThread([this] {
+		std::exception_ptr exception;
+		try {
+			Log() << "Starting PortAudio stream " << this->stream;
+			{
+				COMInitializer comInitializer;  // Required because WASAPI Pa_StartStream() calls into the COM library
+				const auto error = Pa_StartStream(this->stream);
+				if (error != paNoError) throw std::runtime_error(std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
+			}
+			Log() << "PortAudio stream started";
+		}
+		catch (...) {
+		  exception = std::current_exception();
+		}
+		Log() << "Setting start outcome";
+		try {
+			if (exception)
+				promisedOutcome.set_exception(exception);
+			else
+				promisedOutcome.set_value();
+		}
+		catch (const std::future_error& future_error) {
+			if (future_error.code() != std::future_errc::promise_already_satisfied) throw;
+			Log() << "Start outcome already set";
+			return;
+		}
+		Log() << "Start outcome set";
+		}) {
+		Log() << "Waiting for start outcome";
+		promisedOutcome.get_future().get();
+		Log() << "Start outcome is OK";
+	}
+
+	ActiveStream::StartThread::~StartThread() {
+		if (thread.joinable()) {
+			Log() << "Waiting for start thread to finish";
+			thread.join();
+			Log() << "Start thread finished";
+		}
+	}
+
+	void ActiveStream::EndWaitForStartOutcome() {
+		Log() << "Ending wait for outcome";
+		try {
+			promisedOutcome.set_value();
+		}
+		catch (const std::future_error& future_error) {
+			if (future_error.code() != std::future_errc::promise_already_satisfied) throw;
+			Log() << "Start outcome already set";
+			return;
+		}
+		Log() << "Outcome wait ended";
+	}
+
+	ActiveStream::~ActiveStream() {
 		Log() << "Stopping PortAudio stream " << stream;
 		const auto error = Pa_StopStream(stream);
 		if (error != paNoError)
 			Log() << "Unable to stop PortAudio stream: " << Pa_GetErrorText(error);
-	}
-
-	ActiveStream StartStream(PaStream* const stream) {
-		Log() << "Starting PortAudio stream " << stream;
-		const auto error = Pa_StartStream(stream);
-		if (error != paNoError) throw std::runtime_error(std::string("unable to start PortAudio stream: ") + Pa_GetErrorText(error));
-		Log() << "PortAudio stream started";
-		return ActiveStream(stream);
 	}
 
 }

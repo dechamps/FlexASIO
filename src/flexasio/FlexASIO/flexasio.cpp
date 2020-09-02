@@ -772,7 +772,7 @@ namespace flexasio {
 		return result;
 	}()),
 		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady),
-		activeStream(StartStream(preparedState.stream.get())) {}
+		activeStream(preparedState.stream.get()) {}
 
 	void FlexASIO::Stop() {
 		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
@@ -843,6 +843,14 @@ namespace flexasio {
 			for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
 				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
+
+		// Some backends (e.g. WASAPI) issue the first stream callback from within Pa_StartStream().
+		// This is problematic because some host applications (e.g. foo_out_asio) wait for Start() to finish
+		// before returning from bufferSwitch(), resulting in a deadlock. See: https://github.com/dechamps/FlexASIO/issues/60
+		// To work around this problem, unblock Start() if it is still running by the time we reach this point.
+		// One possible downside of this approach is that we might not report Start() errors properly if they occur
+		// after the first stream callback fires.
+		if (state == InitialState()) activeStream.EndWaitForStartOutcome();
 
 		// See dechamps_ASIOUtil/BUFFERS.md for the gory details of how ASIO buffer management works.
 

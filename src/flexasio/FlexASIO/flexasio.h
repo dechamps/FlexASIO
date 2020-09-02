@@ -151,7 +151,8 @@ namespace flexasio {
 				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
 				const bool hostSupportsOutputReady;
-				State state = hostSupportsOutputReady ? State::PRIMING : State::PRIMED;
+				State InitialState() const { return hostSupportsOutputReady ? State::PRIMING : State::PRIMED; }
+				State state = InitialState();
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				long driverBufferIndex = state == State::PRIMING ? 1 : 0;
 				std::atomic<SamplePosition> samplePosition;
@@ -162,7 +163,7 @@ namespace flexasio {
 
 				Win32HighResolutionTimer win32HighResolutionTimer;
 				Registration registration{ preparedState.runningState, *this };
-				const ActiveStream activeStream;
+				ActiveStream activeStream;
 			};
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
