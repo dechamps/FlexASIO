@@ -491,9 +491,6 @@ namespace flexasio {
 		OpenStreamResult result;
 		result.exclusive = hostApi.info.type == paWDMKS;
 
-		inputEnabled = inputEnabled && inputDevice.has_value();
-		outputEnabled = outputEnabled && outputDevice.has_value();
-
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = paNonInterleaved;
 		common_parameters.hostApiSpecificStreamInfo = NULL;
@@ -595,24 +592,26 @@ namespace flexasio {
 		// We do not know whether the host application intends to use only input channels, only output channels, or both.
 		// This logic ensures the driver is usable for all three use cases.
 		bool available = false;
-		try {
-			Log() << "Checking if input supports this sample rate";
-			OpenStream(true, false, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
-			Log() << "Input supports this sample rate";
-			available = true;
-		}
-		catch (const std::exception& exception) {
-			Log() << "Input does not support this sample rate: " << exception.what();
-		}
-		try {
-			Log() << "Checking if output supports this sample rate";
-			OpenStream(false, true, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
-			Log() << "Output supports this sample rate";
-			available = true;
-		}
-		catch (const std::exception& exception) {
-			Log() << "Output does not support this sample rate: " << exception.what();
-		}
+		if (inputDevice.has_value())
+			try {
+				Log() << "Checking if input supports this sample rate";
+				OpenStream(true, false, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+				Log() << "Input supports this sample rate";
+				available = true;
+			}
+			catch (const std::exception& exception) {
+				Log() << "Input does not support this sample rate: " << exception.what();
+			}
+		if (outputDevice.has_value())
+			try {
+				Log() << "Checking if output supports this sample rate";
+				OpenStream(false, true, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+				Log() << "Output supports this sample rate";
+				available = true;
+			}
+			catch (const std::exception& exception) {
+				Log() << "Output does not support this sample rate: " << exception.what();
+			}
 
 		Log() << "Sample rate " << sampleRate << " is " << (available ? "available" : "unavailable");
 		return available;
