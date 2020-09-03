@@ -154,7 +154,9 @@ attempt to use.
 The value of the option is the *full name* of the device. The list of available
 device names is shown by the [`PortAudioDevices` program][PortAudioDevices]. The
 value of this option must exactly match the "Device name" shown by
-`PortAudioDevices`, including any text in parentheses.
+`PortAudioDevices`, including any text in parentheses. If the device name
+contains non-ASCII characters (e.g. accents), make sure the configuration file
+is written in UTF-8.
 
 **Note:** only devices that match the selected [*backend*][BACKENDS] will be
 considered. In other words, the "Host API name" as shown in the output of
