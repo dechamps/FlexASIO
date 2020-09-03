@@ -135,9 +135,11 @@ The default behaviour is to advertise minimum, preferred and maximum buffer
 sizes of 1 ms, 20 ms and 1 s, respectively. However, in practice the minimum
 buffer size will be advertised as 10 ms as long as the (default) DirectSound
 backend is used and the input device isn't disabled; this is to work around a
-[known issue](https://github.com/dechamps/FlexASIO/issues/50) with DirectSound
-and small input buffer sizes. The resulting sizes in samples are computed based
-on whatever sample rate the driver is set to when the application enquires.
+[known issue][issue50] with DirectSound and small input buffer sizes. The
+resulting sizes in samples are computed based on whatever sample rate the driver
+is set to when the application enquires. In addition, by default, FlexASIO will
+not advertise any buffer sizes smaller than 32 samples as that tends to [confuse
+some applications][issue88].
 
 ### `[input]` and `[output]` sections
 
@@ -366,6 +368,8 @@ automatic conversion mechanism as the one this option controls.)
 [device]: #option-device
 [GUI]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [INI files]: https://en.wikipedia.org/wiki/INI_file
+[issue50]: https://github.com/dechamps/FlexASIO/issues/50
+[issue88]: https://github.com/dechamps/FlexASIO/issues/88
 [logging]: README.md#logging
 [official TOML documentation]: https://github.com/toml-lang/toml#toml
 [portaudio287]: https://app.assembla.com/spaces/portaudio/tickets/287-wasapi-interprets-a-zero-suggestedlatency-in-surprising-ways
