@@ -261,6 +261,12 @@ not make sense to choose a type other than 32-bit float, because that's what the
 Windows audio pipeline uses internally, so any other type would just get
 converted to 32-bit float eventually.
 
+**Caution:** it is recommended to always use the same sample type for both input
+and output (i.e. use the same configuration option in both `[input]` and
+`[output]` sections). While the ASIO API allows different channels to use
+different sample types, in practice this is not a well-tested case and some
+applications (e.g. Pro Tools) [do not handle it well][issue87].
+
 Example:
 
 ```toml
@@ -270,7 +276,8 @@ sampleType = "Int16"
 
 The default value is `Float32`, except in WASAPI Exclusive mode, where FlexASIO
 will try to guess the native sample type of the hardware and use that as the
-default.
+default. Note that, in that case, as explained above, you might want to ensure
+both input and output devices are using the same sample type.
 
 #### Option `suggestedLatencySeconds`
 
@@ -369,6 +376,7 @@ automatic conversion mechanism as the one this option controls.)
 [GUI]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [INI files]: https://en.wikipedia.org/wiki/INI_file
 [issue50]: https://github.com/dechamps/FlexASIO/issues/50
+[issue87]: https://github.com/dechamps/FlexASIO/issues/87
 [issue88]: https://github.com/dechamps/FlexASIO/issues/88
 [logging]: README.md#logging
 [official TOML documentation]: https://github.com/toml-lang/toml#toml

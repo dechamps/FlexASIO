@@ -118,6 +118,14 @@ two typical causes:
      buffer sizes.
    - Do not forget to disable logging when you don't need it.
    - To disable logging, simply delete or move the `FlexASIO.log` file.
+ - There is a [known issue][issue87] with **Pro Tools where using different
+   sample types for the input and output devices** can lead to crashes, error
+   messages, or even a garbage sound signal.
+   - This can happen when using WASAPI Exclusive mode, or explicitly setting the
+     [`sampleType`][sampleType] option.
+   - One way to work around the issue is to explicitly set
+     [`sampleType`][sampleType] to the same value in the `[input]` and
+     `[output]` sections.
  - A **FlexASIO (or PortAudio) bug** (or lack of optimization). If you believe
    that is the case, please [file a report][report].
 
@@ -256,6 +264,7 @@ available but then fail to initialize when that sample rate is selected.
 [logging]: README.md#logging
 [issue #3]: https://github.com/dechamps/FlexASIO/issues/3
 [issue66]: https://github.com/dechamps/FlexASIO/issues/66
+[issue87]: https://github.com/dechamps/FlexASIO/issues/87
 [PortAudio]: http://www.portaudio.com/
 [report]: README.md#reporting-issues-feedback-feature-requests
 [sampleType]: CONFIGURATION.md#option-sampleType
