@@ -73,6 +73,9 @@ settings. Here are some common issues:
      the default configuration, as the defaults are always supposed to work on
      all systems.
 
+Note that FlexASIO advertising a sample rate as "available" to the application
+does not mean that this sample rate will actually work (see below).
+
 ## Why am I getting "glitches" (cracks, pops) in the audio?
 
 A more technical term for these is *discontinuities*. They are often caused by
@@ -223,6 +226,27 @@ wasapiExclusiveMode = true
 wasapiExclusiveMode = true
 ```
 
+## Why does FlexASIO list too many available sample rates?
+
+There are some cases in which FlexASIO can report a sample rate as "available"
+to the ASIO host application, even if the underlying hardware doesn't support
+it:
+
+- When using [backends][] that go through the Windows audio engine (i.e. the
+  default DirectSound backend, MME, WASAPI Shared), any sample rate can be used
+  as it will be transparently converted to the hardware sample rate.
+- When using input and output devices that support different sample rates, a
+  sample rate will be reported as available if *either* of the devices support
+  it. This is because, by the time the application asks for available sample
+  rates, FlexASIO doesn't yet know what devices the application is going to use.
+- Some applications (e.g. Max MSP, Cubase, Ableton) sometimes query sample rates
+  [while a stream is already running][issue66]. FlexASIO cannot probe available
+  sample rates while running an exclusive stream. In this situation, FlexASIO
+  will always report all sample rates as available.
+
+Note that in the latter two cases, FlexASIO might report a sample rate as
+available but then fail to initialize when that sample rate is selected.
+
 [backend]: CONFIGURATION.md#option-backend
 [backends]: BACKENDS.md
 [bufferSizeSamples]: CONFIGURATION.md#option-bufferSizeSamples
@@ -231,6 +255,7 @@ wasapiExclusiveMode = true
 [CONFIGURATION]: CONFIGURATION.md
 [logging]: README.md#logging
 [issue #3]: https://github.com/dechamps/FlexASIO/issues/3
+[issue66]: https://github.com/dechamps/FlexASIO/issues/66
 [PortAudio]: http://www.portaudio.com/
 [report]: README.md#reporting-issues-feedback-feature-requests
 [sampleType]: CONFIGURATION.md#option-sampleType
