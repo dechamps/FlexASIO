@@ -75,6 +75,9 @@ namespace flexasio {
 			void StartWatching();
 			void RunThread();
 			void OnEvent();
+			void Debounce();
+			bool FillNotifyInformationBuffer();
+			bool FindConfigFileEvents();
 
 			const std::function<void()> onConfigFileEvent;
 			const UniqueHandle stopEvent;

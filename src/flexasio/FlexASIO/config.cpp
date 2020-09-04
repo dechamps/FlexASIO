@@ -177,43 +177,75 @@ namespace flexasio {
 		// Note: we need to be careful about logging here - since the logfile is in the same directory as the config file,
 		// we could end up with directory change events entering an infinite feedback loop.
 
-		DWORD size;
-		if (!GetOverlappedResult(directory.get(), &overlapped.overlapped, &size, /*bWait=*/FALSE))
-			throw std::system_error(::GetLastError(), std::system_category(), "GetOverlappedResult() failed");
-		if (size <= 0) {
+		bool configFileEvent = false;
+		if (!FillNotifyInformationBuffer()) {
 			Log() << "Config directory event buffer overflow";
 			// We don't know if something happened to the logfile, so assume it did.
-			onConfigFileEvent();
+			configFileEvent = true;
 		}
-		else {
-			const char* fileNotifyInformationPtr = fileNotifyInformationBuffer;
-			for (;;) {
-				constexpr auto fileNotifyInformationHeaderSize = offsetof(FILE_NOTIFY_INFORMATION, FileName);
-				FILE_NOTIFY_INFORMATION fileNotifyInformationHeader;
-				memcpy(&fileNotifyInformationHeader, fileNotifyInformationPtr, fileNotifyInformationHeaderSize);
+		else configFileEvent = FindConfigFileEvents();
 
-				std::wstring fileName(fileNotifyInformationHeader.FileNameLength / sizeof(wchar_t), 0);
-				memcpy(fileName.data(), fileNotifyInformationPtr + fileNotifyInformationHeaderSize, fileNotifyInformationHeader.FileNameLength);
-				if (fileName == configFileName) {
-					// Here we can safely log.
-					Log() << "Configuration file directory change received: NextEntryOffset = " << fileNotifyInformationHeader.NextEntryOffset
-						<< " Action = " << fileNotifyInformationHeader.Action
-						<< " FileNameLength = " << fileNotifyInformationHeader.FileNameLength;
-
-					if (fileNotifyInformationHeader.Action == FILE_ACTION_ADDED ||
-						fileNotifyInformationHeader.Action == FILE_ACTION_REMOVED ||
-						fileNotifyInformationHeader.Action == FILE_ACTION_MODIFIED ||
-						fileNotifyInformationHeader.Action == FILE_ACTION_RENAMED_NEW_NAME) {
-						onConfigFileEvent();
-					}
-				}
-
-				if (fileNotifyInformationHeader.NextEntryOffset == 0) break;
-				fileNotifyInformationPtr += fileNotifyInformationHeader.NextEntryOffset;
-			}
+		if (configFileEvent) {
+			Debounce();
+			onConfigFileEvent();
 		}
 
 		StartWatching();
+	}
+
+	void ConfigLoader::Watcher::Debounce() {
+		// It's best to debounce events that arrive in quick succession, otherwise we might attempt to read the file while it's being changed,
+		// resulting in spurious resets.
+		// (e.g. the Visual Studio Code editor will empty the file first before writing the new contents)
+		// Another reason to debounce is that it might make it less likely we'll run into file locking issues.
+		// We do this by sleeping for a while, and getting rid of all events that occurred in the mean time.
+
+		Log() << "Debouncing config file events";
+		StartWatching();
+		Log() << "Sleeping";
+		::Sleep(250);
+		Log() << "Cancelling directory event watch";
+		// We could use CancelIoEx(), but for some reason that doesn't work (it fails with ERROR_NOT_FOUND).
+		if (!::CancelIo(directory.get()))
+			throw std::system_error(::GetLastError(), std::system_category(), "Unable to cancel debounce");
+		Log() << "Draining directory event buffer";
+		FillNotifyInformationBuffer();
+	}
+
+	bool ConfigLoader::Watcher::FillNotifyInformationBuffer() {
+		DWORD size;
+		if (!::GetOverlappedResult(directory.get(), &overlapped.overlapped, &size, /*bWait=*/TRUE))
+			throw std::system_error(::GetLastError(), std::system_category(), "GetOverlappedResult() failed");
+		return size > 0;
+	}
+
+	bool ConfigLoader::Watcher::FindConfigFileEvents() {
+		const char* fileNotifyInformationPtr = fileNotifyInformationBuffer;
+		for (;;) {
+			constexpr auto fileNotifyInformationHeaderSize = offsetof(FILE_NOTIFY_INFORMATION, FileName);
+			FILE_NOTIFY_INFORMATION fileNotifyInformationHeader;
+			memcpy(&fileNotifyInformationHeader, fileNotifyInformationPtr, fileNotifyInformationHeaderSize);
+
+			std::wstring fileName(fileNotifyInformationHeader.FileNameLength / sizeof(wchar_t), 0);
+			memcpy(fileName.data(), fileNotifyInformationPtr + fileNotifyInformationHeaderSize, fileNotifyInformationHeader.FileNameLength);
+			if (fileName == configFileName) {
+				// Here we can safely log.
+				Log() << "Configuration file directory change received: NextEntryOffset = " << fileNotifyInformationHeader.NextEntryOffset
+					<< " Action = " << fileNotifyInformationHeader.Action
+					<< " FileNameLength = " << fileNotifyInformationHeader.FileNameLength;
+
+				if (fileNotifyInformationHeader.Action == FILE_ACTION_ADDED ||
+					fileNotifyInformationHeader.Action == FILE_ACTION_REMOVED ||
+					fileNotifyInformationHeader.Action == FILE_ACTION_MODIFIED ||
+					fileNotifyInformationHeader.Action == FILE_ACTION_RENAMED_NEW_NAME) {
+					return true;
+				}
+			}
+
+			if (fileNotifyInformationHeader.NextEntryOffset == 0) break;
+			fileNotifyInformationPtr += fileNotifyInformationHeader.NextEntryOffset;
+		}
+		return false;
 	}
 
 	ConfigLoader::Watcher::OverlappedWithEvent::OverlappedWithEvent() {
@@ -246,7 +278,6 @@ namespace flexasio {
 		Log() << "Handling config file event";
 
 		// TODO: handle exceptions
-		// TODO: some editors empty the file first, resulting in a spurious reset. We should probably debounce events.
 		const auto newConfig = LoadConfig(configDirectory / configFileName);
 		if (newConfig == initialConfig) {
 			Log() << "New config is identical to initial config, not taking any action";
