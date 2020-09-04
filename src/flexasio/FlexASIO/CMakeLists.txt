@@ -36,6 +36,7 @@ add_library(FlexASIO_config STATIC EXCLUDE_FROM_ALL config.cpp)
 target_link_libraries(FlexASIO_config
 	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
+	PRIVATE dechamps_cpputil::exception
 	PRIVATE tinytoml
 )
 
@@ -61,6 +62,7 @@ target_link_libraries(FlexASIO_flexasio
 	PRIVATE dechamps_ASIOUtil::asio
 	PRIVATE FlexASIO_log
 	PRIVATE dechamps_cpputil::endian
+	PRIVATE dechamps_cpputil::exception
 	PRIVATE dechamps_cpputil::string
 	PRIVATE dechamps_CMakeUtils_version
 	PRIVATE portaudio::portaudio

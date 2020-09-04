@@ -11,6 +11,7 @@
 #include <MMReg.h>
 
 #include <dechamps_cpputil/endian.h>
+#include <dechamps_cpputil/exception.h>
 #include <dechamps_cpputil/string.h>
 
 #include <dechamps_ASIOUtil/asio.h>
@@ -666,7 +667,12 @@ namespace flexasio {
 		}
 		if (resetRequested) {
 			Log() << "Acting on a previous reset request";
-			preparedState->RequestReset();
+			try {
+				preparedState->RequestReset();
+			}
+			catch (const std::exception& exception) {
+				Log() << "Reset request failed: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
+			}
 		}
 	}
 

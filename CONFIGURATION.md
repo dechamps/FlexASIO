@@ -25,9 +25,10 @@ will *fail to initialize*. The [FlexASIO log][logging] will contain details
 about what went wrong.
 
 While running, FlexASIO watches for changes to the configuration file. If a
-change is detected, FlexASIO will automatically issue a reset request to the
-ASIO application. What happens next is up to the application; ideally, it should
-reload FlexASIO and pick up the new configuration.
+change is detected and the new file contains a valid, different configuration,
+FlexASIO will automatically issue a reset request to the ASIO application. What
+happens next is up to the application; ideally, it should reload FlexASIO and
+pick up the new configuration.
 
 ## Example configuration file
 

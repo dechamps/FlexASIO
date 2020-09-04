@@ -2,6 +2,7 @@
 
 #include "config.h"
 
+#include <dechamps_cpputil/exception.h>
 #include <toml/toml.h>
 
 #include "log.h"
@@ -158,16 +159,22 @@ namespace flexasio {
 	}
 
 	void ConfigLoader::Watcher::RunThread() {
-		// TODO: handle exceptions
-
 		Log() << "Config watcher thread running";
 
-		for (;;) {
-			std::array handles = { stopEvent.get(), overlapped.overlapped.hEvent };
-			const auto waitResult = ::WaitForMultipleObjects(DWORD(handles.size()), handles.data(), /*bWaitAll=*/FALSE, INFINITE);
-			if (waitResult == WAIT_OBJECT_0) break;
-			else if (waitResult == WAIT_OBJECT_0 + 1) OnEvent();
-			else throw std::system_error(::GetLastError(), std::system_category(), "Unable to wait for events");
+		try {
+			for (;;) {
+				std::array handles = { stopEvent.get(), overlapped.overlapped.hEvent };
+				const auto waitResult = ::WaitForMultipleObjects(DWORD(handles.size()), handles.data(), /*bWaitAll=*/FALSE, INFINITE);
+				if (waitResult == WAIT_OBJECT_0) break;
+				else if (waitResult == WAIT_OBJECT_0 + 1) OnEvent();
+				else throw std::system_error(::GetLastError(), std::system_category(), "Unable to wait for events");
+			}			
+		}
+		catch (const std::exception& exception) {
+			Log() << "Config watcher thread encountered error: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
+		}
+		catch (...) {
+			Log() << "Config watcher thread encountered unknown exception";
 		}
 
 		Log() << "Config watcher thread stopping";
@@ -277,8 +284,14 @@ namespace flexasio {
 	void ConfigLoader::OnConfigFileEvent() {
 		Log() << "Handling config file event";
 
-		// TODO: handle exceptions
-		const auto newConfig = LoadConfig(configDirectory / configFileName);
+		Config newConfig;
+		try {
+			newConfig = LoadConfig(configDirectory / configFileName);
+		}
+		catch (const std::exception& exception) {
+			Log() << "Unable to load config, ignoring event: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
+			return;
+		}
 		if (newConfig == initialConfig) {
 			Log() << "New config is identical to initial config, not taking any action";
 			return;
