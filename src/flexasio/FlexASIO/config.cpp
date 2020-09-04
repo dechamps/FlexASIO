@@ -246,8 +246,13 @@ namespace flexasio {
 		Log() << "Handling config file event";
 
 		// TODO: handle exceptions
-		// TODO: do not reset if the configuration has not actually changed
-		LoadConfig(configDirectory / configFileName);
+		// TODO: some editors empty the file first, resulting in a spurious reset. We should probably debounce events.
+		const auto newConfig = LoadConfig(configDirectory / configFileName);
+		if (newConfig == initialConfig) {
+			Log() << "New config is identical to initial config, not taking any action";
+			return;
+		}
+
 		onConfigChange();
 	}
 

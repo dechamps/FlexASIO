@@ -22,9 +22,27 @@ namespace flexasio {
 			std::optional<double> suggestedLatencySeconds;
 			bool wasapiExclusiveMode = false;
 			bool wasapiAutoConvert = true;
+
+			bool operator==(const Stream& other) const {
+				return
+					device == other.device &&
+					channels == other.channels &&
+					sampleType == other.sampleType &&
+					suggestedLatencySeconds == other.suggestedLatencySeconds &&
+					wasapiExclusiveMode == other.wasapiExclusiveMode &&
+					wasapiAutoConvert == other.wasapiAutoConvert;
+			}
 		};
 		Stream input;
 		Stream output;
+
+		bool operator==(const Config& other) const {
+			return
+				backend == other.backend &&
+				bufferSizeSamples == other.bufferSizeSamples &&
+				input == other.input &&
+				output == other.output;
+		}
 	};
 
 	class ConfigLoader {
