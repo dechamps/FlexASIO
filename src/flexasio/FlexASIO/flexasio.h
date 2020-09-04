@@ -212,8 +212,11 @@ namespace flexasio {
 
 		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
+		void RequestReset();
+
 		const HWND windowHandle = nullptr;
-		const Config config;
+		const ConfigLoader configLoader{ [this] { RequestReset(); } };
+		const Config& config = configLoader.Initial();
 
 		PortAudioDebugRedirector portAudioDebugRedirector;
 		PortAudioHandle portAudioHandle;
@@ -229,6 +232,9 @@ namespace flexasio {
 		ASIOSampleRate sampleRate = 0;
 		bool sampleRateWasAccessed = false;
 		bool hostSupportsOutputReady = false;
+
+		std::mutex resetRequestMutex;
+		bool resetRequested = false;
 
 		std::optional<PreparedState> preparedState;
 	};

@@ -288,7 +288,6 @@ namespace flexasio {
 
 	FlexASIO::FlexASIO(void* sysHandle) :
 		windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle)),
-		config(LoadConfig()),
 	portAudioDebugRedirector([](std::string_view str) { if (IsLoggingEnabled()) Log() << "[PortAudio] " << str; }),
 	hostApi([&] {
 		LogPortAudioApiList();
@@ -658,8 +657,17 @@ namespace flexasio {
 			// See https://github.com/dechamps/FlexASIO/issues/31
 			Log() << "WARNING: ASIO host application never enquired about sample rate, and therefore cannot know we are running at " << sampleRate << " Hz!";
 		}
-
-		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
+		bool resetRequested;
+		{
+			const std::lock_guard resetRequestLock(resetRequestMutex);
+			preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
+			resetRequested = this->resetRequested;
+			this->resetRequested = false;
+		}
+		if (resetRequested) {
+			Log() << "Acting on a previous reset request";
+			preparedState->RequestReset();
+		}
 	}
 
 	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSizeInBytes, size_t outputSampleSizeInBytes) :
@@ -731,6 +739,7 @@ namespace flexasio {
 	void FlexASIO::DisposeBuffers()
 	{
 		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
+		const std::lock_guard resetRequestLock(resetRequestMutex);
 		preparedState.reset();
 	}
 
@@ -942,6 +951,18 @@ namespace flexasio {
 			outputReady = true;
 		}
 		outputReadyCondition.notify_all();
+	}
+
+	void FlexASIO::RequestReset() {
+		Log() << "Handling reset request";
+
+		const std::lock_guard resetRequestLock(resetRequestMutex);
+		if (!preparedState.has_value()) {
+			Log() << "No prepared state, will issue reset later";
+			resetRequested = true;
+			return;
+		}
+		preparedState->RequestReset();
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
