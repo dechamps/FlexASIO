@@ -52,6 +52,8 @@ The default settings are as follows:
  - 20 ms "preferred" buffer size
 
 All of the above can be customized using a [configuration file][CONFIGURATION].
+You might want to use a third-party tool such as flipswitchingmonkey's
+[FlexASIO GUI][FlexASIO_GUI] to make this easier.
 
 For more advanced use cases, such as low-latency operation and bit-perfect
 streaming, see the [FAQ][].
@@ -133,6 +135,7 @@ while the problem is occurring, and attach it to your report. The output of
 [DirectSound]: https://en.wikipedia.org/wiki/DirectSound
 [Etienne Dechamps]: mailto:etienne@edechamps.fr
 [FAQ]: FAQ.md
+[FlexASIO_GUI]: https://github.com/flipswitchingmonkey/FlexASIO_GUI
 [file an issue]: https://github.com/dechamps/FlexASIO/issues/new
 [GitHub]: https://github.com/dechamps/FlexASIO
 [GitHub issue tracker]: https://github.com/dechamps/FlexASIO/issues

@@ -28,6 +28,13 @@ The reason for the lack of a proper control panel is because developing a
 graphical user interface requires a lot of time and resources, which FlexASIO
 currently doesn't have.
 
+That said, third-party FlexASIO GUIs do exist:
+
+- flipswitchingmonkey's [FlexASIO GUI][FlexASIO_GUI]
+- Nam-K's [FlexASIO configuration helper][FlexASIO_ConfigGUI]
+- [Room EQ Wizard][REW] provides a custom control
+  panel when FlexASIO is used as the ASIO driver
+
 ## Why does FlexASIO fail to initialize?
 
 There are many reasons why FlexASIO might refuse to initialize. Sadly, the ASIO
@@ -261,12 +268,15 @@ available but then fail to initialize when that sample rate is selected.
 [channels]: CONFIGURATION.md#option-channels
 [device]: CONFIGURATION.md#option-device
 [CONFIGURATION]: CONFIGURATION.md
+[FlexASIO_GUI]: https://github.com/flipswitchingmonkey/FlexASIO_GUI
+[FlexASIO_ConfigGUI]: https://github.com/Nam-K/FlexASIO_ConfigGUI
 [logging]: README.md#logging
 [issue #3]: https://github.com/dechamps/FlexASIO/issues/3
 [issue66]: https://github.com/dechamps/FlexASIO/issues/66
 [issue87]: https://github.com/dechamps/FlexASIO/issues/87
 [PortAudio]: http://www.portaudio.com/
 [report]: README.md#reporting-issues-feedback-feature-requests
+[REW]: https://www.roomeqwizard.com/
 [sampleType]: CONFIGURATION.md#option-sampleType
 [suggestedLatencySeconds]: CONFIGURATION.md#option-suggestedLatencySeconds
 [wasapiAutoConvert]: CONFIGURATION.md#option-wasapiAutoConvert

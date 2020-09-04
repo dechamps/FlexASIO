@@ -1,7 +1,11 @@
 # FlexASIO Configuration
 
-FlexASIO does not provide a graphical interface ([GUI][]) to adjust its
-settings. This is because developing a GUI typically requires a
+**Tip: instead of editing the FlexASIO configuration file directly, you might
+find it easier to use a third-party tool such as flipswitchingmonkey's
+[FlexASIO GUI][FlexASIO_GUI].**
+
+FlexASIO does not provide an official graphical interface ([GUI][]) to adjust
+its settings. This is because developing a GUI typically requires a
 significant amount of developer time that FlexASIO, sadly, doesn't have.
 This explains why nothing happens when you click on the ASIO driver
 "configure" or "settings" button in your application.
@@ -383,6 +387,7 @@ automatic conversion mechanism as the one this option controls.)
 [issue87]: https://github.com/dechamps/FlexASIO/issues/87
 [issue88]: https://github.com/dechamps/FlexASIO/issues/88
 [logging]: README.md#logging
+[FlexASIO_GUI]: https://github.com/flipswitchingmonkey/FlexASIO_GUI
 [official TOML documentation]: https://github.com/toml-lang/toml#toml
 [portaudio287]: https://app.assembla.com/spaces/portaudio/tickets/287-wasapi-interprets-a-zero-suggestedlatency-in-surprising-ways
 [PortAudioDevices]: README.md#device-list-program
