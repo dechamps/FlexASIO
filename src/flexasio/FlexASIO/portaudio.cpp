@@ -4,7 +4,6 @@
 #include "../FlexASIOUtil/portaudio.h"
 
 #include <Objbase.h>
-#include <comdef.h>
 
 namespace flexasio {
 
@@ -13,7 +12,8 @@ namespace flexasio {
 		class COMInitializer {
 		public:
 			COMInitializer() {
-				::_com_util::CheckError(CoInitializeEx(NULL, COINIT_MULTITHREADED));
+				const auto hresult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+				if (FAILED(hresult)) throw std::system_error(hresult, std::system_category(), "CoInitializeEx() failed");
 			}
 			~COMInitializer() {
 				CoUninitialize();
