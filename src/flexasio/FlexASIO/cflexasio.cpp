@@ -6,6 +6,7 @@
 
 #include "log.h"
 
+#include <dechamps_cpputil/exception.h>
 #include <dechamps_ASIOUtil/asiosdk/iasiodrv.h>
 #include <dechamps_ASIOUtil/asio.h>
 
@@ -147,28 +148,6 @@ namespace flexasio {
 
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
-		std::string GetExceptionMessage(const std::exception& exception) {
-			struct MessageBuilder {
-				std::stringstream stringstream;
-				void AddException(const std::exception& exception) {
-					if (stringstream.tellp() > 0) stringstream << ": ";
-					stringstream << exception.what();
-					try {
-						std::rethrow_if_nested(exception);
-					}
-					catch (const std::exception& nestedException) {
-						AddException(nestedException);
-					}
-					catch (...) {
-						stringstream << "unknown nested exception";
-					}
-				}
-			};
-			MessageBuilder messageBuilder;
-			messageBuilder.AddException(exception);
-			return messageBuilder.stringstream.str();
-		}
-
 		template <typename Functor> ASIOError CFlexASIO::Enter(std::string_view context, Functor functor) {
 			if (IsLoggingEnabled()) Log() << "--- ENTERING CONTEXT: " << context;
 			ASIOError result;
@@ -181,7 +160,7 @@ namespace flexasio {
 				result = exception.GetASIOError();
 			}
 			catch (const std::exception& exception) {
-				lastError = GetExceptionMessage(exception);
+				lastError = ::dechamps_cpputil::GetNestedExceptionMessage(exception);
 				result = ASE_HWMalfunction;
 			}
 			catch (...) {

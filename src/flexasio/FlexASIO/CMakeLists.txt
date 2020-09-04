@@ -24,6 +24,7 @@ target_link_libraries(FlexASIO_cflexasio
 	PRIVATE FlexASIO_idl
 	PRIVATE FlexASIO_log
 	PRIVATE FlexASIOUtil_shell
+	PRIVATE dechamps_cpputil::exception
 	PRIVATE dechamps_ASIOUtil::asiosdk_iasiodrv
 	PRIVATE dechamps_ASIOUtil::asio
 )
