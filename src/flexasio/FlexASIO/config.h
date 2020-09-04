@@ -21,6 +21,6 @@ namespace flexasio {
 		Stream output;
 	};
 
-	std::optional<Config> LoadConfig();
+	Config LoadConfig();
 
 }

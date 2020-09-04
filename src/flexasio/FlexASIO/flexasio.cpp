@@ -288,11 +288,7 @@ namespace flexasio {
 
 	FlexASIO::FlexASIO(void* sysHandle) :
 		windowHandle(reinterpret_cast<decltype(windowHandle)>(sysHandle)),
-		config([&] {
-		const auto config = LoadConfig();
-		if (!config.has_value()) throw ASIOException(ASE_HWMalfunction, "could not load FlexASIO configuration. See FlexASIO log for details.");
-		return *config;
-	}()),
+		config(LoadConfig()),
 	portAudioDebugRedirector([](std::string_view str) { if (IsLoggingEnabled()) Log() << "[PortAudio] " << str; }),
 	hostApi([&] {
 		LogPortAudioApiList();

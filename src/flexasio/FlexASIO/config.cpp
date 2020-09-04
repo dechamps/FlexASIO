@@ -13,45 +13,43 @@ namespace flexasio {
 
 	namespace {
 
-		std::optional<toml::Value> LoadConfigToml() {
+		toml::Value LoadConfigToml() {
 			std::filesystem::path path;
 			try {
 				path = GetUserDirectory();
+				path.append("FlexASIO.toml");
 			}
-			catch (const std::exception& exception) {
-				Log() << "Unable to determine user directory for configuration file: " << exception.what();
-				return toml::Table();
+			catch (...) {
+				std::throw_with_nested(std::runtime_error("Unable to get user profile directory"));
 			}
-			path.append("FlexASIO.toml");
 
 			Log() << "Attempting to load configuration file: " << path;
 
+			std::ifstream stream;
+			stream.exceptions(stream.badbit | stream.failbit);
 			try {
-				std::ifstream stream;
-				stream.exceptions(stream.badbit | stream.failbit);
-				try {
-					stream.open(path);
-				}
-				catch (const std::exception& exception) {
-					Log() << "Unable to open configuration file: " << exception.what();
-					return toml::Table();
-				}
-				stream.exceptions(stream.badbit);
-
-				const auto parseResult = toml::parse(stream);
-				if (!parseResult.valid()) {
-					Log() << "Unable to parse configuration file as TOML: " << parseResult.errorReason;
-					return std::nullopt;
-				}
-
-				Log() << "Configuration file successfully parsed as valid TOML: " << parseResult.value;
-
-				return parseResult.value;
+				stream.open(path);
 			}
 			catch (const std::exception& exception) {
-				Log() << "Unable to read configuration file: " << exception.what();
-				return std::nullopt;
+				Log() << "Unable to open configuration file: " << exception.what();
+				return toml::Table();
 			}
+			stream.exceptions(stream.badbit);
+
+			const auto parseResult = [&] {
+				try {
+					const auto parseResult = toml::parse(stream);
+					if (!parseResult.valid()) throw std::runtime_error(parseResult.errorReason);
+					return parseResult;
+				}
+				catch (...) {
+					std::throw_with_nested(std::runtime_error("TOML parse error"));
+				}
+			}();
+
+			Log() << "Configuration file successfully parsed as valid TOML: " << parseResult.value;
+
+			return parseResult.value;
 		}
 
 		template <typename Functor> void ProcessOption(const toml::Table& table, const std::string& key, Functor functor) {
@@ -113,18 +111,22 @@ namespace flexasio {
 
 	}
 
-	std::optional<Config> LoadConfig() {
-		const auto tomlValue = LoadConfigToml();
-		if (!tomlValue.has_value()) return std::nullopt;
+	Config LoadConfig() {
+		toml::Value tomlValue;
+		try {
+			tomlValue = LoadConfigToml();
+		}
+		catch (...) {
+			std::throw_with_nested(std::runtime_error("Unable to load configuration file"));
+		}
 
 		try {
 			Config config;
-			SetConfig(tomlValue->as<toml::Table>(), config);
+			SetConfig(tomlValue.as<toml::Table>(), config);
 			return config;
 		}
-		catch (const std::exception& exception) {
-			Log() << "Invalid configuration: " << exception.what();
-			return std::nullopt;
+		catch (...) {
+			std::throw_with_nested(std::runtime_error("Invalid configuration"));
 		}
 	}
 
