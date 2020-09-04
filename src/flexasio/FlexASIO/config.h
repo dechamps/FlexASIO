@@ -47,24 +47,21 @@ namespace flexasio {
 
 	class ConfigLoader {
 	public:
-		ConfigLoader(std::function<void()> onConfigChange);
+		ConfigLoader();
 
 		const Config& Initial() const { return initialConfig; }
 
-	private:
-		void OnConfigFileEvent();
-
-		struct HandleCloser {
-			void operator()(HANDLE handle);
-		};
-		using UniqueHandle = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleCloser>;
-
 		class Watcher {
 		public:
-			Watcher(std::function<void()> onConfigFileEvent, const std::filesystem::path& configDirectory);
+			Watcher(const ConfigLoader& configLoader, std::function<void()> onConfigChange);
 			~Watcher() noexcept(false);
 
 		private:
+			struct HandleCloser {
+				void operator()(HANDLE handle);
+			};
+			using UniqueHandle = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleCloser>;
+
 			struct OverlappedWithEvent {
 				OverlappedWithEvent();
 				~OverlappedWithEvent();
@@ -78,8 +75,10 @@ namespace flexasio {
 			void Debounce();
 			bool FillNotifyInformationBuffer();
 			bool FindConfigFileEvents();
+			void OnConfigFileEvent();
 
-			const std::function<void()> onConfigFileEvent;
+			const ConfigLoader& configLoader;
+			const std::function<void()> onConfigChange;
 			const UniqueHandle stopEvent;
 			const UniqueHandle directory;
 			OverlappedWithEvent overlapped;
@@ -87,9 +86,8 @@ namespace flexasio {
 			std::thread thread;
 		};
 
-		const std::function<void()> onConfigChange;
+	private:
 		const std::filesystem::path configDirectory;
-		const Watcher watcher{ [this] { OnConfigFileEvent(); }, configDirectory };
 		const Config initialConfig;
 	};
 

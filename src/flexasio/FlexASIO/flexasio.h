@@ -175,6 +175,8 @@ namespace flexasio {
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
 
+			void OnConfigChange();
+
 			FlexASIO& flexASIO;
 			const ASIOSampleRate sampleRate;
 			const ASIOCallbacks callbacks;
@@ -193,6 +195,7 @@ namespace flexasio {
 			// During steady-state operation, runningState just points to *ownedRunningState.
 			RunningState* runningState = nullptr;
 			std::optional<RunningState> ownedRunningState;
+			ConfigLoader::Watcher configWatcher;
 		};
 
 		static const SampleType float32;
@@ -212,10 +215,8 @@ namespace flexasio {
 
 		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
-		void RequestReset();
-
 		const HWND windowHandle = nullptr;
-		const ConfigLoader configLoader{ [this] { RequestReset(); } };
+		const ConfigLoader configLoader;
 		const Config& config = configLoader.Initial();
 
 		PortAudioDebugRedirector portAudioDebugRedirector;
@@ -232,9 +233,6 @@ namespace flexasio {
 		ASIOSampleRate sampleRate = 0;
 		bool sampleRateWasAccessed = false;
 		bool hostSupportsOutputReady = false;
-
-		std::mutex resetRequestMutex;
-		bool resetRequested = false;
 
 		std::optional<PreparedState> preparedState;
 	};

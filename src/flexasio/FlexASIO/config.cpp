@@ -123,20 +123,24 @@ namespace flexasio {
 
 	}
 
-	void ConfigLoader::HandleCloser::operator()(HANDLE handle) {
+	void ConfigLoader::Watcher::HandleCloser::operator()(HANDLE handle) {
 		if (::CloseHandle(handle) == 0)
 			throw std::system_error(::GetLastError(), std::system_category(), "unable to close handle");
 	}
 
-	ConfigLoader::Watcher::Watcher(std::function<void()> onConfigFileEvent, const std::filesystem::path& configDirectory) : onConfigFileEvent(std::move(onConfigFileEvent)), stopEvent([&] {
+	ConfigLoader::Watcher::Watcher(const ConfigLoader& configLoader, std::function<void()> onConfigChange) :
+		configLoader(configLoader),
+		onConfigChange(std::move(onConfigChange)),
+		stopEvent([&] {
 		const auto handle = CreateEventA(NULL, TRUE, FALSE, NULL);
 		if (handle == NULL)
 			throw std::system_error(::GetLastError(), std::system_category(), "Unable to create stop event");
 		return UniqueHandle(handle);
-		}()), directory([&] {
+		}()),
+		directory([&] {
 		Log() << "Opening config directory for watching";
 		const auto handle = ::CreateFileW(
-			configDirectory.wstring().c_str(),
+			configLoader.configDirectory.wstring().c_str(),
 			FILE_LIST_DIRECTORY,
 			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 			/*lpSecurityAttributes=*/NULL,
@@ -149,6 +153,7 @@ namespace flexasio {
 		}()) {
 		Log() << "Starting configuration file watcher";
 		StartWatching();
+		OnConfigFileEvent();
 		thread = std::thread([this] { RunThread(); });
 	}
 
@@ -197,7 +202,7 @@ namespace flexasio {
 
 		if (configFileEvent) {
 			Debounce();
-			onConfigFileEvent();
+			OnConfigFileEvent();
 		}
 
 		StartWatching();
@@ -279,23 +284,22 @@ namespace flexasio {
 			throw std::system_error(::GetLastError(), std::system_category(), "Unable to watch for directory changes");
 	}
 
-	ConfigLoader::ConfigLoader(std::function<void()> onConfigChange) :
-		onConfigChange(std::move(onConfigChange)),
+	ConfigLoader::ConfigLoader() :
 		configDirectory(GetUserDirectory()),
 		initialConfig(LoadConfig(configDirectory / configFileName)) {}
 
-	void ConfigLoader::OnConfigFileEvent() {
+	void ConfigLoader::Watcher::OnConfigFileEvent() {
 		Log() << "Handling config file event";
 
 		Config newConfig;
 		try {
-			newConfig = LoadConfig(configDirectory / configFileName);
+			newConfig = LoadConfig(configLoader.configDirectory / configFileName);
 		}
 		catch (const std::exception& exception) {
 			Log() << "Unable to load config, ignoring event: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
 			return;
 		}
-		if (newConfig == initialConfig) {
+		if (newConfig == configLoader.Initial()) {
 			Log() << "New config is identical to initial config, not taking any action";
 			return;
 		}

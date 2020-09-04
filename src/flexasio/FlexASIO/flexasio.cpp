@@ -658,22 +658,7 @@ namespace flexasio {
 			// See https://github.com/dechamps/FlexASIO/issues/31
 			Log() << "WARNING: ASIO host application never enquired about sample rate, and therefore cannot know we are running at " << sampleRate << " Hz!";
 		}
-		bool resetRequested;
-		{
-			const std::lock_guard resetRequestLock(resetRequestMutex);
-			preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
-			resetRequested = this->resetRequested;
-			this->resetRequested = false;
-		}
-		if (resetRequested) {
-			Log() << "Acting on a previous reset request";
-			try {
-				preparedState->RequestReset();
-			}
-			catch (const std::exception& exception) {
-				Log() << "Reset request failed: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
-			}
-		}
+		preparedState.emplace(*this, sampleRate, bufferInfos, numChannels, bufferSize, callbacks);
 	}
 
 	FlexASIO::PreparedState::Buffers::Buffers(size_t bufferSetCount, size_t inputChannelCount, size_t outputChannelCount, size_t bufferSizeInFrames, size_t inputSampleSizeInBytes, size_t outputSampleSizeInBytes) :
@@ -731,7 +716,8 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), openStreamResult(flexASIO.OpenStream(buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, unsigned long(bufferSizeInFrames), &PreparedState::StreamCallback, this)) {
+	}()), openStreamResult(flexASIO.OpenStream(buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, unsigned long(bufferSizeInFrames), &PreparedState::StreamCallback, this)),
+		configWatcher(flexASIO.configLoader, [this] { OnConfigChange(); }) {
 		if (callbacks->asioMessage) ProbeHostMessages(callbacks->asioMessage);
 	}
 
@@ -745,7 +731,6 @@ namespace flexasio {
 	void FlexASIO::DisposeBuffers()
 	{
 		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "disposeBuffers() called before createBuffers()");
-		const std::lock_guard resetRequestLock(resetRequestMutex);
 		preparedState.reset();
 	}
 
@@ -825,6 +810,16 @@ namespace flexasio {
 		}
 		if (IsLoggingEnabled()) Log() << "--- EXITING STREAM CALLBACK (" << GetPaStreamCallbackResultString(result) << ")";
 		return result;
+	}
+
+	void FlexASIO::PreparedState::OnConfigChange() {
+		Log() << "Issuing reset request due to config change";
+		try {
+			RequestReset();
+		}
+		catch (const std::exception& exception) {
+			Log() << "Reset request failed: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
+		}
 	}
 
 	PaStreamCallbackResult FlexASIO::PreparedState::RunningState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags)
@@ -957,18 +952,6 @@ namespace flexasio {
 			outputReady = true;
 		}
 		outputReadyCondition.notify_all();
-	}
-
-	void FlexASIO::RequestReset() {
-		Log() << "Handling reset request";
-
-		const std::lock_guard resetRequestLock(resetRequestMutex);
-		if (!preparedState.has_value()) {
-			Log() << "No prepared state, will issue reset later";
-			resetRequested = true;
-			return;
-		}
-		preparedState->RequestReset();
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
