@@ -74,6 +74,13 @@ settings. Here are some common issues:
      audio device settings for the selected device.
      - FlexASIO will fail to initialize if it is configured to use any other
        channel count.
+ - **If other ASIO drivers (such as ASIO4ALL) are installed** besides FlexASIO,
+   it might fail or behave erratically at initialization time.
+     - This is a [known issue][issue86] with some ASIO applications (e.g.
+       Ableton, Pro Tools). These applications seem to initialize multiple ASIO
+       drivers in parallel, which makes the drivers race against each other for
+       exclusive access to audio devices, resulting in random failures.
+     - This issue can be worked around by uninstalling the other drivers.
  - A **FlexASIO (or PortAudio) bug**. If you believe that is the case, please
    [file a report][report].
    - In particular, please do file a report if FlexASIO fails to initialize with
@@ -273,6 +280,7 @@ available but then fail to initialize when that sample rate is selected.
 [logging]: README.md#logging
 [issue #3]: https://github.com/dechamps/FlexASIO/issues/3
 [issue66]: https://github.com/dechamps/FlexASIO/issues/66
+[issue86]: https://github.com/dechamps/FlexASIO/issues/86
 [issue87]: https://github.com/dechamps/FlexASIO/issues/87
 [PortAudio]: http://www.portaudio.com/
 [report]: README.md#reporting-issues-feedback-feature-requests
