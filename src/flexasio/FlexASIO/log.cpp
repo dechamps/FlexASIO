@@ -14,10 +14,13 @@ namespace flexasio {
 		class FlexASIOLogSink final : public ::dechamps_cpplog::LogSink {
 			public:
 				static std::unique_ptr<FlexASIOLogSink> Open() {
-					const auto userDirectory = GetUserDirectory();
-					if (!userDirectory.has_value()) return nullptr;
-
-					std::filesystem::path path(*userDirectory);
+					std::filesystem::path path;
+					try {
+						path = GetUserDirectory();
+					}
+					catch (...) {
+						return nullptr;
+					}
 					path.append("FlexASIO.log");
 
 					if (!std::filesystem::exists(path)) return nullptr;

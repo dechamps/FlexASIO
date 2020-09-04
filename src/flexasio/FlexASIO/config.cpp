@@ -14,13 +14,14 @@ namespace flexasio {
 	namespace {
 
 		std::optional<toml::Value> LoadConfigToml() {
-			const auto userDirectory = GetUserDirectory();
-			if (!userDirectory.has_value()) {
-				Log() << "Unable to determine user directory for configuration file";
+			std::filesystem::path path;
+			try {
+				path = GetUserDirectory();
+			}
+			catch (const std::exception& exception) {
+				Log() << "Unable to determine user directory for configuration file: " << exception.what();
 				return toml::Table();
 			}
-
-			std::filesystem::path path(*userDirectory);
 			path.append("FlexASIO.toml");
 
 			Log() << "Attempting to load configuration file: " << path;
