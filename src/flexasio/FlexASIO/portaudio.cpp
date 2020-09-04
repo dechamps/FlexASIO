@@ -12,10 +12,12 @@ namespace flexasio {
 		class COMInitializer {
 		public:
 			COMInitializer() {
+				Log() << "Initializing COM";
 				const auto hresult = CoInitializeEx(NULL, COINIT_MULTITHREADED);
 				if (FAILED(hresult)) throw std::system_error(hresult, std::system_category(), "CoInitializeEx() failed");
 			}
 			~COMInitializer() {
+				Log() << "Uninitializing COM";
 				CoUninitialize();
 			}
 		};
