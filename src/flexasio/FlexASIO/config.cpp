@@ -153,9 +153,12 @@ namespace flexasio {
 	}
 
 	ConfigLoader::Watcher::~Watcher() noexcept(false) {
+		Log() << "Signaling config watcher thread to stop";
 		if (!SetEvent(stopEvent.get()))
 			throw std::system_error(::GetLastError(), std::system_category(), "Unable to set stop event");
+		Log() << "Waiting for config watcher thread to finish";
 		thread.join();
+		Log() << "Joined config watcher thread";
 	}
 
 	void ConfigLoader::Watcher::RunThread() {
