@@ -3,7 +3,7 @@
 	url = https://github.com/mayah/tinytoml.git
 [submodule "src/portaudio"]
 	path = src/portaudio
-	url = https://git.assembla.com/portaudio.git
+	url = https://github.com/PortAudio/portaudio.git
 [submodule "src/cxxopts"]
 	path = src/cxxopts
 	url = https://github.com/jarro2783/cxxopts.git
