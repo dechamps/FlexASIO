@@ -110,7 +110,8 @@ namespace flexasio {
 			{ paWinWasapiRedirectHostProcessor, "RedirectHostProcessor" },
 			{ paWinWasapiUseChannelMask, "UseChannelMask" },
 			{ paWinWasapiPolling, "Polling" },
-			{ paWinWasapiThreadPriority, "ThreadPriority" },
+			{ paWinWasapiExplicitSampleFormat, "ExplicitSampleFormat" },
+			{ paWinWasapiAutoConvert, "AutoConvert" },
 			});
 	}
 
