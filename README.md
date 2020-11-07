@@ -1,6 +1,8 @@
 # FlexASIO, the flexible universal ASIO driver
 *Brought to you by [Etienne Dechamps][] - [GitHub][]*
 
+*ASIO is a trademark and software of Steinberg Media Technologies GmbH*
+
 **If you are looking for an installer, see the
 [GitHub releases page][releases].**
 
@@ -125,6 +127,10 @@ FlexASIO welcomes feedback. Feel free to [file an issue][] in the
 When asking for help, it is strongly recommended to [produce a log][logging]
 while the problem is occurring, and attach it to your report. The output of
 [`FlexASIOTest`][test], along with its log output, might also help.
+
+---
+
+![ASIO logo](ASIO.jpg)
 
 [ASIO]: http://en.wikipedia.org/wiki/Audio_Stream_Input/Output
 [ASIO2KS]: http://www.asio2ks.de/

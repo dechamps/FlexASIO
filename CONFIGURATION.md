@@ -376,6 +376,10 @@ The default behaviour is to allow conversions.
 and MME use WASAPI Shared behind the scenes, and they implicitly enable the same
 automatic conversion mechanism as the one this option controls.)
 
+---
+
+*ASIO is a trademark and software of Steinberg Media Technologies GmbH*
+
 [backend]: #option-backend
 [BACKENDS]: BACKENDS.md
 [bufferSizeSamples]: #option-bufferSizeSamples

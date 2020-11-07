@@ -269,6 +269,10 @@ it:
 Note that in the latter two cases, FlexASIO might report a sample rate as
 available but then fail to initialize when that sample rate is selected.
 
+---
+
+*ASIO is a trademark and software of Steinberg Media Technologies GmbH*
+
 [backend]: CONFIGURATION.md#option-backend
 [backends]: BACKENDS.md
 [bufferSizeSamples]: CONFIGURATION.md#option-bufferSizeSamples

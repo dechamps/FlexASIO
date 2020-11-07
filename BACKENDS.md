@@ -195,6 +195,10 @@ the [`device` option][device].
 The alternative [ASIO4ALL][] and [ASIO2KS][] universal ASIO drivers use Kernel
 Streaming.
 
+---
+
+*ASIO is a trademark and software of Steinberg Media Technologies GmbH*
+
 [ASIO2WASAPI]: https://github.com/levmin/ASIO2WASAPI
 [ASIO2KS]: http://www.asio2ks.de/
 [ASIO4ALL]: http://www.asio4all.org/

@@ -1,3 +1,11 @@
+NOTE: The license below only applies to the source code of FlexASIO itself. the
+ASIO trademark and ASIO SDK are subject to specific license terms; see
+"Steinberg ASIO Licensing Agreement" in the ASIO SDK.
+
+ASIO is a trademark and software of Steinberg Media Technologies GmbH.
+
+---
+
 Copyright (c) 2018 Etienne Dechamps <etienne@edechamps.fr>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
