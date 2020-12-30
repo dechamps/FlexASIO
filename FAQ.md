@@ -90,6 +90,30 @@ settings. Here are some common issues:
 Note that FlexASIO advertising a sample rate as "available" to the application
 does not mean that this sample rate will actually work (see below).
 
+## Why does the device channel count/routing seem wrong with some backends?
+
+In many cases, the device channel count reported by FlexASIO might be wrong, or
+some channels can be misrouted. This is especially true for multichannel (5.1,
+7.1, etc.) setups.
+
+With the notable exception of the WDM-KS [backend][] (which typically deals with
+hardware output channels directly), **all FlexASIO backends eventually rely on
+the channel count that is configured in the Windows audio device control panel
+settings**. It is imperative that this setting be configured correctly,
+otherwise FlexASIO (as well as most other Windows applications) will not route
+audio channels in the way you'd expect.
+
+To confuse matters further, the (default) DirectSound and MME backends support
+on-the-fly downmixing, which means they might provide *more* channels than
+Windows is configured to use - but these aren't "real" channels!
+
+To fix most channel count issues, go through the Windows audio settings, or run
+`mmsys.cpl`, to access the relevant [Windows audio control panel][]. For typical
+output devices, channel configuration can be changed by selecting the relevant
+device and clicking the "Configure" button. For other devices including input
+devices, the channel count can be changed in the device properties, "Advanced"
+tab.
+
 ## Why am I getting "glitches" (cracks, pops) in the audio?
 
 A more technical term for these is *discontinuities*. They are often caused by
@@ -292,3 +316,4 @@ available but then fail to initialize when that sample rate is selected.
 [sampleType]: CONFIGURATION.md#option-sampleType
 [suggestedLatencySeconds]: CONFIGURATION.md#option-suggestedLatencySeconds
 [wasapiAutoConvert]: CONFIGURATION.md#option-wasapiAutoConvert
+[Windows audio control panel]: https://manual.audacityteam.org/man/windows_accessing_the_windows_sound_controls.html
