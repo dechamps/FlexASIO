@@ -35,6 +35,23 @@ That said, third-party FlexASIO GUIs do exist:
 - [Room EQ Wizard][REW] provides a custom control
   panel when FlexASIO is used as the ASIO driver
 
+## Why is FlexASIO ignoring my configuration file and/or logfile?
+
+You can double-check that the files are located in the correct folder and are
+named properly by running the following in a command-line prompt:
+
+```
+dir %userprofile%\FlexASIO*
+```
+
+The output should list `FlexASIO.toml` and/or `FlexASIO.log`.
+
+**Note:** it is typical for Windows and some text editors to automatically add a
+`.txt` extension to file names. This results in files named `FlexASIO.toml.txt`
+or `FlexASIO.log.txt`, which won't work. To confuse matters further, Windows
+*hides* `.txt` extensions by default. Use the aforementioned command to reveal
+the true file name.
+
 ## Why does FlexASIO fail to initialize?
 
 There are many reasons why FlexASIO might refuse to initialize. Sadly, the ASIO
