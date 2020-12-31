@@ -98,6 +98,13 @@ settings. Here are some common issues:
        drivers in parallel, which makes the drivers race against each other for
        exclusive access to audio devices, resulting in random failures.
      - This issue can be worked around by uninstalling the other drivers.
+ - **When using devices with an unusually large number of channels (10 or
+   more)**, there is a [known issue][issue100] where the (default) DirectSound
+   backend fails to initialize if the channel count set in the Windows audio
+   device settings doesn't match.
+     - You can solve this problem by [fixing the channel count][channelfix] in
+       the Windows audio device settings.
+     - Alternatively, try a different [backend][].
  - A **FlexASIO (or PortAudio) bug**. If you believe that is the case, please
    [file a report][report].
    - In particular, please do file a report if FlexASIO fails to initialize with
@@ -318,6 +325,7 @@ available but then fail to initialize when that sample rate is selected.
 [backends]: BACKENDS.md
 [bufferSizeSamples]: CONFIGURATION.md#option-bufferSizeSamples
 [channels]: CONFIGURATION.md#option-channels
+[channelfix]: #why-does-the-device-channel-countrouting-seem-wrong-with-some-backends
 [device]: CONFIGURATION.md#option-device
 [CONFIGURATION]: CONFIGURATION.md
 [FlexASIO_GUI]: https://github.com/flipswitchingmonkey/FlexASIO_GUI
@@ -327,6 +335,7 @@ available but then fail to initialize when that sample rate is selected.
 [issue66]: https://github.com/dechamps/FlexASIO/issues/66
 [issue86]: https://github.com/dechamps/FlexASIO/issues/86
 [issue87]: https://github.com/dechamps/FlexASIO/issues/87
+[issue100]: https://github.com/dechamps/FlexASIO/issues/100
 [PortAudio]: http://www.portaudio.com/
 [report]: README.md#reporting-issues-feedback-feature-requests
 [REW]: https://www.roomeqwizard.com/
