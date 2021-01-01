@@ -200,6 +200,12 @@ namespace flexasio {
 		if (result <= 0) throw std::runtime_error(std::string("Unable to get WASAPI device default format for device ") + std::to_string(index) + ": " + Pa_GetErrorText(result));
 		return format;
 	}
+	WAVEFORMATEXTENSIBLE GetWasapiDeviceMixFormat(PaDeviceIndex index) {
+		WAVEFORMATEXTENSIBLE format = { 0 };
+		const auto result = PaWasapi_GetDeviceMixFormat(&format, sizeof(format), index);
+		if (result <= 0) throw std::runtime_error(std::string("Unable to get WASAPI device mix format for device ") + std::to_string(index) + ": " + Pa_GetErrorText(result));
+		return format;
+	}
 
 	std::string GetWaveFormatTagString(WORD formatTag) {
 		return ::dechamps_cpputil::EnumToString(int(formatTag), {

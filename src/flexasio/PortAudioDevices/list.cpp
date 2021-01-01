@@ -73,6 +73,7 @@ namespace flexasio {
 			switch (hostApi->type) {
 			case paWASAPI:
 				std::wcout << "WASAPI device default format: " << UTF8ToWideString(DescribeWaveFormat(GetWasapiDeviceDefaultFormat(deviceIndex))) << std::endl;
+				std::wcout << "WASAPI device mix format: " << UTF8ToWideString(DescribeWaveFormat(GetWasapiDeviceMixFormat(deviceIndex))) << std::endl;
 			}
 		}
 
