@@ -203,14 +203,13 @@ namespace flexasio {
 		static const SampleType int16;
 		static const std::pair<std::string_view, SampleType> sampleTypes[];
 		static SampleType ParseSampleType(std::string_view str);
-		static std::optional<SampleType> WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat);
-		static SampleType SelectSampleType(const Config::Stream&, PaHostApiTypeId, const std::optional<WAVEFORMATEXTENSIBLE>&);
+		static SampleType WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat);
+		static SampleType SelectSampleType(PaHostApiTypeId hostApiTypeId, const Device& device, const Config::Stream& streamConfig);
 		static std::string DescribeSampleType(const SampleType&);
+		static DWORD SelectChannelMask(PaHostApiTypeId hostApiTypeId, const Device& device, const Config::Stream& streamConfig);
 
 		int GetInputChannelCount() const;
 		int GetOutputChannelCount() const;
-		DWORD GetInputChannelMask() const;
-		DWORD GetOutputChannelMask() const;
 
 		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
@@ -224,10 +223,10 @@ namespace flexasio {
 		const HostApi hostApi;
 		const std::optional<Device> inputDevice;
 		const std::optional<Device> outputDevice;
-		const std::optional<WAVEFORMATEXTENSIBLE> inputFormat;
-		const std::optional<WAVEFORMATEXTENSIBLE> outputFormat;
 		const std::optional<SampleType> inputSampleType;
 		const std::optional<SampleType> outputSampleType;
+		const DWORD inputChannelMask;
+		const DWORD outputChannelMask;
 
 		ASIOSampleRate sampleRate = 0;
 		bool sampleRateWasAccessed = false;
