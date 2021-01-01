@@ -92,6 +92,7 @@ namespace flexasio {
 			SetOption(table, "suggestedLatencySeconds", stream.suggestedLatencySeconds, ValidateSuggestedLatency);
 			SetOption(table, "wasapiExclusiveMode", stream.wasapiExclusiveMode);
 			SetOption(table, "wasapiAutoConvert", stream.wasapiAutoConvert);
+			SetOption(table, "wasapiExplicitSampleFormat", stream.wasapiExplicitSampleFormat);
 		}
 
 		void SetConfig(const toml::Table& table, Config& config) {

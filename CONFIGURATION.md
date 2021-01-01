@@ -253,7 +253,9 @@ internally. If this option is set to a sample type that the device cannot be
 opened with, PortAudio will *automatically* and *implicitly* convert to the
 "closest" type that works. Sadly, this cannot be disabled, which means it's
 impossible to be sure what sample type is actually used in the PortAudio
-backend, aside from examining the [FlexASIO log][logging].
+backend, aside from examining the [FlexASIO log][logging]. The only exception is
+when operating in WASAPI Exclusive mode - see the [`wasapiExplicitSampleFormat`
+option][wasapiExplicitSampleFormat].
 
 The valid values are:
 
@@ -379,6 +381,45 @@ The default behaviour is to allow conversions.
 and MME use WASAPI Shared behind the scenes, and they implicitly enable the same
 automatic conversion mechanism as the one this option controls.)
 
+#### Option `wasapiExplicitSampleFormat`
+
+*Boolean*-typed option that determines if PortAudio is allowed to implicitly
+convert between sample types when using WASAPI Exclusive.
+
+This option is only meaningful when the [`backend` option][backend] option
+is set to WASAPI and the [`wasapiExclusiveMode` option][wasapiExclusiveMode] is
+set to exclusive mode. In all other cases, implicit sample type conversion is
+always active and cannot be disabled.
+
+If set to `true`, the underlying WASAPI stream will be configured according to
+the [`sampleType` option][sampleType], and PortAudio will not do any sample type
+conversions. If the underlying device doesn't support the requested sample type,
+initialization will fail. This can be used to guarantee "bit-perfect" operation.
+
+If set to `false`, PortAudio will attempt to open a WASAPI stream with the
+configured sample type. If that fails, PortAudio will automatically try other
+sample types and, if it finds one that works, will convert samples on-the-fly.
+This means that the actual sample type of the underlying WASAPI stream might
+differ from the sample type used at the ASIO interface level, and the resulting
+audio pipeline will not be "bit-perfect".
+
+In general, there is little reason to allow implicit sample type conversions
+between the ASIO Host application and WASAPI unless you have a specific need for
+such conversions.
+
+Example:
+
+```toml
+backend = "Windows WASAPI"
+
+[output]
+wasapiExclusiveMode = true
+wasapiExplicitSampleFormat = false
+sampleType = "Int24"
+```
+
+The default behaviour is to disallow implicit conversions.
+
 ---
 
 *ASIO is a trademark and software of Steinberg Media Technologies GmbH*
@@ -398,7 +439,9 @@ automatic conversion mechanism as the one this option controls.)
 [official TOML documentation]: https://github.com/toml-lang/toml#toml
 [portaudio287]: https://app.assembla.com/spaces/portaudio/tickets/287-wasapi-interprets-a-zero-suggestedlatency-in-surprising-ways
 [PortAudioDevices]: README.md#device-list-program
+[sampleType]: #option-sampleType
 [suggestedLatencySeconds]: #option-suggestedLatencySeconds
 [TOML]: https://en.wikipedia.org/wiki/TOML
 [WASAPI]: BACKENDS.md#wasapi-backend
 [wasapiExclusiveMode]: #option-wasapiExclusiveMode
+[wasapiExplicitSampleFormat]: #option-wasapiExplicitSampleFormat

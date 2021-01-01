@@ -22,6 +22,7 @@ namespace flexasio {
 			std::optional<double> suggestedLatencySeconds;
 			bool wasapiExclusiveMode = false;
 			bool wasapiAutoConvert = true;
+			bool wasapiExplicitSampleFormat = true;
 
 			bool operator==(const Stream& other) const {
 				return
@@ -30,7 +31,8 @@ namespace flexasio {
 					sampleType == other.sampleType &&
 					suggestedLatencySeconds == other.suggestedLatencySeconds &&
 					wasapiExclusiveMode == other.wasapiExclusiveMode &&
-					wasapiAutoConvert == other.wasapiAutoConvert;
+					wasapiAutoConvert == other.wasapiAutoConvert &&
+					wasapiExplicitSampleFormat == other.wasapiExplicitSampleFormat;
 			}
 		};
 		Stream input;
