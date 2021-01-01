@@ -278,6 +278,9 @@ applications (e.g. Pro Tools) [do not handle it well][issue87].
 Example:
 
 ```toml
+[input]
+sampleType = "Int16"
+
 [output]
 sampleType = "Int16"
 ```
