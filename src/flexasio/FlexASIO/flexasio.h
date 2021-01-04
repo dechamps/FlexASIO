@@ -56,6 +56,7 @@ namespace flexasio {
 			ASIOSampleType asio;
 			PaSampleFormat pa;
 			size_t size;
+			GUID waveSubFormat;
 		};
 
 		struct OpenStreamResult {

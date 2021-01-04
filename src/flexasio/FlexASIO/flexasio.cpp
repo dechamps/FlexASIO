@@ -220,10 +220,10 @@ namespace flexasio {
 
 	}
 
-	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4 };
-	constexpr FlexASIO::SampleType FlexASIO::int32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4 };
-	constexpr FlexASIO::SampleType FlexASIO::int24 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3 };
-	constexpr FlexASIO::SampleType FlexASIO::int16 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2 };
+	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT };
+	constexpr FlexASIO::SampleType FlexASIO::int32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt32LSB : ASIOSTInt32MSB, paInt32, 4, KSDATAFORMAT_SUBTYPE_PCM };
+	constexpr FlexASIO::SampleType FlexASIO::int24 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt24LSB : ASIOSTInt24MSB, paInt24, 3, KSDATAFORMAT_SUBTYPE_PCM };
+	constexpr FlexASIO::SampleType FlexASIO::int16 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTInt16LSB : ASIOSTInt16MSB, paInt16, 2, KSDATAFORMAT_SUBTYPE_PCM };
 	constexpr std::pair<std::string_view, FlexASIO::SampleType> FlexASIO::sampleTypes[] = {
 			{"Float32", float32},
 			{"Int32", int32},
@@ -240,13 +240,9 @@ namespace flexasio {
 	}
 
 	FlexASIO::SampleType FlexASIO::WaveFormatToSampleType(const WAVEFORMATEXTENSIBLE& waveFormat) {
-		if (waveFormat.SubFormat == KSDATAFORMAT_SUBTYPE_IEEE_FLOAT) return float32;
-		if (waveFormat.SubFormat == KSDATAFORMAT_SUBTYPE_PCM) {
-			for (const auto& sampleType : sampleTypes) {
-				const auto bits = sampleType.second.size * 8;
-				if (bits == waveFormat.Samples.wValidBitsPerSample) return sampleType.second;
-				if (bits == waveFormat.Format.wBitsPerSample) return sampleType.second;
-			}
+		const auto validBitsPerSample = waveFormat.Samples.wValidBitsPerSample != 0 ? waveFormat.Samples.wValidBitsPerSample : waveFormat.Format.wBitsPerSample;
+		for (const auto& [name, sampleType] : sampleTypes) {
+			if (sampleType.waveSubFormat == waveFormat.SubFormat && sampleType.size * 8 == validBitsPerSample) return sampleType;
 		}
 		throw std::runtime_error(std::string("Unable to convert wave format to sample type: ") + DescribeWaveFormat(waveFormat));
 	}
