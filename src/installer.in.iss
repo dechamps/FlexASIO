@@ -30,4 +30,4 @@ Source:"..\..\*.md"; DestDir:"{app}"; Flags: ignoreversion
 Source:"..\..\*.jpg"; DestDir:"{app}"; Flags: ignoreversion
 
 [Run]
-Filename:"https://github.com/dechamps/FlexASIO/blob/@DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION@/README.md"; Description:"Open README"; Flags: postinstall shellexec nowait
+Filename:"https://github.com/dechamps/FlexASIO/blob/@DECHAMPS_CMAKEUTILS_GIT_DESCRIPTION@/README.md"; Description:"Open README"; Flags: postinstall shellexec nowait skipifsilent
