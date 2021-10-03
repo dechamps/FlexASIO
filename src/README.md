@@ -21,14 +21,17 @@ automatically at configure time.
 
 ## Packaging
 
-The following command will do a clean superbuild and generate a FlexASIO
-installer package for you:
+The following command will generate the installer package for you:
 
 ```
 cmake -P installer.cmake
 ```
 
-Note that for this command to work, you need to have [Inno Setup][] installed.
+Note that for this command to work:
+
+ -  You need to have [Inno Setup][] installed.
+ -  You need to have built FlexASIO in the `x64-Release` and `x86-Release`
+    Visual Studio configurations first.
 
 ## Troubleshooting
 
