@@ -11,7 +11,7 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/CMakeModules")
 find_package(tinytoml MODULE REQUIRED)
-find_package(portaudio MODULE REQUIRED)
+find_package(PortAudio CONFIG REQUIRED)
 find_package(dechamps_cpplog CONFIG REQUIRED)
 find_package(dechamps_cpputil CONFIG REQUIRED)
 find_package(dechamps_ASIOUtil CONFIG REQUIRED)

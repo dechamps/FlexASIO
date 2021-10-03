@@ -52,7 +52,10 @@ ExternalProject_Add(
     BUILD_ALWAYS TRUE USES_TERMINAL_BUILD TRUE
 	CMAKE_ARGS ${CMAKE_ARGS}
 		-DPA_ENABLE_DEBUG_OUTPUT=ON
-		"-DCMAKE_PROJECT_portaudio_INCLUDE=${CMAKE_CURRENT_LIST_DIR}/portaudio.cmake"
+		"-DCMAKE_PROJECT_PortAudio_INCLUDE=${CMAKE_CURRENT_LIST_DIR}/portaudio.cmake"
+        # The CMAKE_INSTALL_INCLUDEDIR built-in was introduced in CMake 3.14.
+        # Sadly current Visual Studio (16.11.3) ships with CMake 3.13, so we have to work around the missing built-in.
+        -DCMAKE_INSTALL_INCLUDEDIR=include
 	EXCLUDE_FROM_ALL
 )
 

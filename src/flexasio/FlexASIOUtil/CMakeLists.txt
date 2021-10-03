@@ -1,6 +1,6 @@
 add_library(FlexASIOUtil_portaudio STATIC portaudio.cpp)
 target_link_libraries(FlexASIOUtil_portaudio
-	PUBLIC portaudio::portaudio
+	PUBLIC PortAudio::PortAudio
 	PRIVATE dechamps_cpputil::string
 )
 

@@ -50,7 +50,7 @@ target_link_libraries(FlexASIO_log
 add_library(FlexASIO_portaudio STATIC EXCLUDE_FROM_ALL portaudio.cpp)
 target_link_libraries(FlexASIO_portaudio
 	PRIVATE FlexASIOUtil_portaudio
-	PRIVATE portaudio::portaudio
+	PRIVATE PortAudio::PortAudio
 )
 
 add_library(FlexASIO_flexasio STATIC EXCLUDE_FROM_ALL flexasio.cpp)
@@ -65,7 +65,7 @@ target_link_libraries(FlexASIO_flexasio
 	PRIVATE dechamps_cpputil::exception
 	PRIVATE dechamps_cpputil::string
 	PRIVATE dechamps_CMakeUtils_version
-	PRIVATE portaudio::portaudio
+	PRIVATE PortAudio::PortAudio
 	PRIVATE winmm
 )
 
