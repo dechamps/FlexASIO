@@ -1,5 +1,7 @@
 # FlexASIO Developer Information
 
+[![.github/workflows/continuous-integration.yml](https://github.com/dechamps/FlexASIO/actions/workflows/continuous-integration.yml/badge.svg)](https://github.com/dechamps/FlexASIO/actions/workflows/continuous-integration.yml)
+
 See `LICENSE.txt` for licensing information. In particular, do note that
 specific license terms apply to the ASIO trademark and ASIO SDK.
 
