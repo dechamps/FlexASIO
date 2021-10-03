@@ -212,6 +212,17 @@ namespace flexasio {
 		int GetInputChannelCount() const;
 		int GetOutputChannelCount() const;
 
+		struct BufferSizes {
+			long minimum;
+			long maximum;
+			long preferred;
+			long granularity;
+		};
+		BufferSizes ComputeBufferSizes() const;
+
+		long ComputeLatency(long latencyInFrames, bool output, size_t bufferSizeInFrames) const;
+		long ComputeLatencyFromStream(PaStream* stream, bool output, size_t bufferSizeInFrames) const;
+
 		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
 
 		const HWND windowHandle = nullptr;

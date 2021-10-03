@@ -396,24 +396,35 @@ namespace flexasio {
 		return outputDevice->info.maxOutputChannels;
 	}
 
-	void FlexASIO::GetBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
+	FlexASIO::BufferSizes FlexASIO::ComputeBufferSizes() const
 	{
+		BufferSizes bufferSizes;
 		if (config.bufferSizeSamples.has_value()) {
 			Log() << "Using buffer size " << *config.bufferSizeSamples << " from configuration";
-			*minSize = *maxSize = *preferredSize = long(*config.bufferSizeSamples);
-			*granularity = 0;
+			bufferSizes.minimum = bufferSizes.maximum = bufferSizes.preferred = long(*config.bufferSizeSamples);
+			bufferSizes.granularity = 0;
 		}
 		else {
 			Log() << "Calculating default buffer size based on " << sampleRate << " Hz sample rate";
 			// We enforce a minimum of 32 samples as applications tend to choke on extremely small buffers - see https://github.com/dechamps/FlexASIO/issues/88
-			*minSize = (std::max<long>)(32,  long(sampleRate * (hostApi.info.type == paDirectSound && inputDevice.has_value() ?
+			bufferSizes.minimum = (std::max<long>)(32, long(sampleRate * (hostApi.info.type == paDirectSound && inputDevice.has_value() ?
 				0.010 :  // Cap the min buffer size to 10 ms when using DirectSound with an input device to work around https://github.com/dechamps/FlexASIO/issues/50
 				0.001    // 1 ms, there's basically no chance we'll get glitch-free streaming below this
-			)));
-			*maxSize = (std::max<long>)(32, long(sampleRate)); // 1 second, more would be silly
-			*preferredSize = (std::max<long>)(32, long(sampleRate * 0.02)); // 20 ms
-			*granularity = 1; // Don't care
+				)));
+			bufferSizes.maximum = (std::max<long>)(32, long(sampleRate)); // 1 second, more would be silly
+			bufferSizes.preferred = (std::max<long>)(32, long(sampleRate * 0.02)); // 20 ms
+			bufferSizes.granularity = 1; // Don't care
 		}
+		return bufferSizes;
+	}
+
+	void FlexASIO::GetBufferSize(long* minSize, long* maxSize, long* preferredSize, long* granularity)
+	{
+		const auto bufferSizes = ComputeBufferSizes();
+		*minSize = bufferSizes.minimum;
+		*maxSize = bufferSizes.maximum;
+		*preferredSize = bufferSizes.preferred;
+		*granularity = bufferSizes.granularity;
 		Log() << "Returning: min buffer size " << *minSize << ", max buffer size " << *maxSize << ", preferred buffer size " << *preferredSize << ", granularity " << *granularity;
 	}
 
@@ -762,27 +773,68 @@ namespace flexasio {
 		preparedState.reset();
 	}
 
-	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
-		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "getLatencies() called before createBuffers()");
-		return preparedState->GetLatencies(inputLatency, outputLatency);
+	long FlexASIO::ComputeLatency(long latencyInFrames, bool output, size_t bufferSizeInFrames) const
+	{
+		if (output && !hostSupportsOutputReady) {
+			Log() << bufferSizeInFrames << " samples added to output latency due to the ASIO Host Application not supporting OutputReady";
+			latencyInFrames += long(bufferSizeInFrames);
+		}
+
+		return latencyInFrames;
 	}
 
-	void FlexASIO::PreparedState::GetLatencies(long* inputLatency, long* outputLatency)
+	long FlexASIO::ComputeLatencyFromStream(PaStream* stream, bool output, size_t bufferSizeInFrames) const
 	{
-		const PaStreamInfo* stream_info = Pa_GetStreamInfo(openStreamResult.stream.get());
+		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
 		if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 		// See https://github.com/dechamps/FlexASIO/issues/10.
 		// The latency that PortAudio reports appears to take the buffer size into account already.
-		*inputLatency = (long)(stream_info->inputLatency * sampleRate);
-		*outputLatency = (long)(stream_info->outputLatency * sampleRate);
+		return ComputeLatency(long((output ? stream_info->outputLatency : stream_info->inputLatency) * sampleRate), output, bufferSizeInFrames);
+	}
 
-		if (!flexASIO.hostSupportsOutputReady) {
-			Log() << buffers.bufferSizeInFrames << " samples added to output latency due to the ASIO Host Application not supporting OutputReady";
-			*outputLatency += long(buffers.bufferSizeInFrames);
-		}
+	void FlexASIO::GetLatencies(long* inputLatency, long* outputLatency) {
+		if (preparedState.has_value()) {
+			preparedState->GetLatencies(inputLatency, outputLatency);
+		} else {
+			// A GetLatencies() call before CreateBuffers() puts us in a difficult situation,
+			// but according to the ASIO SDK we have to come up with a number and some
+			// applications rely on it - see https://github.com/dechamps/FlexASIO/issues/122.
+			Log() << "GetLatencies() called before CreateBuffers() - attempting to probe streams";
 
+			const auto bufferSize = ComputeBufferSizes().preferred;
+			Log() << "Assuming " << bufferSize << " as the buffer size";
+
+			if (!inputDevice.has_value())
+				*inputLatency = 0;
+			else
+				try {
+					*inputLatency = ComputeLatencyFromStream(OpenStream(true, false, sampleRate, bufferSize, NoOpStreamCallback, nullptr).stream.get(), /*output=*/false, bufferSize);
+					Log() << "Using input latency from successful stream probe";
+				}
+				catch (const std::exception& exception) {
+					Log() << "Unable to open input, estimating input latency: " << exception.what();
+					*inputLatency = ComputeLatency(bufferSize, /*output=*/false, bufferSize);
+				}
+			if (!outputDevice.has_value())
+				*outputLatency = 0;
+			else
+				try {
+					*outputLatency = ComputeLatencyFromStream(OpenStream(false, true, sampleRate, bufferSize, NoOpStreamCallback, nullptr).stream.get(), /*output=*/true, bufferSize);
+					Log() << "Using output latency from successful stream probe";
+				}
+				catch (const std::exception& exception) {
+					Log() << "Unable to open output, estimating output latency: " << exception.what();
+					*outputLatency = ComputeLatency(bufferSize, /*output=*/true, bufferSize);
+				}
+		}		
 		Log() << "Returning input latency of " << *inputLatency << " samples and output latency of " << *outputLatency << " samples";
+	}
+
+	void FlexASIO::PreparedState::GetLatencies(long* inputLatency, long* outputLatency)
+	{
+		*inputLatency = flexASIO.ComputeLatencyFromStream(openStreamResult.stream.get(), /*output=*/false, buffers.bufferSizeInFrames);
+		*outputLatency = flexASIO.ComputeLatencyFromStream(openStreamResult.stream.get(), /*output=*/true, buffers.bufferSizeInFrames);
 	}
 
 	void FlexASIO::Start() {
