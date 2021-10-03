@@ -34,6 +34,21 @@ jobs:
         with:
           name: FlexASIO-${{ matrix.msvc_config }}
           path: src/out/install/${{ matrix.msvc_config }}/
+      # https://github.com/actions/virtual-environments/issues/2528
+      # TODO: Scream only provides an output device. See if we can use a
+      # different virtual audio driver that provides a virtual input device as
+      # well.
+      - name: Install Scream
+        shell: powershell
+        run: |
+          Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/3.8/Scream3.8.zip -OutFile Scream3.8.zip
+          Expand-Archive -Path Scream3.8.zip -DestinationPath Scream
+          Import-Certificate -FilePath Scream\Install\driver\x64\Scream.cat -CertStoreLocation Cert:\LocalMachine\TrustedPublisher 
+          Scream\Install\helpers\devcon-x64.exe install Scream\Install\driver\x64\Scream.inf *Scream
+      # Obviously this doesn't do any kind of thorough testing. We just want to
+      # make sure that the executables are not obviously broken.
+      - run: src/out/install/${{ matrix.msvc_config }}/bin/PortAudioDevices.exe
+      - run: src/out/install/${{ matrix.msvc_config }}/bin/FlexASIOTest.exe
   installer:
     runs-on: windows-latest
     needs: build
