@@ -33,6 +33,10 @@ Note that for this command to work:
  -  You need to have built FlexASIO in the `x64-Release` and `x86-Release`
     Visual Studio configurations first.
 
+**Note:** instead of running `installer.cmake` manually, it is often preferable
+to let the FlexASIO GitHub Actions workflow build the installer, as that
+guarantees a clean build.
+
 ## Troubleshooting
 
 ### VC runtime DLLs are not included in the installation

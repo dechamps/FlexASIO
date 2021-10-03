@@ -26,3 +26,26 @@ jobs:
         with:
           name: FlexASIO-${{ matrix.msvc_config }}
           path: src/out/install/${{ matrix.msvc_config }}/
+  installer:
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+          # Required for version stamping (`git describe`) to work.
+          fetch-depth: 0
+      - uses: actions/download-artifact@v2
+        with:
+          name: FlexASIO-x64-Release
+          path: src/out/install/x64-Release
+      - uses: actions/download-artifact@v2
+        with:
+          name: FlexASIO-x86-Release
+          path: src/out/install/x86-Release
+      - run: cmake -P installer.cmake
+        working-directory: src
+      - uses: actions/upload-artifact@v2
+        with:
+          name: FlexASIO-installer
+          path: src/out/installer/*
