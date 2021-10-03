@@ -2,10 +2,18 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - amd64
+          - amd64_x86
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
       - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
       - run: cmake -S src -B src/out/build -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo"
       - run: cmake --build src/out/build
