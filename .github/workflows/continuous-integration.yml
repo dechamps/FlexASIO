@@ -8,8 +8,16 @@ jobs:
         include:
           - msvc_config: x64-Release
             msvc_arch: amd64
+            build_type: RelWithDebInfo
           - msvc_config: x86-Release
             msvc_arch: amd64_x86
+            build_type: RelWithDebInfo
+          - msvc_config: x64-Debug
+            msvc_arch: amd64
+            build_type: Debug
+          - msvc_config: x86-Debug
+            msvc_arch: amd64_x86
+            build_type: Debug
     steps:
       - uses: actions/checkout@v2
         with:
@@ -19,7 +27,7 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.msvc_arch }}
-      - run: cmake -S src -B src/out/build/${{ matrix.msvc_config }} -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DCMAKE_INSTALL_PREFIX:PATH=${{ github.workspace }}/src/out/install/${{ matrix.msvc_config }}
+      - run: cmake -S src -B src/out/build/${{ matrix.msvc_config }} -G Ninja -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DCMAKE_INSTALL_PREFIX:PATH=${{ github.workspace }}/src/out/install/${{ matrix.msvc_config }}
       - run: cmake --build src/out/build/${{ matrix.msvc_config }}
       - run: cmake --install src/out/build/${{ matrix.msvc_config }}
       - uses: actions/upload-artifact@v2
