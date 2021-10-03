@@ -15,5 +15,6 @@ jobs:
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
-      - run: cmake -S src -B src/out/build -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo"
+      - run: cmake -S src -B src/out/build -G Ninja -DCMAKE_BUILD_TYPE="RelWithDebInfo" -DCMAKE_INSTALL_PREFIX:PATH=${{ github.workspace }}/src/out/install
       - run: cmake --build src/out/build
+      - run: cmake --install src/out/build
