@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+          # Required for version stamping (`git describe`) to work.
+          fetch-depth: 0
       - uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: ${{ matrix.arch }}
