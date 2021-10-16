@@ -43,7 +43,12 @@ target_link_libraries(FlexASIO_config
 add_library(FlexASIO_control_panel STATIC EXCLUDE_FROM_ALL control_panel.cpp)
 target_link_libraries(FlexASIO_control_panel
 	PRIVATE FlexASIO_log
+	PRIVATE FlexASIOUtil_windows_com
+	PRIVATE FlexASIOUtil_windows_error
+	PRIVATE FlexASIOUtil_windows_registry
+	PRIVATE FlexASIOUtil_windows_string
 	PRIVATE dechamps_CMakeUtils_version
+	PRIVATE dechamps_cpputil::exception
 )
 
 add_library(FlexASIO_log STATIC EXCLUDE_FROM_ALL log.cpp)
