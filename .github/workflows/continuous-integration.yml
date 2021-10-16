@@ -48,7 +48,7 @@ jobs:
       # Obviously this doesn't do any kind of thorough testing. We just want to
       # make sure that the executables are not obviously broken.
       - run: src/out/install/${{ matrix.msvc_config }}/bin/PortAudioDevices.exe
-      - run: src/out/install/${{ matrix.msvc_config }}/bin/FlexASIOTest.exe
+      - run: src/out/install/${{ matrix.msvc_config }}/bin/FlexASIOTest.exe --verbose
   installer:
     runs-on: windows-latest
     needs: build
