@@ -86,7 +86,22 @@ namespace flexasio {
 		}
 
 		void SetStream(const toml::Table& table, Config::Stream& stream) {
-			SetOption(table, "device", stream.device);
+			if (table.find("device") != table.end() && table.find("deviceRegex") != table.end())
+				throw std::runtime_error("the device and deviceRegex options cannot be specified at the same time");
+			ProcessTypedOption<std::string>(table, "device", [&](const std::string& deviceString) {
+				if (deviceString == "") stream.device = Config::NoDevice();
+				else stream.device = deviceString;
+			});
+			ProcessTypedOption<std::string>(table, "deviceRegex", [&](const std::string& deviceRegexString) {
+				if (deviceRegexString == "") throw std::runtime_error("the deviceRegex option cannot be empty");
+				try {
+					stream.device = Config::DeviceRegex(deviceRegexString);
+				}
+				catch (...) {
+					std::throw_with_nested(std::runtime_error("Invalid regex in deviceRegex option"));
+				}
+			});
+
 			SetOption(table, "channels", stream.channels, ValidateChannelCount);
 			SetOption(table, "sampleType", stream.sampleType);
 			SetOption(table, "suggestedLatencySeconds", stream.suggestedLatencySeconds, ValidateSuggestedLatency);

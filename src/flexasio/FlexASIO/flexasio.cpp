@@ -93,19 +93,10 @@ namespace flexasio {
 			throw std::runtime_error(std::string("PortAudio host API '") + std::string(name) + "' not found");
 		}
 
-		Device SelectDeviceByName(const PaHostApiIndex hostApiIndex, const std::string_view name, const int minimumInputChannelCount, const int minimumOutputChannelCount) {
-			Log() << "Searching for a PortAudio device named '" << name << "' with host API index " << hostApiIndex;
-			const auto deviceCount = Pa_GetDeviceCount();
+		std::optional<Device> SelectDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDeviceIndex, const Config::Device& configDevice, const int minimumInputChannelCount, const int minimumOutputChannelCount) {
+			Log() << "Selecting PortAudio device with host API index " << hostApiIndex << ", minimum channel counts: " << minimumInputChannelCount << " input, " << minimumOutputChannelCount << " output";
 
-			for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
-				const Device device(deviceIndex);
-				if (device.info.hostApi == hostApiIndex && device.info.name == name && device.info.maxInputChannels >= minimumInputChannelCount && device.info.maxOutputChannels >= minimumOutputChannelCount) return device;
-			}
-			throw std::runtime_error(std::string("PortAudio device '") + std::string(name) + "' not found within specified backend (minimum channel count: " + std::to_string(minimumInputChannelCount) + " input, " + std::to_string(minimumOutputChannelCount) + " output)");
-		}
-
-		std::optional<Device> SelectDevice(const PaHostApiIndex hostApiIndex, const PaDeviceIndex defaultDeviceIndex, std::optional<std::string_view> name, const int minimumInputChannelCount, const int minimumOutputChannelCount) {
-			if (!name.has_value()) {
+			if (std::holds_alternative<Config::DefaultDevice>(configDevice)) {
 				if (defaultDeviceIndex == paNoDevice) {
 					Log() << "No default device";
 					return std::nullopt;
@@ -118,12 +109,39 @@ namespace flexasio {
 				}
 				return Device(defaultDeviceIndex);
 			}
-			if (name->empty()) {
+			if (std::holds_alternative<Config::NoDevice>(configDevice)) {
 				Log() << "Device explicitly disabled in configuration";
 				return std::nullopt;
 			}
 
-			return SelectDeviceByName(hostApiIndex, *name, minimumInputChannelCount, minimumOutputChannelCount);
+			const auto configName = std::get_if<std::string>(&configDevice);
+			const auto configRegex = std::get_if<Config::DeviceRegex>(&configDevice);
+
+			std::string matchDescription;
+			if (configName != nullptr) matchDescription = "named `" + *configName + "`";
+			if (configRegex != nullptr) matchDescription = "whose name matches regex `" + configRegex->getString() + "`";
+			Log() << "Searching for a PortAudio device " << matchDescription;
+
+			std::optional<Device> foundDevice;
+			const auto deviceCount = Pa_GetDeviceCount();
+			for (PaDeviceIndex deviceIndex = 0; deviceIndex < deviceCount; ++deviceIndex) {
+				Device device(deviceIndex);
+				if (device.info.hostApi != hostApiIndex || device.info.maxInputChannels < minimumInputChannelCount || device.info.maxOutputChannels < minimumOutputChannelCount) continue;
+
+				const auto& name = device.info.name;
+				if (configName != nullptr && name != *configName) continue;
+				if (configRegex != nullptr && !std::regex_search(name, configRegex->getRegex())) continue;
+
+				Log() << "Found a match with device " << device.index;
+				if (foundDevice.has_value())
+					throw std::runtime_error(std::string("Device search found more than one device: `") + foundDevice->info.name + "` and `" + name + "` (minimum channel count: " + std::to_string(minimumInputChannelCount) + " input, " + std::to_string(minimumOutputChannelCount) + " output)");
+				foundDevice.emplace(device);
+			}
+			if (!foundDevice.has_value()) {
+				Log() << "No matching devices found";
+				throw std::runtime_error(std::string("Unable to find a PortAudio device ") + matchDescription + " within specified backend (minimum channel count : " + std::to_string(minimumInputChannelCount) + " input, " + std::to_string(minimumOutputChannelCount) + " output)");
+			}
+			return *foundDevice;
 		}
 
 		std::string GetPaStreamCallbackResultString(PaStreamCallbackResult result) {

@@ -198,6 +198,45 @@ The default behaviour is to use the default device for the selected backend.
 `PortAudioDevices` will show which device that is. Typically, this would be the
 device set as default in the Windows audio control panel.
 
+#### Option `deviceRegex`
+
+This option is identical to `device` (see above) except that it supports
+matching device names using a [C++-flavored ECMAScript regular expression][].
+This is useful in (rare) situations where the full name of the device is not
+known in advance.
+
+Most users are unlikely to find this option useful, and will likely want to use
+`device` instead.
+
+The regex is evaluated against the exact device name string that one would use
+as the value of the `device` option, including the parentheses. By default the
+regex is not anchored; use `^` and `$` to match the full device name.
+
+You will likely want to enclose the regex in single quotes (`'`) instead of
+double quotes (`"`) as that makes it easier to escape regex metacharacters. For
+example, when using single quoting, you can write `\(` and `\)` to match
+parentheses literally.
+
+If the regex matches multiple device names, FlexASIO will fail to initialize.
+
+If `device` and `deviceRegex` are specified at the same time, FlexASIO will fail
+to initialize.
+
+Unlike `device`, if this option is set to the empty string (`""`), FlexASIO will
+fail to initialize.
+
+Example:
+
+```toml
+[input]
+# Will match "FooBar", "_Foo_Bar_", "Foo123Bar", etc.
+deviceRegex = 'Foo.*Bar'
+
+[output]
+# Will match "Foo_(Bar)", "Foo123(Bar)", etc., but not "Foo(Bar)", "_Foo_(Bar)_", etc.
+deviceRegex = '^Foo.+\(Bar\)$'
+```
+
 #### Option `channels`
 
 *Integer*-typed option that determines how many channels FlexASIO will open the
@@ -428,6 +467,7 @@ The default behaviour is to disallow implicit conversions.
 [BACKENDS]: BACKENDS.md
 [bufferSizeSamples]: #option-bufferSizeSamples
 [configuration file]: https://en.wikipedia.org/wiki/Configuration_file
+[C++-flavored ECMAScript regular expression]: https://en.cppreference.com/w/cpp/regex/ecmascript
 [device]: #option-device
 [GUI]: https://en.wikipedia.org/wiki/Graphical_user_interface
 [INI files]: https://en.wikipedia.org/wiki/INI_file

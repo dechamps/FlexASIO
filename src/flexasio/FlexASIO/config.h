@@ -6,17 +6,39 @@
 #include <filesystem>
 #include <functional>
 #include <optional>
+#include <regex>
 #include <string>
 #include <thread>
+#include <variant>
 
 namespace flexasio {
 
 	struct Config {
+		struct DefaultDevice final {
+			bool operator==(const DefaultDevice&) const { return true; }
+		};
+		struct NoDevice final {
+			bool operator==(const NoDevice&) const { return true; }
+		};
+		struct DeviceRegex final {
+			DeviceRegex(std::string string) : string(std::move(string)), regex(this->string) {}
+
+			const std::string& getString() const { return string; }
+			const std::regex& getRegex() const { return regex; }
+
+			bool operator==(const DeviceRegex& other) const { return string == other.string; }
+
+		private:
+			std::string string;
+			std::regex regex;
+		};
+		using Device = std::variant<DefaultDevice, NoDevice, std::string, DeviceRegex>;
+
 		std::optional<std::string> backend;
 		std::optional<int64_t> bufferSizeSamples;
 
-		struct Stream {
-			std::optional<std::string> device;
+		struct Stream {			
+			Device device;
 			std::optional<int> channels;
 			std::optional<std::string> sampleType;
 			std::optional<double> suggestedLatencySeconds;
