@@ -58,8 +58,8 @@ pipeline. In particular, choice of backend can affect:
     with the streams from other applications.
   - *APOs:* Hardware audio drivers can come bundled with so-called [Audio
     Processing Objects][] (APOs), which can apply arbitrary pre-mixing (SFX) or
-    post-mixing (MFX/EFX) processing on audio data. Some backends will bypass
-    this processing, some won't.
+    post-mixing (MFX/EFX/GFX) processing on audio data. Some backends will
+    bypass this processing, some won't.
 - **Feature set:** some FlexASIO features and options might not work with all
   backends.
 
@@ -131,9 +131,10 @@ regularly releases new features for it. PortAudio supports most of these
 features and makes them available through various options (though, sadly,
 FlexASIO doesn't provide ways to leverage all these options yet).
 
-WASAPI is the only entry point to the Windows audio engine. In modern versions
-of Windows, DirectSound and MME merely forward to WASAPI internally. This means
-that, in theory, one cannot achieve better performance than WASAPI when using
+WASAPI is the only entry point to the shared Windows audio processing pipeline,
+which runs in the *Windows Audio* service (`audiosrv`). In modern versions of
+Windows, DirectSound and MME merely forward to WASAPI internally. This means
+that, in theory, one cannot achieve better performance than WASAPI when usin
 MME or DirectSound. In practice however, the PortAudio side of the WASAPI
 backend could conceivably have limitations or bugs that these other backends
 don't have.
@@ -144,20 +145,21 @@ used. The two modes behave very differently; in fact, they should probably be
 seen as two separate backends entirely.
 
 In *shared* mode, WASAPI behaves similarly to MME and DirectSound, in that the
-audio goes through most of the normal Windows audio pipeline. Indeed, in
-modern versions of Windows, MME and DirectSound are just thin wrappers
-implemented on top of WASAPI. For this reason it is reasonable to assume that
-this mode will provide the best possible latency for a shared backend.
+audio goes through the normal Windows audio processing pipeline, including
+mixing and APOs. Indeed, in modern versions of Windows, MME and DirectSound are
+just thin wrappers implemented on top of WASAPI Shared. For this reason it is
+reasonable to assume that this mode will provide the best possible latency for a
+shared backend.
 
 In *exclusive* mode, WASAPI behaves completely differently and bypasses the
-entirety of the Windows audio pipeline, including mixing and APOs. As a result,
-PortAudio has a direct path to the audio hardware driver, which makes for an
-ideal setup for low latency operation - latencies in the single-digit
-milliseconds have been observed. The lack of APOs in the signal path can
-also be helpful in applications where fidelity to the original signal is of the
-utmost importance, and in fact, this mode can be used for "bit-perfect"
-operation. However, since mixing is bypassed, other applications cannot use the
-audio device at the same time.
+entirety of the Windows audio pipeline. As a result, PortAudio has a nearly
+direct path to the audio hardware driver, which makes for an ideal setup for low
+latency operation - latencies in the single-digit milliseconds have been
+observed. The lack of APOs in the signal path can also be helpful in
+applications where fidelity to the original signal is of the utmost importance,
+and in fact, this mode can be used for "bit-perfect" operation. However, since
+mixing is bypassed, other applications cannot use the audio device at the same
+time.
 
 In both modes, the latency numbers reported by WASAPI appear to be more reliable
 than other backends.
@@ -166,31 +168,73 @@ than other backends.
 backend is used. Channel names are not shown when using other backends due to
 PortAudio limitations.
 
+Windows implements WASAPI using Kernel Streaming internally.
+
 The alternative [ASIO2WASAPI][] universal ASIO driver uses WASAPI.
 
 ## WDM-KS backend
 
-[Kernel Streaming][] (WDM stands for [Windows Driver Model][]) is an API
-introduced in Windows 98 that enables streaming of audio data directly to the
-audio hardware driver, bypassing the entire Windows audio pipeline. In that
-sense it is very similar to WASAPI Exclusive, and should behave fairly
-similarly.
+[Kernel Streaming][] was first introduced in Windows 98 and is the interface
+between Windows audio device drivers (also known as WDM, which stands for
+[Windows Driver Model][]), running in kernel mode, and processes running in
+user mode. Note that, in this context, "Windows audio device driver" refers to
+Windows hardware drivers, not ASIO drivers - the two concepts are not directly
+related to each other.
 
-Compared to WASAPI Exclusive, Kernel Streaming is a much older API that is
-perceived as highly complex and less reliable. WASAPI Exclusive should be
-expected to provide better results in most cases. That said, it seems that
-Kernel Streaming, contrary to MME and DirectSound, is not implemented using
-WASAPI in current versions of Windows; therefore, it could conceivably behave
-differently in potentially interesting ways.
+The Windows audio engine itself (WASAPI) uses Kernel Streaming internally to
+communicate with audio device drivers. It logically follows that any device that
+behaves as a normal Windows audio device *de facto* comes with a WDM driver that
+implements Kernel Streaming (usually not directly but through a [PortCls
+miniport driver][]). Calls made through any of the standard Windows audio APIs
+(MME, DirectSound, WASAPI) eventually become Kernel Streaming calls as they
+cross the boundary into kernel mode and enter the Windows audio device driver.
 
-In terms of latency, WDM-KS has been observed to perform slightly worse than
-WASAPI Exclusive, bottoming out at around 10 ms.
+In the typical case, the only client of the Windows audio device driver is the
+Windows audio engine. It is, however, technically possible, albeit highly
+atypical, for an application to issue Kernel Streaming requests directly,
+bypassing the Windows audio engine and talking to the Windows kernel directly.
+This is what the WDM-KS PortAudio backend does.
 
-**Note:** typically, WDM-KS will fail to initialize if the audio device is
-currently opened by any other application, even if no sound is playing.
-Consequently, it is very likely to fail when used on the default device. This
-issue can be worked around by pointing FlexASIO to another, idle device using
-the [`device` option][device].
+Given the above, Kernel Streaming offers the most direct path to the audio
+device among all PortAudio backends, but comes with some downsides:
+
+- Many audio outputs only handle a single stream at a time, because many audio
+  devices do not support hardware mixing. (In Kernel Streaming terms, their
+  *pins* only support one *instance* at a time.) These devices can therefore
+  only be used by one KS client at a time, making Kernel Streaming an
+  *exclusive* backend in this case. Because the Windows audio engine is itself a
+  KS client, it is usually not possible to access an audio device using KS if
+  the Windows audio engine is already using it. Use the [`device`
+  option][device] to select a device that the Windows audio engine is not
+  currently using.
+- Kernel Streaming is a very flexible API, which also makes it quite
+  complicated. Even just enumerating audio devices involves quite a bit of
+  complex, error-prone logic to be implemented in the application (here, in the
+  PortAudio KS backend). Different device drivers implement KS calls in
+  different ways, report different [topologies][], and even [different ways of
+  handling audio buffers][wdmwave]. This presents a lot of opportunities for
+  things to go wrong in a variety of different ways depending on the specific
+  audio device used. Presumably this is the reason why most applications do not
+  attempt to use KS directly, and the reason why Microsoft does not recommend
+  this approach.
+
+Note that the list of devices that the PortAudio WDM-KS backend exposes might
+look a bit different from the list of devices shown in the Windows audio
+settings. This is because the Windows audio engine [generates its own list of
+devices][AudioEndpointBuilder] (or, more specifically, [audio endpoint
+devices][]) by interpreting information returned by Kernel Streaming. When using
+KS directly this logic is bypassed, and the PortAudio WDM-KS backend uses its
+own logic to discover devices. Furthermore, the concept of a device "name" is
+specific to the Windows audio engine and does not apply to KS, which explains
+why PortAudio WDM-KS device names do not necessarily match the Windows audio
+settings.
+
+In principle, similar results should be obtained when using WASAPI Exclusive
+and Kernel Streaming, since they both offer exclusive access to the hardware.
+WASAPI is simpler and less likely to cause problems, but Kernel Streaming is
+more direct and more flexible. Furthermore, their internal implementation in
+PortAudio are very different. Therefore, the WASAPI Exclusive and WDM-KS
+PortAudio backends might behave somewhat differently depending on the situation.
 
 The alternative [ASIO4ALL][] and [ASIO2KS][] universal ASIO drivers use Kernel
 Streaming.
@@ -202,6 +246,8 @@ Streaming.
 [ASIO2WASAPI]: https://github.com/levmin/ASIO2WASAPI
 [ASIO2KS]: http://www.asio2ks.de/
 [ASIO4ALL]: http://www.asio4all.org/
+[AudioEndpointBuilder]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-endpoint-builder-algorithm
+[audio endpoint devices]: https://docs.microsoft.com/en-us/windows/win32/coreaudio/audio-endpoint-devices
 [Audio Processing Objects]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-processing-object-architecture
 [backend]: CONFIGURATION.md#option-backend
 [device]: CONFIGURATION.md#option-device
@@ -209,14 +255,16 @@ Streaming.
 [DSP]: https://en.wikipedia.org/wiki/Digital_signal_processor
 [issue29]: https://github.com/dechamps/FlexASIO/issues/29
 [issue30]: https://github.com/dechamps/FlexASIO/issues/30
-[Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
+[Kernel Streaming]: https://docs.microsoft.com/en-us/windows-hardware/drivers/stream/kernel-streaming
 [Multimedia Extensions]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [portaudio]: http://www.portaudio.com/
+[PortCls miniport driver]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-miniport-drivers
+[topologies]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/specifying-the-topology
 [wasapiExclusiveMode]: CONFIGURATION.md#option-wasapiExclusiveMode
 [Windows Audio Session API]: https://docs.microsoft.com/en-us/windows/desktop/coreaudio/wasapi
 [Windows Driver Model]: https://en.wikipedia.org/wiki/Windows_Driver_Model
-[WDM-KS issue]: https://github.com/dechamps/FlexASIO/issues/21
+[wdmwave]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/wave-filters
 
 <!-- Use the converter at http://gravizo.com/ to recover the source code of this
 graph. -->
-[diagram]: https://g.gravizo.com/svg?digraph%20G%20%7B%0A%09rankdir%3D%22LR%22%0A%09style%3D%22dashed%22%0A%09fontname%3D%22sans-serif%22%0A%09node%5Bfontname%3D%22sans-serif%22%5D%0A%0A%09subgraph%20clusterApplicationProcess%20%7B%0A%09%09label%3D%22Application%20process%22%0A%0A%09%09Host%5Blabel%3D%22ASIO%20host%20application%22%5D%0A%0A%09%09subgraph%20clusterFlexASIO%20%7B%0A%09%09%09label%3D%22FlexASIO%22%0A%09%09%09FlexASIO%5Blabel%3D%22ASIO%20driver%22%5D%0A%0A%09%09%09subgraph%20clusterPortAudio%20%7B%0A%09%09%09%09label%3D%22PortAudio%22%0A%0A%09%09%09%09PortAudio%5Blabel%20%3D%20%22Frontend%22%5D%0A%09%09%09%09subgraph%20%7B%0A%09%09%09%09%09rank%3D%22same%22%0A%09%09%09%09%09node%20%5Bcolor%3D%22red%22%3B%20penwidth%3D3%5D%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20PortAudioMME%5Blabel%3D%22MME%22%5D%0A%09%09%09%09%09PortAudioDirectSound%5Blabel%3D%22DirectSound%22%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20PortAudioWASAPI%5Blabel%3D%22WASAPI%22%5D%0A%09%09%09%09%09PortAudioWDMKS%5Blabel%3D%22WDM-KS%22%5D%0A%09%09%09%09%7D%0A%09%09%09%7D%0A%09%09%7D%0A%09%7D%0A%0A%09subgraph%20clusterWindows%20%7B%0A%09%09label%3D%22Windows%20audio%20subsystem%22%0A%09%09subgraph%20%7B%0A%09%09%09rank%3D%22same%22%0A%09%09%09MME%0A%09%09%09DirectSound%0A%09%09%09%0A%09%09%7D%0A%09%09subgraph%20%7B%0A%09%09%09rank%3D%22same%22%0A%09%09%09WASAPIShared%5Blabel%3D%22WASAPI%20(shared)%22%5D%0A%09%09%09WASAPIExclusive%5Blabel%3D%22WASAPI%20(exclusive)%22%5D%0A%09%09%09WDMKS%5Blabel%3D%22Kernel%20Streaming%22%5D%0A%09%09%7D%0A%0A%09%09PreMix%5Blabel%3D%22Pre-mix%20APOs%22%5D%0A%09%09Mix%5Blabel%3D%22Mixing%22%5D%0A%09%09PostMix%5Blabel%3D%22Post-mix%20APOs%22%5D%0A%09%7D%0A%0A%09subgraph%20clusterHardware%20%7B%0A%09%09label%3D%22Audio%20hardware%22%0A%09%09HardwareDriver%5Blabel%3D%22Driver%22%5D%0A%09%09HardwareDevice%5Blabel%3D%22Device%22%5D%0A%09%7D%0A%0A%09Host-%3EFlexASIO%0A%09FlexASIO-%3EPortAudio%0A%0A%09PortAudio-%3E%7B%0A%09%09PortAudioMME%0A%09%09PortAudioDirectSound%0A%09%09PortAudioWASAPI%0A%09%09PortAudioWDMKS%0A%09%7D%0A%0A%09PortAudioMME-%3EMME%0A%09PortAudioDirectSound-%3EDirectSound%0A%09PortAudioWASAPI-%3EWASAPIShared%0A%09PortAudioWASAPI-%3EWASAPIExclusive%0A%09PortAudioWDMKS-%3EWDMKS%0A%0A%09MME-%3EWASAPIShared%0A%09DirectSound-%3EWASAPIShared%0A%09%0A%09WASAPIShared-%3EPreMix%0A%09WASAPIExclusive-%3EHardwareDriver%0A%09PreMix-%3EMix%0A%09Mix-%3EPostMix%0A%09PostMix-%3EHardwareDriver%0A%09%0A%09WDMKS-%3EHardwareDriver%0A%09%0A%09HardwareDriver-%3EHardwareDevice%0A%7D%0A
+[diagram]: https://g.gravizo.com/svg?digraph%20G%20%7B%0A%09rankdir%3D%22LR%22%0A%09style%3D%22dashed%22%0A%09fontname%3D%22sans-serif%22%0A%09node%5Bfontname%3D%22sans-serif%22%5D%0A%0A%09subgraph%20clusterUserMode%20%7B%0A%09%09label%3D%22Windows%20user%20mode%22%0A%0A%09%09subgraph%20clusterApplicationProcess%20%7B%0A%09%09%09label%3D%22Application%20process%22%0A%0A%09%09%09Host%5Blabel%3D%22ASIO%20host%5Cnapplication%22%5D%0A%0A%09%09%09subgraph%20clusterFlexASIO%20%7B%0A%09%09%09%09label%3D%22FlexASIO%22%0A%09%09%09%09FlexASIO%5Blabel%3D%22ASIO%5Cndriver%22%5D%0A%0A%09%09%09%09subgraph%20clusterPortAudio%20%7B%0A%09%09%09%09%09label%3D%22PortAudio%22%0A%0A%09%09%09%09%09PortAudio%5Blabel%20%3D%20%22Frontend%22%5D%0A%09%09%09%09%09subgraph%20%7B%0A%09%09%09%09%09%09rank%3D%22same%22%0A%09%09%09%09%09%09node%20%5Bcolor%3D%22red%22%3B%20penwidth%3D3%5D%0A%0A%09%09%09%09%09%09PortAudioMME%5Blabel%3D%22MME%22%5D%0A%09%09%09%09%09%09PortAudioDirectSound%5Blabel%3D%22DirectSound%22%5D%0A%09%09%09%09%09%09PortAudioWASAPI%5Blabel%3D%22WASAPI%22%5D%0A%09%09%09%09%09%09PortAudioWDMKS%5Blabel%3D%22WDM-KS%22%5D%0A%09%09%09%09%09%7D%0A%09%09%09%09%7D%0A%09%09%09%7D%0A%09%09%7D%0A%0A%09%09subgraph%20%7B%0A%09%09%09rank%3D%22same%22%0A%09%09%09MME%5Blabel%3D%22MME%5Cnlibrary%22%5D%0A%09%09%09DirectSound%5Blabel%3D%22DirectSound%5Cnlibrary%22%5D%0A%09%09%09WASAPI%5Blabel%3D%22WASAPI%5Cnlibrary%22%5D%0A%09%09%7D%0A%0A%09%09subgraph%20%7B%0A%09%09%09rank%3D%22same%22%0A%09%09%09WASAPIShared%5Blabel%3D%22WASAPI%5Cn(shared)%22%5D%0A%09%09%09WASAPIExclusive%5Blabel%3D%22WASAPI%5Cn(exclusive)%22%5D%0A%09%09%7D%0A%0A%09%09subgraph%20clusterWindows%20%7B%0A%09%09%09label%3D%22Windows%20Audio%20Service%20(audiosrv%2C%20audiodg)%22%0A%09%09%09%0A%09%09%09PreMix%5Blabel%3D%22Pre-mix%5CnAPOs%22%5D%0A%09%09%09Mix%5Blabel%3D%22Mixing%22%5D%0A%09%09%09PostMix%5Blabel%3D%22Post-mix%5CnAPOs%22%5D%0A%09%09%7D%0A%0A%09%09KS%5Blabel%3D%22Kernel%20Streaming%5Cnlibrary%22%5D%0A%09%7D%0A%0A%09WDM%5Blabel%3D%22Windows%20audio%5Cndevice%20driver%5Cn(WDM%2C%20kernel%20mode)%22%5D%0A%09Hardware%5Blabel%3D%22Hardware%5Cndevice%22%5D%0A%0A%09Host-%3EFlexASIO%0A%09FlexASIO-%3EPortAudio%0A%0A%09PortAudio-%3E%7B%0A%09%09PortAudioMME%0A%09%09PortAudioDirectSound%0A%09%09PortAudioWASAPI%0A%09%09PortAudioWDMKS%0A%09%7D%0A%0A%09PortAudioMME-%3EMME%0A%09PortAudioDirectSound-%3EDirectSound%0A%09PortAudioWASAPI-%3EWASAPI%0A%09PortAudioWDMKS-%3EKS%0A%0A%09MME-%3EWASAPIShared%0A%09DirectSound-%3EWASAPIShared%0A%09WASAPI-%3EWASAPIShared%0A%09WASAPI-%3EWASAPIExclusive%0A%09%0A%09WASAPIShared-%3EPreMix%0A%09PreMix-%3EMix%0A%09Mix-%3EPostMix%0A%09PostMix-%3EKS%0A%0A%09WASAPIExclusive-%3EKS%0A%09%0A%09KS-%3EWDM%0A%09WDM-%3EHardware%0A%7D%0A
