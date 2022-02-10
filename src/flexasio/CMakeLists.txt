@@ -19,7 +19,7 @@ find_package(ASIOTest CONFIG REQUIRED)
 
 set(CMAKE_CXX_STANDARD 17)
 add_compile_options(
-	/WX /W4 /permissive- /analyze
+	/external:anglebrackets /WX /W4 /external:W0 /permissive- /analyze /analyze:external-
 
 	# Suppress warnings about shadowing declarations.
 	#
