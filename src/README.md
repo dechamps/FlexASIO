@@ -8,7 +8,7 @@ specific license terms apply to the ASIO trademark and ASIO SDK.
 ## Building
 
 FlexASIO is designed to be built using CMake within the Microsoft Visual C++
-2019 toolchain native CMake support.
+2019/2022 toolchain native CMake support.
 
 FlexASIO uses a CMake "superbuild" system (in `/src`) to automatically build the
 dependencies (most notably [PortAudio][]) before building FlexASIO itself. These
