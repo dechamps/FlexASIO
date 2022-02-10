@@ -60,6 +60,11 @@ pipeline. In particular, choice of backend can affect:
     Processing Objects][] (APOs), which can apply arbitrary pre-mixing (SFX) or
     post-mixing (MFX/EFX/GFX) processing on audio data. Some backends will
     bypass this processing, some won't.
+- **Automatic device switching:** some backends can be set up to track the
+  audio device set as default in the Windows audio control panel. If the default
+  device changes, the stream is automatically and transparently redirected to
+  the new device. Other backends don't support this, and can only select a
+  specific device that cannot change while streaming is taking place.
 - **Feature set:** some FlexASIO features and options might not work with all
   backends.
 
@@ -97,6 +102,12 @@ Latency numbers reported by MME do not seem to take the Windows audio pipeline
 into account. This means the reported latency is underestimated by at least 20
 ms, if not more.
 
+The MME backend exposes "virtual" devices called *"Microsoft Sound Mapper -
+Input"* and *"Microsoft Sound Mapper - Output"*. These virtual devices
+automatically track the Windows audio device selected as "default" in the
+Windows audio control panel, and will redirect the stream transparently if that
+setting changes.
+
 **Note:** the channel count exposed by FlexASIO when using MME can be a bit odd.
 For example, it might expose 8 channels for a 5.1 output, downmixing the rear
 channels pairs.
@@ -118,6 +129,11 @@ One would expect latency to be somewhat better than MME, though it's not clear
 if that's really the case in practice. The DirectSound backend has been observed
 to [behave very poorly][issue29] with small buffer sizes on the input side,
 making it a poor choice for low-latency capture use cases.
+
+The DirectSound backend exposes "virtual" devices called *"Primary Sound Capture
+Driver"* and *"Primary Sound Driver"*. These virtual devices automatically track
+the Windows audio device selected as "default" in the Windows audio control
+panel, and will redirect the stream transparently if that setting changes.
 
 Modern versions of Windows implement the DirectSound API by using WASAPI Shared
 internally, making this backend a "second-class citizen" compared to WASAPI and
@@ -163,6 +179,9 @@ time.
 
 In both modes, the latency numbers reported by WASAPI appear to be more reliable
 than other backends.
+
+The WASAPI backend cannot redirect the stream if the default Windows audio
+device changes while streaming.
 
 **Note:** FlexASIO will show channel names (e.g. "Front left") when the WASAPI
 backend is used. Channel names are not shown when using other backends due to
@@ -235,6 +254,9 @@ WASAPI is simpler and less likely to cause problems, but Kernel Streaming is
 more direct and more flexible. Furthermore, their internal implementation in
 PortAudio are very different. Therefore, the WASAPI Exclusive and WDM-KS
 PortAudio backends might behave somewhat differently depending on the situation.
+
+The WDM-KS backend cannot redirect the stream if the default Windows audio
+device changes while streaming.
 
 The alternative [ASIO4ALL][] and [ASIO2KS][] universal ASIO drivers use Kernel
 Streaming.

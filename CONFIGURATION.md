@@ -170,6 +170,13 @@ considered. In other words, the "Host API name" as shown in the output of
 Beware that a given hardware device will not necessarily have the same name
 under different backends.
 
+If you want FlexASIO to track whatever device is set as "default" in the Windows
+audio device settings, switching automatically and transparently as the default
+device changes while streaming, then use the relevant "virtual" device from a
+backend that supports this feature. For more information, see
+[BACKENDS][BACKENDS]. Note that the default device for the default backend
+behaves like this by default.
+
 If the specified name doesn't match any device under the selected backend,
 FlexASIO will fail to initialize.
 
