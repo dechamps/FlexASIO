@@ -150,7 +150,7 @@ FlexASIO doesn't provide ways to leverage all these options yet).
 WASAPI is the only entry point to the shared Windows audio processing pipeline,
 which runs in the *Windows Audio* service (`audiosrv`). In modern versions of
 Windows, DirectSound and MME merely forward to WASAPI internally. This means
-that, in theory, one cannot achieve better performance than WASAPI when usin
+that, in theory, one cannot achieve better performance than WASAPI when using
 MME or DirectSound. In practice however, the PortAudio side of the WASAPI
 backend could conceivably have limitations or bugs that these other backends
 don't have.
