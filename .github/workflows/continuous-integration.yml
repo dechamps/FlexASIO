@@ -45,6 +45,9 @@ jobs:
           Expand-Archive -Path Scream3.8.zip -DestinationPath Scream
           Import-Certificate -FilePath Scream\Install\driver\x64\Scream.cat -CertStoreLocation Cert:\LocalMachine\TrustedPublisher 
           Scream\Install\helpers\devcon-x64.exe install Scream\Install\driver\x64\Scream.inf *Scream
+      # Starting from windows-2022, the Windows Audio engine doesn't seem to
+      # be started by default anymore.
+      - run: net start audiosrv
       # Obviously this doesn't do any kind of thorough testing. We just want to
       # make sure that the executables are not obviously broken.
       - run: src/out/install/${{ matrix.msvc_config }}/bin/PortAudioDevices.exe
