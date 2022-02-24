@@ -1,3 +1,5 @@
+#pragma warning(disable: 6553) // https://developercommunity.visualstudio.com/t/warning-C6553:-The-annotation-for-functi/1676659
+
 #include "control_panel.h"
 
 #include "../FlexASIOUtil/windows_com.h"
