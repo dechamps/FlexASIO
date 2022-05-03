@@ -177,6 +177,11 @@ backend that supports this feature. For more information, see
 [BACKENDS][BACKENDS]. Note that the default device for the default backend
 behaves like this by default.
 
+The WASAPI backend provides extra "mirror" devices whose names end
+with `[Loopback]`. These virtual devices can be used to record whatever audio
+is being played through the corresponding output device. For more information,
+see the [WASAPI backend documentation][WASAPI].
+
 If the specified name doesn't match any device under the selected backend,
 FlexASIO will fail to initialize.
 

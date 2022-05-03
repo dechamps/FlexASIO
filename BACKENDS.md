@@ -180,6 +180,23 @@ time.
 In both modes, the latency numbers reported by WASAPI appear to be more reliable
 than other backends.
 
+WASAPI provides a feature called [loopback recording][], which makes it possible
+to capture whatever audio signal is being played through an output device. This
+feature is supported by PortAudio (and FlexASIO), which exposes it in the form
+of extra "virtual" input devices whose names end with `[Loopback]`. To record
+the audio flowing through a particular output device, simply use the
+corresponding loopback device. Note that this feature cannot be used if the
+output device or loopback device are operating in exclusive mode. The signal is
+mirrored near the end of the Windows audio engine pipeline, after all APOs
+(including CAudioLimiter) but before conversion to integer. The mirrored signal
+is expected to be a bit-perfect reflection of the samples passing through the
+Windows audio engine as long as: 32-bit floating-point samples are used (which
+is normally the case if the [`sampleType`][] option isn't used), and the sample
+rate and channel count match the Windows settings for the device (this can be
+enforced by disabling the [`wasapiAutoConvert`][] option). If the sample type,
+sample rate, or channel count don't match, then the usual automatic conversions
+will occur.
+
 The WASAPI backend cannot redirect the stream if the default Windows audio
 device changes while streaming.
 
@@ -273,10 +290,13 @@ Streaming.
 [Audio Processing Objects]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-processing-object-architecture
 [backend]: CONFIGURATION.md#option-backend
 [device]: CONFIGURATION.md#option-device
+[`sampleType`]: CONFIGURATION.md#option-sampleType
+[`wasapiAutoConvert`]: CONFIGURATION.md#option-wasapiAutoConvert
 [DirectSound]: https://en.wikipedia.org/wiki/DirectSound
 [DSP]: https://en.wikipedia.org/wiki/Digital_signal_processor
 [issue29]: https://github.com/dechamps/FlexASIO/issues/29
 [issue30]: https://github.com/dechamps/FlexASIO/issues/30
+[loopback recording]: https://docs.microsoft.com/en-us/windows/win32/coreaudio/loopback-recording
 [Kernel Streaming]: https://docs.microsoft.com/en-us/windows-hardware/drivers/stream/kernel-streaming
 [Multimedia Extensions]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [portaudio]: http://www.portaudio.com/
