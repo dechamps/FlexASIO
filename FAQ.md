@@ -40,8 +40,14 @@ That said, third-party FlexASIO GUIs do exist:
 You can double-check that the files are located in the correct folder and are
 named properly by running the following in a command-line prompt:
 
-```
+```batch
 dir %userprofile%\FlexASIO*
+```
+
+Or, if you are using PowerShell:
+
+```powershell
+dir $env:userprofile\FlexASIO*
 ```
 
 The output should list `FlexASIO.toml` and/or `FlexASIO.log`.
