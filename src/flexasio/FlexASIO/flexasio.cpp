@@ -55,6 +55,10 @@ namespace flexasio {
 
 		std::optional<ASIOSampleRate> previousSampleRate;
 
+		bool IsValidSampleRate(ASIOSampleRate sampleRate) {
+			return sampleRate >= 0.001 && sampleRate < 100'000'000;
+		}
+
 		void LogPortAudioApiList() {
 			const auto pa_api_count = Pa_GetHostApiCount();
 			for (PaHostApiIndex pa_api_index = 0; pa_api_index < pa_api_count; ++pa_api_index) {
@@ -634,6 +638,11 @@ namespace flexasio {
 	{
 		Log() << "Checking for sample rate: " << sampleRate;
 
+		if (!IsValidSampleRate(sampleRate)) {
+			Log() << "Sample rate is invalid";
+			return false;
+		}
+
 		if (preparedState.has_value() && preparedState->IsExclusive()) {
 			// Some applications will call canSampleRate() while the stream is running. If the stream is exclusive our probes will fail.
 			// In that case we always say "yes" - always saying "no" confuses applications. See https://github.com/dechamps/FlexASIO/issues/66
@@ -681,9 +690,8 @@ namespace flexasio {
 	{
 		Log() << "Request to set sample rate: " << requestedSampleRate;
 
-		if (!(requestedSampleRate > 0 && requestedSampleRate < (std::numeric_limits<ASIOSampleRate>::max)())) {
+		if (!IsValidSampleRate(requestedSampleRate))
 			throw ASIOException(ASE_InvalidParameter, "setSampleRate() called with an invalid sample rate");
-		}
 
 		sampleRateWasAccessed = true;
 		previousSampleRate = requestedSampleRate;
