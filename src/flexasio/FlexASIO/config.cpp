@@ -63,7 +63,7 @@ namespace flexasio {
 		template <typename T> struct RemoveOptional<std::optional<T>> { using Value = T; };
 
 		template <typename T, typename Validator> void SetOption(const toml::Table& table, const std::string& key, T& option, Validator validator) {
-			ProcessTypedOption<RemoveOptional<T>::Value>(table, key, [&](const RemoveOptional<T>::Value& value) {
+			ProcessTypedOption<typename RemoveOptional<T>::Value>(table, key, [&](const RemoveOptional<T>::Value& value) {
 				validator(value);
 				option = value;
 			});
