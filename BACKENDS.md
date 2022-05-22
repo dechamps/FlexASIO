@@ -287,7 +287,7 @@ Streaming.
 [ASIO4ALL]: http://www.asio4all.org/
 [AudioEndpointBuilder]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-endpoint-builder-algorithm
 [audio endpoint devices]: https://docs.microsoft.com/en-us/windows/win32/coreaudio/audio-endpoint-devices
-[Audio Processing Objects]: https://docs.microsoft.com/en-us/windows-hardware/drivers/audio/audio-processing-object-architecture
+[Audio Processing Objects]: https://github.com/dechamps/APO
 [backend]: CONFIGURATION.md#option-backend
 [device]: CONFIGURATION.md#option-device
 [`sampleType`]: CONFIGURATION.md#option-sampleType
