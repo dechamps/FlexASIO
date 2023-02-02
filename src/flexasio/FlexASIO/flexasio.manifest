@@ -6,10 +6,6 @@
     indeed, in that case, the default behaviour of the Windows DLL Loader is to reuse the DLL that's already
     loaded, which could be different from the one that FlexASIO expects. Unpredictable behaviour ensues.
     See https://github.com/dechamps/FlexASIO/issues/47 for details.
-    
-    Note that we specify both 32-bit and 64-bit DLLs here. Only one of those actually exists, but the Windows
-    loader seems to be fine with ignoring non-existent files.
   -->
-  <file name="portaudio_x64.dll" />
-  <file name="portaudio_x86.dll" />
+  <file name="portaudio.dll" />
 </assembly>
