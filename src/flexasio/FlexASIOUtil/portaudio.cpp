@@ -37,30 +37,55 @@ typedef struct PaUtilHostApiSpecificStreamInfoHeader
 
 namespace flexasio {
 
-	PortAudioDebugRedirector::PortAudioDebugRedirector(Write write) {
-		write(std::string("PortAudio version: ") + Pa_GetVersionText());
-		write("Enabling PortAudio debug output redirection");
-		if (this->write) abort();
-		this->write = std::move(write);
-		PaUtil_SetDebugPrintFunction(DebugPrint);
+	PortAudioDebugRedirector::Singleton::~Singleton() {
+		Check();
+		if (write) abort();
 	}
 
-	PortAudioDebugRedirector::~PortAudioDebugRedirector() {
+	void PortAudioDebugRedirector::Singleton::Start(Write write) {
+		const std::lock_guard lock(mutex);
+		Check();
+
+		if (referenceCount > 0) {
+			if (write != this->write) abort();
+		} else {
+			this->write = write;
+			write(std::string("PortAudio version: ") + Pa_GetVersionText());
+			write("Enabling PortAudio debug output redirection");
+			PaUtil_SetDebugPrintFunction(DebugPrint);
+		}
+
+		++referenceCount;
+	}
+
+	void PortAudioDebugRedirector::Singleton::Stop() {
+		const std::lock_guard lock(mutex);
+		Check();
+		if (!write) abort();
+
+		--referenceCount;
+		if (referenceCount > 0) return;
+
 		this->write("Disabling PortAudio debug output redirection");
 		PaUtil_SetDebugPrintFunction(NULL);
-		if (!this->write) abort();
-		this->write = nullptr;
+		write = nullptr;
 	}
 
-	void PortAudioDebugRedirector::DebugPrint(const char* str) {
-		if (!PortAudioDebugRedirector::write) abort();
+	void PortAudioDebugRedirector::Singleton::DebugPrint(const char* str) {
+		singleton.Check();
+		const auto write = singleton.write;
+		if (!write) abort();
 
 		std::string_view line(str);
 		while (!line.empty() && isspace(static_cast<unsigned char>(line.back()))) line.remove_suffix(1);
-		PortAudioDebugRedirector::write(line);
+		write(line);
 	}
 
-	PortAudioDebugRedirector::Write PortAudioDebugRedirector::write;
+	void PortAudioDebugRedirector::Singleton::Check() const {
+		if ((referenceCount != 0) != !!write) abort();
+	}
+
+	PortAudioDebugRedirector::Singleton PortAudioDebugRedirector::singleton;
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId) {
 		return ::dechamps_cpputil::EnumToString(hostApiTypeId, {

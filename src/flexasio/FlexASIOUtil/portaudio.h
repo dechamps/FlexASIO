@@ -7,6 +7,7 @@
 #include <MMReg.h>
 
 #include <functional>
+#include <mutex>
 #include <string>
 #include <string_view>
 
@@ -14,15 +15,30 @@ namespace flexasio {
 
 	class PortAudioDebugRedirector final {
 	public:
-		using Write = std::function<void(std::string_view)>;
+		using Write = void(std::string_view);
 
-		explicit PortAudioDebugRedirector(Write write);
-		~PortAudioDebugRedirector();
+		explicit PortAudioDebugRedirector(Write write) { singleton.Start(write); }
+		~PortAudioDebugRedirector() { singleton.Stop(); };
 
 	private:
-		static void DebugPrint(const char*);
+		class Singleton final {
+		public:
+			~Singleton();
 
-		static Write write;
+			void Start(Write);
+			void Stop();
+
+		private:
+			std::mutex mutex;
+			size_t referenceCount = 0;
+			Write* write = nullptr;
+
+			static void DebugPrint(const char*);
+
+			void Check() const;
+		};
+
+		static Singleton singleton;
 	};
 
 	std::string GetHostApiTypeIdString(PaHostApiTypeId hostApiTypeId);
