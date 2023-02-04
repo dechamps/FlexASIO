@@ -146,7 +146,7 @@ namespace flexasio {
 		OBJECT_ENTRY_AUTO(__uuidof(::CFlexASIO), CFlexASIO);
 
 		template <typename Functor> ASIOError CFlexASIO::Enter(std::string_view context, Functor functor) {
-			if (IsLoggingEnabled()) Log() << "--- ENTERING CONTEXT: " << context;
+			if (IsLoggingEnabled()) Log() << "--- ENTERING CONTEXT: " << context << " on " << this;
 			ASIOError result;
 			try {
 				functor();
