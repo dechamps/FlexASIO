@@ -34,10 +34,12 @@ namespace flexasio {
 	FlexASIO::PortAudioHandle::~PortAudioHandle() {
 		Log() << "Terminating PortAudio";
 		PaError error = Pa_Terminate();
-		if (error != paNoError)
+		if (error != paNoError) {
 			Log() << "PortAudio termination failed with " << Pa_GetErrorText(error);
-		else
+		} else
+		{
 			Log() << "PortAudio terminated successfully";
+		}
 	}
 
 	FlexASIO::Win32HighResolutionTimer::Win32HighResolutionTimer() {
