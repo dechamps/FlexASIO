@@ -1,0 +1,9 @@
+on: [push, pull_request]
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: wolletd/clang-format-checker@v1
+        with:
+          target-ref: master
