@@ -1,5 +1,6 @@
 #include "cflexasio.h"
 
+#include "control_panel.h"
 #include "flexasio.h"
 #include "flexasio.rc.h"
 #include "flexasio_h.h"
@@ -121,7 +122,10 @@ namespace flexasio {
 			}
 
 			ASIOError controlPanel() throw() final {
-				return EnterWithMethod("controlPanel()", &FlexASIO::ControlPanel);
+				return Enter("controlPanel()", [&] {
+					if (!flexASIO.has_value()) OpenControlPanel(NULL);  // https://github.com/dechamps/FlexASIO/issues/184
+					flexASIO->ControlPanel();
+				});
 			}
 			ASIOError future(long selector, void *) throw() final {
 				return Enter("future()", [&] {
