@@ -177,17 +177,23 @@ namespace flexasio {
 	ConfigLoader::Watcher::~Watcher() noexcept(false) {
 		Log() << "Stopping config watcher";
 		{
-			std::unique_lock lock(mutex);
-			stopRequested = true;
+			std::unique_lock lock(directoryMutex);
 			if (directory != INVALID_HANDLE_VALUE) {
 				Log() << "Cancelling any pending config directory operations";
 				if (::CancelIoEx(directory, NULL) == 0)
 					throw std::system_error(::GetLastError(), std::system_category(), "Unable to cancel directory watch operation");
 			}
 		}
+		stopSemaphore.release();
+
 		Log() << "Waiting for config watcher thread to finish";
 		thread.join();
+
 		Log() << "Joined config watcher thread";
+	}
+
+	void ConfigLoader::Watcher::CheckStopRequested(std::chrono::milliseconds waitFor = {}) {
+		if (stopSemaphore.try_acquire_for(waitFor)) throw StopRequested();
 	}
 
 	void ConfigLoader::Watcher::RunThread() {
@@ -205,8 +211,7 @@ namespace flexasio {
 				// Another reason to debounce is that it might make it less likely we'll run into file locking issues.
 				// We do this by sleeping for a while, and getting rid of all events that occurred in the mean time.
 				Log() << "Sleeping for debounce";
-				// TODO: ideally the destructor should be able to cut this sleep short. This should be fairly trivial with std::condition_variable::wait_for().
-				::Sleep(250);
+				CheckStopRequested(/*waitFor=*/std::chrono::milliseconds(250));
 			}
 		}
 		catch (StopRequested) {}
@@ -237,13 +242,13 @@ namespace flexasio {
 				throw std::system_error(::GetLastError(), std::system_category(), "Unable to open config directory for watching");
 
 			{
-				std::unique_lock lock(mutex);
+				std::unique_lock lock(directoryMutex);
 				assert(directory == INVALID_HANDLE_VALUE);
 				directory = handle;
 			}
 			const auto directoryDeleter = [&](HANDLE handle) {
 				{
-					std::unique_lock lock(mutex);
+					std::unique_lock lock(directoryMutex);
 					assert(directory == handle);
 					directory = INVALID_HANDLE_VALUE;
 				}
@@ -261,10 +266,7 @@ namespace flexasio {
 
 			// Check for stop requests *after* we start watching, so that we correctly exit
 			// even if the destructor ran just before there was an I/O to cancel.
-			{
-				std::unique_lock lock(mutex);
-				if (stopRequested) throw StopRequested();
-			}
+			CheckStopRequested();
 
 			if (first) {
 				Log() << "Triggering initial config file event";
@@ -273,8 +275,7 @@ namespace flexasio {
 
 			if (OnVariant(operation.Await(),
 				[&](ConfigDirectoryWatchOperation::Aborted) -> bool {
-					std::unique_lock lock(mutex);
-					if (stopRequested) throw StopRequested();
+					CheckStopRequested();
 					throw std::runtime_error("Config directory watch operation was aborted, but we were not requested to stop");
 				},
 				[&](ConfigDirectoryWatchOperation::Overflow) {

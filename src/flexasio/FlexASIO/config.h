@@ -9,6 +9,7 @@
 #include <optional>
 #include <regex>
 #include <string>
+#include <semaphore>
 #include <span>
 #include <thread>
 #include <variant>
@@ -108,6 +109,7 @@ namespace flexasio {
 			// We abuse exception handling to handle stop requests. This is a bit unorthodox, but
 			// it does make the code significantly simpler.
 			struct StopRequested final {};
+			void CheckStopRequested(std::chrono::milliseconds timeout);
 
 			void RunThread();
 			void TriggerConfigFileEventThenWait(OVERLAPPED*, std::span<std::byte> fileNotifyInformationBuffer);
@@ -117,10 +119,10 @@ namespace flexasio {
 			const ConfigLoader& configLoader;
 			const std::function<void()> onConfigChange;
 			
-
-			std::mutex mutex;
-			bool stopRequested = false;
+			std::binary_semaphore stopSemaphore{0};
+			std::mutex directoryMutex;
 			HANDLE directory = INVALID_HANDLE_VALUE;
+
 			std::thread thread;
 		};
 
