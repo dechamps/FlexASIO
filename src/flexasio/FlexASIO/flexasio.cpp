@@ -652,14 +652,6 @@ namespace flexasio {
 			return false;
 		}
 
-		if (preparedState.has_value() && preparedState->GetStreamExclusivity() == StreamExclusivity::EXCLUSIVE) {
-			// Some applications will call canSampleRate() while the stream is running. If the stream is exclusive our probes will fail.
-			// In that case we always say "yes" - always saying "no" confuses applications. See https://github.com/dechamps/FlexASIO/issues/66
-			// TODO: now that we are using Pa_IsFormatSupported() instead of Pa_OpenStream() to probe sample rates, is this still necessary?
-			Log() << "Faking sample rate " << sampleRate << " as available because an exclusive stream is currently running";
-			return true;
-		}
-
 		const auto checkParameters = [&](const StreamParameters& streamParameters, StreamExclusivity) {
 			CheckFormatSupported(streamParameters);
 		};
