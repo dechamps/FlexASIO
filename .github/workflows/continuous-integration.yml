@@ -34,17 +34,27 @@ jobs:
         with:
           name: FlexASIO-${{ matrix.msvc_config }}
           path: src/out/install/${{ matrix.msvc_config }}/
-      # https://github.com/actions/virtual-environments/issues/2528
+      # hhttps://github.com/actions/runner-images/issues/2528#issuecomment-2132193207
       # TODO: Scream only provides an output device. See if we can use a
       # different virtual audio driver that provides a virtual input device as
       # well.
-      - name: Install Scream
-        shell: powershell
-        run: |
-          Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/3.8/Scream3.8.zip -OutFile Scream3.8.zip
-          Expand-Archive -Path Scream3.8.zip -DestinationPath Scream
-          Import-Certificate -FilePath Scream\Install\driver\x64\Scream.cat -CertStoreLocation Cert:\LocalMachine\TrustedPublisher 
-          Scream\Install\helpers\devcon-x64.exe install Scream\Install\driver\x64\Scream.inf *Scream
+      - run: 'Invoke-WebRequest https://github.com/duncanthrax/scream/releases/download/4.0/Scream4.0.zip -OutFile Scream4.0.zip'
+      - run: 'Expand-Archive -Path Scream4.0.zip -DestinationPath Scream'
+      # To work around https://github.com/duncanthrax/scream/issues/215, create our own self-signed certificate for the Scream driver.
+      # makecert.exe insists on interactively asking the user for a password (sigh...), so use OpenSSL instead.
+      # `-extensions v3_req` is a trick to make sure the resulting cert has basic constraint CA:FALSE (the default is CA:TRUE which is problematic here) without having to create an OpenSSL config file.
+      - run: 'openssl req -batch -verbose -x509 -newkey rsa -keyout ScreamCertificate.pvk -out ScreamCertificate.cer -nodes -extensions v3_req'
+      - run: 'openssl pkcs12 -export -nodes -in ScreamCertificate.cer -inkey ScreamCertificate.pvk -out ScreamCertificate.pfx -passout pass:'
+      # Sign the driver with the self-signed certificate we just made.
+      - run: 'signtool sign /v /fd SHA256 /f ScreamCertificate.pfx Scream\Install\driver\x64\Scream.cat'
+      # Tell Windows to trust the self-signed certificate we just made.
+      # (For some reason it has to be added to both stores for it to work.)
+      - run: 'Import-Certificate -FilePath ScreamCertificate.cer -CertStoreLocation Cert:\LocalMachine\root'
+      - run: 'Import-Certificate -FilePath ScreamCertificate.cer -CertStoreLocation Cert:\LocalMachine\TrustedPublisher'
+      # Finally, install the driver.
+      - run: 'Scream\Install\helpers\devcon-x64.exe install Scream\Install\driver\x64\Scream.inf *Scream'
+        # For convenience, make sure we fail fast if for whatever reason the install gets blocked on some GUI prompt.
+        timeout-minutes: 5
       # Starting from windows-2022, the Windows Audio engine doesn't seem to
       # be started by default anymore.
       - run: net start audiosrv
