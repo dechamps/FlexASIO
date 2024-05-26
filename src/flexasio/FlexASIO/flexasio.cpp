@@ -867,8 +867,9 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Start()
 	{
-		if (runningState != nullptr) throw ASIOException(ASE_InvalidMode, "start() called twice");
-		ownedRunningState.emplace(*this);
+		if (runningState.has_value()) throw ASIOException(ASE_InvalidMode, "start() called twice");
+		runningState.emplace(*this);
+		runningState->Start();
 	}
 
 	FlexASIO::PreparedState::RunningState::RunningState(PreparedState& preparedState) :
@@ -881,8 +882,11 @@ namespace flexasio {
 		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
 		return result;
 	}()),
-		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady),
-		activeStream(StartStream(preparedState.openStreamResult.stream.get())) {}
+		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady) {}
+
+	void FlexASIO::PreparedState::RunningState::RunningState::Start() {
+		activeStream = StartStream(preparedState.openStreamResult.stream.get());
+	}
 
 	void FlexASIO::Stop() {
 		if (!preparedState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before createBuffers()");
@@ -891,8 +895,8 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::Stop()
 	{
-		if (runningState == nullptr) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
-		ownedRunningState.reset();
+		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "stop() called before start()");
+		runningState.reset();
 	}
 
 	int FlexASIO::PreparedState::StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw() {
@@ -900,7 +904,7 @@ namespace flexasio {
 		PaStreamCallbackResult result = paContinue;
 		try {
 			auto& preparedState = *static_cast<PreparedState*>(userData);
-			if (preparedState.runningState == nullptr) {
+			if (!preparedState.runningState.has_value()) {
 				throw std::runtime_error("PortAudio stream callback fired in non-started state");
 			}
 			result = preparedState.runningState->StreamCallback(input, output, frameCount, timeInfo, statusFlags);
@@ -1017,7 +1021,7 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp)
 	{
-		if (runningState == nullptr) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
+		if (!runningState.has_value()) throw ASIOException(ASE_InvalidMode, "getSamplePosition() called before start()");
 		return runningState->GetSamplePosition(sPos, tStamp);
 	}
 
@@ -1038,7 +1042,7 @@ namespace flexasio {
 	}
 
 	void FlexASIO::PreparedState::OutputReady() {
-		if (runningState != nullptr) runningState->OutputReady();
+		if (runningState.has_value()) runningState->OutputReady();
 	}
 
 	void FlexASIO::PreparedState::RunningState::OutputReady() {

@@ -129,6 +129,13 @@ namespace flexasio {
 			public:
 				RunningState(PreparedState& preparedState);
 
+				// Note: the reason why this is not done in the constructor is to allow `PreparedState::Start()`
+				// to properly set `PreparedState::runningState` before callbacks start flying. This is because
+				// the ASIO host application may decide to call GetSamplePosition() or OutputReady() as soon
+				// as bufferSwitch() is called without waiting for Start() to return - we don't want these calls
+				// to race with `PreparedState::Start()` constructing `PreparedState::runningState`.
+				void Start();
+
 				void GetSamplePosition(ASIOSamples* sPos, ASIOTimeStamp* tStamp) const;
 				void OutputReady();
 
@@ -141,20 +148,6 @@ namespace flexasio {
 					ASIOSamples samples = { 0 };
 					ASIOTimeStamp timestamp = { 0 };
 				};
-
-				class Registration {
-				public:
-					Registration(RunningState*& holder, RunningState& runningState) : holder(holder) {
-						holder = &runningState;
-					}
-					~Registration() { holder = nullptr; }
-
-				private:
-					RunningState*& holder;
-				};
-
-				void Register() { preparedState.runningState = this; }
-				void Unregister() { preparedState.runningState = nullptr; }
 
 				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
@@ -169,8 +162,7 @@ namespace flexasio {
 				bool outputReady = true;
 
 				Win32HighResolutionTimer win32HighResolutionTimer;
-				Registration registration{ preparedState.runningState, *this };
-				const ActiveStream activeStream;
+				ActiveStream activeStream;
 			};
 
 			static int StreamCallback(const void *input, void *output, unsigned long frameCount, const PaStreamCallbackTimeInfo *timeInfo, PaStreamCallbackFlags statusFlags, void *userData) throw();
@@ -189,12 +181,7 @@ namespace flexasio {
 
 			const OpenStreamResult openStreamResult;
 
-			// RunningState will set runningState before ownedRunningState has finished constructing.
-			// This allows PreparedState to properly forward stream callbacks that might fire before RunningState construction is fully complete.
-			// (See https://github.com/dechamps/FlexASIO/issues/27)
-			// During steady-state operation, runningState just points to *ownedRunningState.
-			RunningState* runningState = nullptr;
-			std::optional<RunningState> ownedRunningState;
+			std::optional<RunningState> runningState;
 			ConfigLoader::Watcher configWatcher;
 		};
 
