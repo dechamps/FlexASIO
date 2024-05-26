@@ -3,7 +3,6 @@
 #include "control_panel.h"
 
 #include "../FlexASIOUtil/windows_com.h"
-#include "../FlexASIOUtil/windows_error.h"
 #include "../FlexASIOUtil/windows_registry.h"
 #include "../FlexASIOUtil/windows_string.h"
 
@@ -13,6 +12,8 @@
 #include "log.h"
 
 #include <Windows.h>
+
+#include <system_error>
 
 namespace flexasio {
 
@@ -34,7 +35,7 @@ namespace flexasio {
 
 			Log() << "Executing: " << ConvertToUTF8(file);
 			if (!::ShellExecuteW(windowHandle, NULL, file.c_str(), NULL, NULL, SW_SHOWNORMAL))
-				throw std::runtime_error("Execution failed: " + GetWindowsErrorString(::GetLastError()));
+				throw std::system_error(::GetLastError(), std::system_category(), "ShellExecuteW failed");
 		}
 
 		std::wstring GetStringRegistryValue(HKEY registryKey, LPCWSTR valueName) {
@@ -49,7 +50,7 @@ namespace flexasio {
 					value.resize(valueSize);
 					continue;
 				}
-				if (regQueryValueError != ERROR_SUCCESS) throw std::runtime_error("Unable to query string registry value: " + GetWindowsErrorString(regQueryValueError));
+				if (regQueryValueError != ERROR_SUCCESS) throw std::system_error(regQueryValueError, std::system_category(), "Unable to query string registry value");
 				Log() << "Registry value size: " << valueSize;
 				if (valueType != REG_SZ) throw std::runtime_error("Expected string registry value type, got " + std::to_string(valueType));
 				value.resize(valueSize);
@@ -67,7 +68,7 @@ namespace flexasio {
 		UniqueHKEY OpenFlexAsioGuiInstallRegistryKey() {
 			HKEY registryKey;
 			const auto regOpenKeyError = ::RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"Software\\Fabrikat\\FlexASIOGUI\\Install", {}, KEY_QUERY_VALUE | KEY_WOW64_64KEY, &registryKey);
-			if (regOpenKeyError != ERROR_SUCCESS) throw std::runtime_error("Unable to open FlexASIOGUI registry key: " + GetWindowsErrorString(regOpenKeyError));
+			if (regOpenKeyError != ERROR_SUCCESS) throw std::system_error(regOpenKeyError, std::system_category(), "Unable to open FlexASIOGUI registry key");
 			return UniqueHKEY(registryKey);
 		}
 
