@@ -218,20 +218,18 @@ namespace flexasio {
 			return result;
 		}
 
-		void CopyFromPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, const void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+		void CopyFromPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, const std::byte* const* portAudioBuffers, const size_t bufferSizeInBytes) {
 			for (const auto& bufferInfo : bufferInfos)
 			{
 				if (!bufferInfo.isInput) continue;
-				void* asioBuffer = bufferInfo.buffers[doubleBufferIndex];
-				memcpy(asioBuffer, portAudioBuffers[bufferInfo.channelNum], bufferSizeInBytes);
+				memcpy(bufferInfo.buffers[doubleBufferIndex], portAudioBuffers[bufferInfo.channelNum], bufferSizeInBytes);
 			}
 		}
-		void CopyToPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, void* const* portAudioBuffers, const size_t bufferSizeInBytes) {
+		void CopyToPortAudioBuffers(const std::vector<ASIOBufferInfo>& bufferInfos, const long doubleBufferIndex, std::byte* const* portAudioBuffers, const size_t bufferSizeInBytes) {
 			for (const auto& bufferInfo : bufferInfos)
 			{
 				if (bufferInfo.isInput) continue;
-				void* asioBuffer = bufferInfo.buffers[doubleBufferIndex];
-				memcpy(portAudioBuffers[bufferInfo.channelNum], asioBuffer, bufferSizeInBytes);
+				memcpy(portAudioBuffers[bufferInfo.channelNum], bufferInfo.buffers[doubleBufferIndex], bufferSizeInBytes);
 			}
 		}
 
@@ -733,7 +731,7 @@ namespace flexasio {
 			<< inputChannelCount << "/" << outputChannelCount << " (I/O) channels per buffer set, "
 			<< bufferSizeInFrames << " samples per channel, "
 			<< inputSampleSizeInBytes << "/" << outputSampleSizeInBytes << " (I/O) bytes per sample, memory range: "
-			<< static_cast<const void*>(buffers.data()) << "-" << static_cast<const void*>(buffers.data() + buffers.size());
+			<< buffers.data() << "-" << buffers.data() + buffers.size();
 	}
 
 	FlexASIO::PreparedState::Buffers::~Buffers() {
@@ -769,14 +767,14 @@ namespace flexasio {
 			auto& nextBuffersChannelIndex = asioBufferInfo.isInput ? nextBuffersInputChannelIndex : nextBuffersOutputChannelIndex;
 			const auto bufferSizeInBytes = asioBufferInfo.isInput ? buffers.GetInputBufferSizeInBytes() : buffers.GetOutputBufferSizeInBytes();
 
-			uint8_t* first_half = (buffers.*getBuffer)(0, nextBuffersChannelIndex);
-			uint8_t* second_half = (buffers.*getBuffer)(1, nextBuffersChannelIndex);
+			std::byte* first_half = (buffers.*getBuffer)(0, nextBuffersChannelIndex);
+			std::byte* second_half = (buffers.*getBuffer)(1, nextBuffersChannelIndex);
 			++nextBuffersChannelIndex;
 			asioBufferInfo.buffers[0] = first_half;
 			asioBufferInfo.buffers[1] = second_half;
 			Log() << "ASIO buffer #" << channelIndex << " is " << (asioBufferInfo.isInput ? "input" : "output") << " channel " << asioBufferInfo.channelNum
-				<< " - first half: " << static_cast<const void*>(first_half) << "-" << static_cast<const void*>(first_half + bufferSizeInBytes)
-				<< " - second half: " << static_cast<const void*>(second_half) << "-" << static_cast<const void*>(second_half + bufferSizeInBytes);
+				<< " - first half: " << first_half << "-" << first_half + bufferSizeInBytes
+				<< " - second half: " << second_half << "-" << second_half + bufferSizeInBytes;
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
@@ -958,8 +956,8 @@ namespace flexasio {
 
 		const auto inputSampleSizeInBytes = preparedState.buffers.inputSampleSizeInBytes;
 		const auto outputSampleSizeInBytes = preparedState.buffers.outputSampleSizeInBytes;
-		const void* const* input_samples = static_cast<const void* const*>(input);
-		void* const* output_samples = static_cast<void* const*>(output);
+		const std::byte* const* input_samples = static_cast<const std::byte* const*> (input);
+		std::byte* const* output_samples = static_cast<std::byte* const*>(output);
 
 		if (output_samples) {
 			for (int output_channel_index = 0; output_channel_index < preparedState.flexASIO.GetOutputChannelCount(); ++output_channel_index)
