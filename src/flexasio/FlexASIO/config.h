@@ -106,7 +106,7 @@ namespace flexasio {
 			const UniqueHandle stopEvent;
 			const UniqueHandle directory;
 			OverlappedWithEvent overlapped;
-			alignas(DWORD) char fileNotifyInformationBuffer[64 * 1024];
+			alignas(DWORD) std::byte fileNotifyInformationBuffer[64 * 1024];
 			std::thread thread;
 		};
 

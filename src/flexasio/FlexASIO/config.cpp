@@ -251,7 +251,7 @@ namespace flexasio {
 	}
 
 	bool ConfigLoader::Watcher::FindConfigFileEvents() {
-		const char* fileNotifyInformationPtr = fileNotifyInformationBuffer;
+		const std::byte* fileNotifyInformationPtr = fileNotifyInformationBuffer;
 		for (;;) {
 			constexpr auto fileNotifyInformationHeaderSize = offsetof(FILE_NOTIFY_INFORMATION, FileName);
 			FILE_NOTIFY_INFORMATION fileNotifyInformationHeader;
