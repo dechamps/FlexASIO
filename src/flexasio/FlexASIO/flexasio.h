@@ -59,10 +59,7 @@ namespace flexasio {
 			GUID waveSubFormat;
 		};
 
-		struct OpenStreamResult {
-			Stream stream;
-			bool exclusive;
-		};
+		enum class StreamExclusivity { SHARED, EXCLUSIVE };
 
 		class PortAudioHandle {
 		public:
@@ -87,7 +84,7 @@ namespace flexasio {
 			PreparedState(const PreparedState&) = delete;
 			PreparedState(PreparedState&&) = delete;
 
-			bool IsExclusive() const { return openStreamResult.exclusive;  }
+			StreamExclusivity GetStreamExclusivity() const { return streamWithExclusivity.exclusivity;  }
 
 			bool IsChannelActive(bool isInput, long channel) const;
 
@@ -179,7 +176,11 @@ namespace flexasio {
 			Buffers buffers;
 			const std::vector<ASIOBufferInfo> bufferInfos;
 
-			const OpenStreamResult openStreamResult;
+			struct StreamWithExclusivity final {
+				Stream stream;
+				StreamExclusivity exclusivity;
+			};
+			const StreamWithExclusivity streamWithExclusivity;
 
 			std::optional<RunningState> runningState;
 			ConfigLoader::Watcher configWatcher;
@@ -210,7 +211,9 @@ namespace flexasio {
 		long ComputeLatency(long latencyInFrames, bool output, size_t bufferSizeInFrames) const;
 		long ComputeLatencyFromStream(PaStream* stream, bool output, size_t bufferSizeInFrames) const;
 
-		OpenStreamResult OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData);
+		template <typename Functor>
+		decltype(auto) WithStreamParameters(bool inputEnabled, bool outputEnabled, double sampleRate, PaTime suggestedLatency, Functor functor) const;
+		Stream OpenStream(const StreamParameters&, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData) const;
 
 		const HWND windowHandle = nullptr;
 		const ConfigLoader configLoader;

@@ -237,6 +237,10 @@ namespace flexasio {
 			value = static_cast<Enum>(std::underlying_type_t<Enum>(value) + 1);
 		}
 
+		PaTime GetDefaultSuggestedLatency(long bufferSizeInFrames, ASIOSampleRate sampleRate) {
+			return 3 * bufferSizeInFrames / sampleRate;
+		}
+
 	}
 
 	constexpr FlexASIO::SampleType FlexASIO::float32 = { ::dechamps_cpputil::endianness == ::dechamps_cpputil::Endianness::LITTLE ? ASIOSTFloat32LSB : ASIOSTFloat32MSB, paFloat32, 4, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT };
@@ -533,16 +537,17 @@ namespace flexasio {
 		Log() << "Returning: " << info->name << ", " << (info->isActive ? "active" : "inactive") << ", group " << info->channelGroup << ", type " << ::dechamps_ASIOUtil::GetASIOSampleTypeString(info->type);
 	}
 
-	FlexASIO::OpenStreamResult FlexASIO::OpenStream(bool inputEnabled, bool outputEnabled, double sampleRate, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData)
+	template <typename Functor>
+	decltype(auto) FlexASIO::WithStreamParameters(bool inputEnabled, bool outputEnabled, double sampleRate, PaTime defaultSuggestedLatency, Functor functor) const
 	{
-		Log() << "CFlexASIO::OpenStream(inputEnabled = " << inputEnabled << ", outputEnabled = " << outputEnabled << ", sampleRate = " << sampleRate << ", framesPerBuffer = " << framesPerBuffer << ", callback = " << callback << ", callbackUserData = " << callbackUserData << ")";
-		OpenStreamResult result;
-		result.exclusive = hostApi.info.type == paWDMKS;
+		Log() << "FlexASIO::WithStreamParameters(inputEnabled = " << inputEnabled << ", outputEnabled = " << outputEnabled << ", sampleRate = " << sampleRate << ")";
+
+		auto exclusivity = hostApi.info.type == paWDMKS ? StreamExclusivity::EXCLUSIVE : StreamExclusivity::SHARED;
 
 		PaStreamParameters common_parameters = { 0 };
 		common_parameters.sampleFormat = paNonInterleaved;
 		common_parameters.hostApiSpecificStreamInfo = NULL;
-		common_parameters.suggestedLatency = 3 * framesPerBuffer / sampleRate;
+		common_parameters.suggestedLatency = defaultSuggestedLatency;
 
 		PaWasapiStreamInfo common_wasapi_stream_info = { 0 };
 		if (hostApi.info.type == paWASAPI) {
@@ -570,7 +575,7 @@ namespace flexasio {
 				Log() << "Using " << (config.input.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for input WASAPI stream";
 				if (config.input.wasapiExclusiveMode) {
 					input_wasapi_stream_info.flags |= paWinWasapiExclusive;
-					result.exclusive = true;
+					exclusivity = StreamExclusivity::EXCLUSIVE;
 				}
 				Log() << (config.input.wasapiAutoConvert ? "Enabling" : "Disabling") << " auto-conversion for input WASAPI stream";
 				if (config.input.wasapiAutoConvert) {
@@ -602,7 +607,7 @@ namespace flexasio {
 				Log() << "Using " << (config.output.wasapiExclusiveMode ? "exclusive" : "shared") << " mode for output WASAPI stream";
 				if (config.output.wasapiExclusiveMode) {
 					output_wasapi_stream_info.flags |= paWinWasapiExclusive;
-					result.exclusive = true;
+					exclusivity = StreamExclusivity::EXCLUSIVE;
 				}
 				Log() << (config.output.wasapiAutoConvert ? "Enabling" : "Disabling") << " auto-conversion for output WASAPI stream";
 				if (config.output.wasapiAutoConvert) {
@@ -616,20 +621,26 @@ namespace flexasio {
 			}
 		}
 
-		result.stream = flexasio::OpenStream(
-			inputEnabled ? &input_parameters : NULL,
-			outputEnabled ? &output_parameters : NULL,
-			sampleRate, framesPerBuffer, paPrimeOutputBuffersUsingStreamCallback, callback, callbackUserData);
-		if (result.stream != nullptr) {
-			const auto streamInfo = Pa_GetStreamInfo(result.stream.get());
-			if (streamInfo == nullptr) {
-				Log() << "Unable to get stream info";
-			}
-			else {
-				Log() << "Stream info: " << DescribeStreamInfo(*streamInfo);
-			}
+		return functor(StreamParameters{
+			.inputParameters = inputEnabled ? &input_parameters : NULL,
+			.outputParameters = outputEnabled ? &output_parameters : NULL,
+			.sampleRate = sampleRate,
+		}, exclusivity);
+	}
+
+	Stream FlexASIO::OpenStream(const StreamParameters& streamParameters, unsigned long framesPerBuffer, PaStreamCallback callback, void* callbackUserData) const
+	{
+		Log() << "FlexASIO::OpenStream(framesPerBuffer = " << framesPerBuffer << ", callback = " << callback << ", callbackUserData = " << callbackUserData << ")";
+		auto stream = flexasio::OpenStream(
+			streamParameters, framesPerBuffer, paPrimeOutputBuffersUsingStreamCallback, callback, callbackUserData);
+		const auto streamInfo = Pa_GetStreamInfo(stream.get());
+		if (streamInfo == nullptr) {
+			Log() << "Unable to get stream info";
 		}
-		return result;
+		else {
+			Log() << "Stream info: " << DescribeStreamInfo(*streamInfo);
+		}
+		return stream;
 	}
 
 	bool FlexASIO::CanSampleRate(ASIOSampleRate sampleRate)
@@ -641,12 +652,17 @@ namespace flexasio {
 			return false;
 		}
 
-		if (preparedState.has_value() && preparedState->IsExclusive()) {
+		if (preparedState.has_value() && preparedState->GetStreamExclusivity() == StreamExclusivity::EXCLUSIVE) {
 			// Some applications will call canSampleRate() while the stream is running. If the stream is exclusive our probes will fail.
 			// In that case we always say "yes" - always saying "no" confuses applications. See https://github.com/dechamps/FlexASIO/issues/66
+			// TODO: now that we are using Pa_IsFormatSupported() instead of Pa_OpenStream() to probe sample rates, is this still necessary?
 			Log() << "Faking sample rate " << sampleRate << " as available because an exclusive stream is currently running";
 			return true;
 		}
+
+		const auto checkParameters = [&](const StreamParameters& streamParameters, StreamExclusivity) {
+			CheckFormatSupported(streamParameters);
+		};
 
 		// We do not know whether the host application intends to use only input channels, only output channels, or both.
 		// This logic ensures the driver is usable for all three use cases.
@@ -654,7 +670,7 @@ namespace flexasio {
 		if (inputDevice.has_value())
 			try {
 				Log() << "Checking if input supports this sample rate";
-				OpenStream(true, false, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+				WithStreamParameters(/*inputEnabled=*/true, /*outputEnabled=*/false, sampleRate, /*suggestedLatency*/0, checkParameters);
 				Log() << "Input supports this sample rate";
 				available = true;
 			}
@@ -664,7 +680,7 @@ namespace flexasio {
 		if (outputDevice.has_value())
 			try {
 				Log() << "Checking if output supports this sample rate";
-				OpenStream(false, true, sampleRate, paFramesPerBufferUnspecified, NoOpStreamCallback, nullptr);
+				WithStreamParameters(/*inputEnabled=*/false, /*outputEnabled=*/true, sampleRate, /*suggestedLatency*/0, checkParameters);
 				Log() << "Output supports this sample rate";
 				available = true;
 			}
@@ -778,7 +794,14 @@ namespace flexasio {
 			bufferInfos.push_back(asioBufferInfo);
 		}
 		return bufferInfos;
-	}()), openStreamResult(flexASIO.OpenStream(buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, unsigned long(bufferSizeInFrames), &PreparedState::StreamCallback, this)),
+		}()), streamWithExclusivity(flexASIO.WithStreamParameters(
+			buffers.inputChannelCount > 0, buffers.outputChannelCount > 0, sampleRate, GetDefaultSuggestedLatency(bufferSizeInFrames, sampleRate),
+			[&](const StreamParameters& streamParameters, StreamExclusivity streamExclusivity) {
+				return StreamWithExclusivity{
+					.stream = flexASIO.OpenStream(streamParameters, static_cast<unsigned long>(bufferSizeInFrames), &PreparedState::StreamCallback, this),
+					.exclusivity = streamExclusivity,
+				};
+			})),
 		configWatcher(flexASIO.configLoader, [this] { OnConfigChange(); }) {
 		if (callbacks->asioMessage) ProbeHostMessages(callbacks->asioMessage);
 	}
@@ -808,7 +831,7 @@ namespace flexasio {
 
 	long FlexASIO::ComputeLatencyFromStream(PaStream* stream, bool output, size_t bufferSizeInFrames) const
 	{
-		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
+		const PaStreamInfo* stream_info = Pa_GetStreamInfo(&stream);
 		if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 		// See https://github.com/dechamps/FlexASIO/issues/10.
@@ -828,11 +851,26 @@ namespace flexasio {
 			const auto bufferSize = ComputeBufferSizes().preferred;
 			Log() << "Assuming " << bufferSize << " as the buffer size";
 
+			// Since CreateBuffers() has not been called yet, we do not know if the application intends
+			// to use only input channels, only output channels, or both. We arbitrarily decide to compute
+			// the input latency assuming an input-only stream, and the output latency assuming an
+			// output-only stream, because that makes this code least likely to fail. The tradeoff is this
+			// will likely return wrong latencies for full duplex streams (which tend to have higher
+			// latency due to the need for buffer adaptation).
+
+			const auto getLatency = [&](bool output) {
+				return WithStreamParameters(
+					/*inputEnabled=*/!output, /*outputEnabled=*/output, sampleRate, GetDefaultSuggestedLatency(bufferSize, sampleRate),
+					[&](const StreamParameters& streamParameters, StreamExclusivity) {
+						return ComputeLatencyFromStream(OpenStream(streamParameters, bufferSize, NoOpStreamCallback, nullptr).get(), output, bufferSize);
+					});
+			};
+
 			if (!inputDevice.has_value())
 				*inputLatency = 0;
 			else
 				try {
-					*inputLatency = ComputeLatencyFromStream(OpenStream(true, false, sampleRate, bufferSize, NoOpStreamCallback, nullptr).stream.get(), /*output=*/false, bufferSize);
+					*inputLatency = getLatency(/*output=*/false);
 					Log() << "Using input latency from successful stream probe";
 				}
 				catch (const std::exception& exception) {
@@ -843,7 +881,7 @@ namespace flexasio {
 				*outputLatency = 0;
 			else
 				try {
-					*outputLatency = ComputeLatencyFromStream(OpenStream(false, true, sampleRate, bufferSize, NoOpStreamCallback, nullptr).stream.get(), /*output=*/true, bufferSize);
+					*outputLatency = getLatency(/*output=*/true);
 					Log() << "Using output latency from successful stream probe";
 				}
 				catch (const std::exception& exception) {
@@ -856,8 +894,8 @@ namespace flexasio {
 
 	void FlexASIO::PreparedState::GetLatencies(long* inputLatency, long* outputLatency)
 	{
-		*inputLatency = flexASIO.ComputeLatencyFromStream(openStreamResult.stream.get(), /*output=*/false, buffers.bufferSizeInFrames);
-		*outputLatency = flexASIO.ComputeLatencyFromStream(openStreamResult.stream.get(), /*output=*/true, buffers.bufferSizeInFrames);
+		*inputLatency = flexASIO.ComputeLatencyFromStream(streamWithExclusivity.stream.get(), /*output=*/false, buffers.bufferSizeInFrames);
+		*outputLatency = flexASIO.ComputeLatencyFromStream(streamWithExclusivity.stream.get(), /*output=*/true, buffers.bufferSizeInFrames);
 	}
 
 	void FlexASIO::Start() {
@@ -885,7 +923,7 @@ namespace flexasio {
 		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady) {}
 
 	void FlexASIO::PreparedState::RunningState::RunningState::Start() {
-		activeStream = StartStream(preparedState.openStreamResult.stream.get());
+		activeStream = StartStream(preparedState.streamWithExclusivity.stream.get());
 	}
 
 	void FlexASIO::Stop() {
