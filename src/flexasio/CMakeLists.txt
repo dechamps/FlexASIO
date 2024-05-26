@@ -17,7 +17,7 @@ find_package(dechamps_cpputil CONFIG REQUIRED)
 find_package(dechamps_ASIOUtil CONFIG REQUIRED)
 find_package(ASIOTest CONFIG REQUIRED)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 add_compile_options(
 	/external:anglebrackets /WX /W4 /external:W0 /permissive- /analyze /analyze:external-
 
