@@ -7,6 +7,7 @@
 
 #include "log.h"
 #include "../FlexASIOUtil/shell.h"
+#include "../FlexASIOUtil/variant.h"
 
 namespace flexasio {
 
@@ -137,46 +138,53 @@ namespace flexasio {
 			}
 		}
 
-	}
+		struct HandleCloser {
+			void operator()(HANDLE handle) {
+				if (::CloseHandle(handle) == 0)
+					throw std::system_error(::GetLastError(), std::system_category(), "unable to close handle");
+			}
+		};
+		using UniqueHandle = std::unique_ptr<std::remove_pointer_t<HANDLE>, HandleCloser>;
 
-	void ConfigLoader::Watcher::HandleCloser::operator()(HANDLE handle) {
-		if (::CloseHandle(handle) == 0)
-			throw std::system_error(::GetLastError(), std::system_category(), "unable to close handle");
+		struct OverlappedWithEvent final {
+			OverlappedWithEvent() {
+				overlapped.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
+				if (overlapped.hEvent == NULL)
+					throw std::system_error(::GetLastError(), std::system_category(), "Unable to create watch event");
+			}
+			~OverlappedWithEvent() {
+				UniqueHandle(overlapped.hEvent);
+			}
+
+			OverlappedWithEvent(const OverlappedWithEvent&) = delete;
+			OverlappedWithEvent& operator=(const OverlappedWithEvent&) = delete;
+
+			OVERLAPPED overlapped = { 0 };
+		};
+
 	}
 
 	ConfigLoader::Watcher::Watcher(const ConfigLoader& configLoader, std::function<void()> onConfigChange) :
 		configLoader(configLoader),
-		onConfigChange(std::move(onConfigChange)),
-		stopEvent([&] {
-		const auto handle = CreateEventA(NULL, TRUE, FALSE, NULL);
-		if (handle == NULL)
-			throw std::system_error(::GetLastError(), std::system_category(), "Unable to create stop event");
-		return UniqueHandle(handle);
-		}()),
-		directory([&] {
-		Log() << "Opening config directory for watching";
-		const auto handle = ::CreateFileW(
-			configLoader.configDirectory.wstring().c_str(),
-			FILE_LIST_DIRECTORY,
-			FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-			/*lpSecurityAttributes=*/NULL,
-			OPEN_EXISTING,
-			FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
-			/*hTemplateFile=*/NULL);
-		if (handle == INVALID_HANDLE_VALUE)
-			throw std::system_error(::GetLastError(), std::system_category(), "Unable to open config directory for watching");
-		return UniqueHandle(handle);
-		}()) {
-		Log() << "Starting configuration file watcher";
-		StartWatching();
+		onConfigChange(std::move(onConfigChange)) {
+		// Trigger an initial event so that if the config has already changed we fire the callback immediately inline.
 		OnConfigFileEvent();
+
+		Log() << "Starting config watcher thread";
 		thread = std::thread([this] { RunThread(); });
 	}
 
 	ConfigLoader::Watcher::~Watcher() noexcept(false) {
-		Log() << "Signaling config watcher thread to stop";
-		if (!SetEvent(stopEvent.get()))
-			throw std::system_error(::GetLastError(), std::system_category(), "Unable to set stop event");
+		Log() << "Stopping config watcher";
+		{
+			std::unique_lock lock(mutex);
+			stopRequested = true;
+			if (directory != INVALID_HANDLE_VALUE) {
+				Log() << "Cancelling any pending config directory operations";
+				if (::CancelIoEx(directory, NULL) == 0)
+					throw std::system_error(::GetLastError(), std::system_category(), "Unable to cancel directory watch operation");
+			}
+		}
 		Log() << "Waiting for config watcher thread to finish";
 		thread.join();
 		Log() << "Joined config watcher thread";
@@ -186,14 +194,22 @@ namespace flexasio {
 		Log() << "Config watcher thread running";
 
 		try {
+			OverlappedWithEvent overlapped;
+			std::vector<std::byte> fileNotifyInformationBuffer(64 * 1024);
 			for (;;) {
-				std::array handles = { stopEvent.get(), overlapped.overlapped.hEvent };
-				const auto waitResult = ::WaitForMultipleObjects(DWORD(handles.size()), handles.data(), /*bWaitAll=*/FALSE, INFINITE);
-				if (waitResult == WAIT_OBJECT_0) break;
-				else if (waitResult == WAIT_OBJECT_0 + 1) OnEvent();
-				else throw std::system_error(::GetLastError(), std::system_category(), "Unable to wait for events");
-			}			
+				TriggerConfigFileEventThenWait(&overlapped.overlapped, fileNotifyInformationBuffer);
+
+				// It's best to debounce events that arrive in quick succession, otherwise we might attempt to read the file while it's being changed,
+				// resulting in spurious resets.
+				// (e.g. the Visual Studio Code editor will empty the file first before writing the new contents)
+				// Another reason to debounce is that it might make it less likely we'll run into file locking issues.
+				// We do this by sleeping for a while, and getting rid of all events that occurred in the mean time.
+				Log() << "Sleeping for debounce";
+				// TODO: ideally the destructor should be able to cut this sleep short. This should be fairly trivial with std::condition_variable::wait_for().
+				::Sleep(250);
+			}
 		}
+		catch (StopRequested) {}
 		catch (const std::exception& exception) {
 			Log() << "Config watcher thread encountered error: " << ::dechamps_cpputil::GetNestedExceptionMessage(exception);
 		}
@@ -204,64 +220,91 @@ namespace flexasio {
 		Log() << "Config watcher thread stopping";
 	}
 
-	void ConfigLoader::Watcher::OnEvent() {
-		// Note: we need to be careful about logging here - since the logfile is in the same directory as the config file,
-		// we could end up with directory change events entering an infinite feedback loop.
+	void ConfigLoader::Watcher::TriggerConfigFileEventThenWait(OVERLAPPED* overlapped, std::span<std::byte> fileNotifyInformationBuffer) {
+		// We don't keep the directory open between config file events, because otherwise
+		// we would get events that accumulated during the debounce period.
+		Log() << "Opening config directory for watching: " << configLoader.configDirectory;
+		const auto ownedDirectory = [&] {
+			const auto handle = ::CreateFileW(
+				configLoader.configDirectory.wstring().c_str(),
+				FILE_LIST_DIRECTORY,
+				FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+				/*lpSecurityAttributes=*/NULL,
+				OPEN_EXISTING,
+				FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OVERLAPPED,
+				/*hTemplateFile=*/NULL);
+			if (handle == INVALID_HANDLE_VALUE)
+				throw std::system_error(::GetLastError(), std::system_category(), "Unable to open config directory for watching");
 
-		bool configFileEvent = false;
-		if (!FillNotifyInformationBuffer()) {
-			Log() << "Config directory event buffer overflow";
-			// We don't know if something happened to the logfile, so assume it did.
-			configFileEvent = true;
+			{
+				std::unique_lock lock(mutex);
+				assert(directory == INVALID_HANDLE_VALUE);
+				directory = handle;
+			}
+			const auto directoryDeleter = [&](HANDLE handle) {
+				{
+					std::unique_lock lock(mutex);
+					assert(directory == handle);
+					directory = INVALID_HANDLE_VALUE;
+				}
+				UniqueHandle{handle};
+			};
+			return std::unique_ptr<std::remove_pointer_t<HANDLE>, decltype(directoryDeleter)>(handle, directoryDeleter);
+		}();
+
+		Log() << "Watching config directory";
+		for (bool first = true;; first = false) {
+			// Note: we need to be careful about logging here - since the logfile is in the same directory as the config file,
+			// we could end up with directory change events entering an infinite feedback loop.
+
+			ConfigDirectoryWatchOperation operation(ownedDirectory.get(), overlapped, fileNotifyInformationBuffer);
+
+			// Check for stop requests *after* we start watching, so that we correctly exit
+			// even if the destructor ran just before there was an I/O to cancel.
+			{
+				std::unique_lock lock(mutex);
+				if (stopRequested) throw StopRequested();
+			}
+
+			if (first) {
+				Log() << "Triggering initial config file event";
+				OnConfigFileEvent();
+			}
+
+			if (OnVariant(operation.Await(),
+				[&](ConfigDirectoryWatchOperation::Aborted) -> bool {
+					std::unique_lock lock(mutex);
+					if (stopRequested) throw StopRequested();
+					throw std::runtime_error("Config directory watch operation was aborted, but we were not requested to stop");
+				},
+				[&](ConfigDirectoryWatchOperation::Overflow) {
+					Log() << "Config watcher file notify information buffer overflowed";
+					// We don't know if something happened to the logfile, so assume it did.
+					// If for some reason there is enough churn in the directory and we overflow all the time,
+					// this will de facto fall back to polling at intervals given by the debounce period.
+					return true;
+				},
+				[&](std::span<const std::byte> fileNotifyInformation) {
+					return FileNotifyInformationContainsConfigFileEvents(fileNotifyInformation);
+				}
+			)) break;
 		}
-		else configFileEvent = FindConfigFileEvents();
-
-		if (configFileEvent) {
-			Debounce();
-			OnConfigFileEvent();
-		}
-
-		StartWatching();
 	}
 
-	void ConfigLoader::Watcher::Debounce() {
-		// It's best to debounce events that arrive in quick succession, otherwise we might attempt to read the file while it's being changed,
-		// resulting in spurious resets.
-		// (e.g. the Visual Studio Code editor will empty the file first before writing the new contents)
-		// Another reason to debounce is that it might make it less likely we'll run into file locking issues.
-		// We do this by sleeping for a while, and getting rid of all events that occurred in the mean time.
-
-		Log() << "Debouncing config file events";
-		StartWatching();
-		Log() << "Sleeping";
-		::Sleep(250);
-		Log() << "Cancelling directory event watch";
-		// We could use CancelIoEx(), but for some reason that doesn't work (it fails with ERROR_NOT_FOUND).
-		if (!::CancelIo(directory.get()))
-			throw std::system_error(::GetLastError(), std::system_category(), "Unable to cancel debounce");
-		Log() << "Draining directory event buffer";
-		FillNotifyInformationBuffer();
-	}
-
-	bool ConfigLoader::Watcher::FillNotifyInformationBuffer() {
-		DWORD size;
-		if (!::GetOverlappedResult(directory.get(), &overlapped.overlapped, &size, /*bWait=*/TRUE))
-			throw std::system_error(::GetLastError(), std::system_category(), "GetOverlappedResult() failed");
-		return size > 0;
-	}
-
-	bool ConfigLoader::Watcher::FindConfigFileEvents() {
-		const std::byte* fileNotifyInformationPtr = fileNotifyInformationBuffer;
+	bool ConfigLoader::Watcher::FileNotifyInformationContainsConfigFileEvents(std::span<const std::byte> fileNotifyInformationBuffer) {
 		for (;;) {
 			constexpr auto fileNotifyInformationHeaderSize = offsetof(FILE_NOTIFY_INFORMATION, FileName);
 			FILE_NOTIFY_INFORMATION fileNotifyInformationHeader;
-			memcpy(&fileNotifyInformationHeader, fileNotifyInformationPtr, fileNotifyInformationHeaderSize);
+			const auto fileNotifyInformationHeaderBuffer = fileNotifyInformationBuffer.first(fileNotifyInformationHeaderSize);
+			memcpy(&fileNotifyInformationHeader, fileNotifyInformationHeaderBuffer.data(), fileNotifyInformationHeaderBuffer.size());
 
-			std::wstring fileName(fileNotifyInformationHeader.FileNameLength / sizeof(wchar_t), 0);
-			memcpy(fileName.data(), fileNotifyInformationPtr + fileNotifyInformationHeaderSize, fileNotifyInformationHeader.FileNameLength);
+			const auto fileNameBuffer = fileNotifyInformationBuffer.subspan(fileNotifyInformationHeaderSize, fileNotifyInformationHeader.FileNameLength);
+			std::wstring fileName(fileNameBuffer.size() / sizeof(wchar_t), 0);
+			memcpy(fileName.data(), fileNameBuffer.data(), fileNameBuffer.size());
 			if (fileName == configFileName) {
 				// Here we can safely log.
-				Log() << "Configuration file directory change received: NextEntryOffset = " << fileNotifyInformationHeader.NextEntryOffset
+				Log() << "Config directory change received with matching file name: "
+					<< " NextEntryOffset = " << fileNotifyInformationHeader.NextEntryOffset
 					<< " Action = " << fileNotifyInformationHeader.Action
 					<< " FileNameLength = " << fileNotifyInformationHeader.FileNameLength;
 
@@ -269,35 +312,60 @@ namespace flexasio {
 					fileNotifyInformationHeader.Action == FILE_ACTION_REMOVED ||
 					fileNotifyInformationHeader.Action == FILE_ACTION_MODIFIED ||
 					fileNotifyInformationHeader.Action == FILE_ACTION_RENAMED_NEW_NAME) {
+					Log() << "Detected configuration file change event";
 					return true;
 				}
 			}
 
 			if (fileNotifyInformationHeader.NextEntryOffset == 0) break;
-			fileNotifyInformationPtr += fileNotifyInformationHeader.NextEntryOffset;
+			fileNotifyInformationBuffer = fileNotifyInformationBuffer.subspan(fileNotifyInformationHeader.NextEntryOffset);
 		}
 		return false;
 	}
 
-	ConfigLoader::Watcher::OverlappedWithEvent::OverlappedWithEvent() {
-		overlapped.hEvent = CreateEventA(NULL, TRUE, FALSE, NULL);
-		if (overlapped.hEvent == NULL)
-			throw std::system_error(::GetLastError(), std::system_category(), "Unable to create watch event");
-	}
-	ConfigLoader::Watcher::OverlappedWithEvent::~OverlappedWithEvent() {
-		UniqueHandle(overlapped.hEvent);
-	}
-
-	void ConfigLoader::Watcher::StartWatching() {
+	ConfigLoader::Watcher::ConfigDirectoryWatchOperation::ConfigDirectoryWatchOperation(HANDLE directory, OVERLAPPED* overlapped, std::span<std::byte> fileNotifyInformationBuffer) :
+		directory(directory), overlapped(overlapped), fileNotifyInformationBuffer(fileNotifyInformationBuffer) {
+		assert(overlapped != nullptr);
+		assert(reinterpret_cast<std::uintptr_t>(fileNotifyInformationBuffer.data()) % sizeof(DWORD) == 0);
 		if (::ReadDirectoryChangesW(
-			directory.get(),
-			fileNotifyInformationBuffer, sizeof(fileNotifyInformationBuffer),
+			directory,
+			fileNotifyInformationBuffer.data(), DWORD(fileNotifyInformationBuffer.size()),
 			/*bWatchSubtree=*/FALSE,
 			FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE,
 			/*lpBytesReturned=*/NULL,
-			&overlapped.overlapped,
+			overlapped,
 			/*lpCompletionRoutine=*/NULL) == 0)
 			throw std::system_error(::GetLastError(), std::system_category(), "Unable to watch for directory changes");
+
+	}
+	ConfigLoader::Watcher::ConfigDirectoryWatchOperation::~ConfigDirectoryWatchOperation() noexcept (false) {
+		if (overlapped == nullptr) return;
+
+		Log() << "Cancelling pending directory watch operation";
+		if (::CancelIoEx(directory, overlapped) == 0)
+			throw std::system_error(::GetLastError(), std::system_category(), "Unable to cancel directory watch operation");
+
+		Log() << "Awaiting cancelled operation";
+		Await();
+	}
+
+	ConfigLoader::Watcher::ConfigDirectoryWatchOperation::Outcome ConfigLoader::Watcher::ConfigDirectoryWatchOperation::Await() {
+		assert(overlapped != nullptr);
+
+		DWORD size;
+		const auto result = ::GetOverlappedResult(directory, overlapped, &size, /*bWait=*/TRUE);
+		overlapped = nullptr;
+		if (result == 0) {
+			const auto error = ::GetLastError();
+			if (error == ERROR_OPERATION_ABORTED) {
+				Log() << "Directory watch operation was aborted";
+				return Aborted();
+			}
+			throw std::system_error(::GetLastError(), std::system_category(), "GetOverlappedResult() failed");
+		}
+		if (size < 0 || size > fileNotifyInformationBuffer.size())
+			throw std::system_error(::GetLastError(), std::system_category(), "ReadDirectoryChangesW() produced invalid size: " + std::to_string(size));
+		return size > 0 ? Outcome(std::span(fileNotifyInformationBuffer).first(size)) : Outcome(Overflow());
 	}
 
 	ConfigLoader::ConfigLoader() :
