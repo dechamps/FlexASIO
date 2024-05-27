@@ -10,7 +10,8 @@
 
 FlexASIO is a *universal [ASIO][] driver*, meaning that it is not tied to
 specific audio hardware. Other examples of universal ASIO drivers include
-[ASIO4ALL][], [ASIO2KS][], [ASIO2WASAPI][].
+[ASIO4ALL][], [ASIO2KS][], [ASIO2WASAPI][]. [KoordASIO][] is a derivative of
+FlexASIO that focuses on WASAPI and user convenience.
 
 Universal ASIO drivers use hardware-agnostic audio interfaces provided by the
 operating system to produce and consume sound. The typical use case for such a
@@ -149,6 +150,7 @@ while the problem is occurring, and attach it to your report. The output of
 [logging]: #logging
 [MME]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Multimedia_Extensions_(MME)
 [Kernel Streaming]: https://en.wikipedia.org/wiki/Windows_legacy_audio_components#Kernel_Streaming
+[KoordASIO]: https://github.com/koord-live/KoordASIO
 [PortAudio]: http://www.portaudio.com/
 [releases]: https://github.com/dechamps/FlexASIO/releases
 [report]: #reporting-issues-feedback-feature-requests
