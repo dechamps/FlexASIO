@@ -823,7 +823,7 @@ namespace flexasio {
 
 	long FlexASIO::ComputeLatencyFromStream(PaStream* stream, bool output, size_t bufferSizeInFrames) const
 	{
-		const PaStreamInfo* stream_info = Pa_GetStreamInfo(&stream);
+		const PaStreamInfo* stream_info = Pa_GetStreamInfo(stream);
 		if (!stream_info) throw ASIOException(ASE_HWMalfunction, "unable to get stream info");
 
 		// See https://github.com/dechamps/FlexASIO/issues/10.
