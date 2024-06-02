@@ -912,9 +912,24 @@ namespace flexasio {
 		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
 		return result;
 	}()),
-		outputReadyState([&]() -> std::optional<std::atomic<bool>> {
-		if (preparedState.flexASIO.hostSupportsOutputReady) return true; else return std::nullopt;
+		outputReadyState([&]() -> std::optional<std::atomic<OutputReadyState>> {
+		if (preparedState.flexASIO.hostSupportsOutputReady) return OutputReadyState::READY; else return std::nullopt;
 	}()) {}
+
+	FlexASIO::PreparedState::RunningState::~RunningState() {
+		if (outputReadyState.has_value()) {
+			auto& outputReady = *outputReadyState;
+			// Some applications (e.g. Max) will call stop() without calling outputReady() for the last bufferSwitch().
+			// In this situation, make sure we don't hang forever waiting for that outputReady() call.
+			// See https://github.com/dechamps/FlexASIO/issues/235
+			// 
+			// Note this code assumes that an application calls outputReady() *before* calling stop(), or that it calls
+			// it from within bufferSwitch(). If an application calls outputReady() after returning from bufferSwitch()
+			// *and* after calling stop(), then outputReady() will sadly race against RunningState teardown.
+			outputReady = OutputReadyState::STOPPING;
+			outputReady.notify_all();
+		}
+	}
 
 	void FlexASIO::PreparedState::RunningState::RunningState::Start() {
 		activeStream = StartStream(preparedState.streamWithExclusivity.stream.get());
@@ -1008,7 +1023,11 @@ namespace flexasio {
 			if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
 			CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
 
-			if (outputReady != nullptr) *outputReady = false;
+			if (outputReady != nullptr) {
+				// Reset OutputReady, but only if we are not STOPPING, atomically.
+				auto outputReadyState = OutputReadyState::READY;
+				outputReady->compare_exchange_strong(outputReadyState, OutputReadyState::NOT_READY);
+			}
 			if (!host_supports_timeinfo)
 			{
 				if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
@@ -1031,9 +1050,9 @@ namespace flexasio {
 		if (outputReady == nullptr) {
 			driverBufferIndex = (driverBufferIndex + 1) % 2;
 		}
-		else if (!*outputReady) {
-			if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady";
-			outputReady->wait(false);
+		else if (*outputReady == OutputReadyState::NOT_READY) {
+			if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady or stop";
+			outputReady->wait(OutputReadyState::NOT_READY);
 		}
 
 		if (IsLoggingEnabled()) Log() << "Transferring output buffers from buffer index #" << driverBufferIndex << " to PortAudio";
@@ -1081,9 +1100,24 @@ namespace flexasio {
 			if (IsLoggingEnabled()) Log() << "Received OutputReady signal, but the ASIO Host Application did not advertise support for OutputReady!";
 			return;
 		}
+
 		auto& outputReady = *outputReadyState;
-		outputReady = true;
-		outputReady.notify_all();
+		auto outputReadyState = OutputReadyState::NOT_READY;
+		if (outputReady.compare_exchange_strong(outputReadyState, OutputReadyState::READY)) {
+			if (IsLoggingEnabled()) Log() << "Successfully set OutputReady";
+			outputReady.notify_all();
+			return;
+		}
+
+		switch (outputReadyState) {
+			case OutputReadyState::NOT_READY: abort();
+			case OutputReadyState::READY:
+				if (IsLoggingEnabled()) Log() << "Received redundant OutputReady signal!";
+				break;
+			case OutputReadyState::STOPPING:
+				if (IsLoggingEnabled()) Log() << "Ignoring OutputReady signal because we are currently stopping";
+				break;
+		}		
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {

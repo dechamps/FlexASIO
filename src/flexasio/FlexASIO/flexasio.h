@@ -125,6 +125,7 @@ namespace flexasio {
 			class RunningState {
 			public:
 				RunningState(PreparedState& preparedState);
+				~RunningState();
 
 				// Note: the reason why this is not done in the constructor is to allow `PreparedState::Start()`
 				// to properly set `PreparedState::runningState` before callbacks start flying. This is because
@@ -148,7 +149,8 @@ namespace flexasio {
 
 				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
-				std::optional<std::atomic<bool>> outputReadyState;
+				enum class OutputReadyState { NOT_READY, READY, STOPPING };
+				std::optional<std::atomic<OutputReadyState>> outputReadyState;
 				State state = outputReadyState.has_value() ? State::PRIMING : State::PRIMED;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				long driverBufferIndex = state == State::PRIMING ? 1 : 0;
