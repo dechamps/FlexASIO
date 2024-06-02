@@ -1000,12 +1000,15 @@ namespace flexasio {
 				memset(output_samples[output_channel_index], 0, frameCount * outputSampleSizeInBytes);
 		}
 
+		const auto outputReady = outputReadyState.has_value() ? &*outputReadyState : nullptr;
+
 		// See dechamps_ASIOUtil/BUFFERS.md for the gory details of how ASIO buffer management works.
 
 		if (state != State::PRIMING) {
 			if (IsLoggingEnabled()) Log() << "Transferring input buffers from PortAudio to ASIO buffer index #" << driverBufferIndex;
 			CopyFromPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, input_samples, frameCount * inputSampleSizeInBytes);
 
+			if (outputReady != nullptr) *outputReady = false;
 			if (!host_supports_timeinfo)
 			{
 				if (IsLoggingEnabled()) Log() << "Firing ASIO bufferSwitch() callback with buffer index: " << driverBufferIndex;
@@ -1025,16 +1028,12 @@ namespace flexasio {
 			}
 		}
 
-		if (!outputReadyState.has_value()) {
+		if (outputReady == nullptr) {
 			driverBufferIndex = (driverBufferIndex + 1) % 2;
 		}
-		else {
-			auto& outputReady = *outputReadyState;
-			if (!outputReady) {
-				if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady";
-				outputReady.wait(false);
-			}
-			outputReady = false;
+		else if (!*outputReady) {
+			if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady";
+			outputReady->wait(false);
 		}
 
 		if (IsLoggingEnabled()) Log() << "Transferring output buffers from buffer index #" << driverBufferIndex << " to PortAudio";
