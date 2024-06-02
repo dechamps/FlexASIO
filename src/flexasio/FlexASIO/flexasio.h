@@ -148,15 +148,11 @@ namespace flexasio {
 
 				PreparedState& preparedState;
 				const bool host_supports_timeinfo;
-				const bool hostSupportsOutputReady;
-				State state = hostSupportsOutputReady ? State::PRIMING : State::PRIMED;
+				std::optional<std::atomic<bool>> outputReadyState;
+				State state = outputReadyState.has_value() ? State::PRIMING : State::PRIMED;
 				// The index of the "unlocked" buffer (or "half-buffer", i.e. 0 or 1) that contains data not currently being processed by the ASIO host.
 				long driverBufferIndex = state == State::PRIMING ? 1 : 0;
 				std::atomic<SamplePosition> samplePosition;
-
-				std::mutex outputReadyMutex;
-				std::condition_variable outputReadyCondition;
-				bool outputReady = true;
 
 				Win32HighResolutionTimer win32HighResolutionTimer;
 				ActiveStream activeStream;

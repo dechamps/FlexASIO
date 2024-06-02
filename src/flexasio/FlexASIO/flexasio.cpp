@@ -912,7 +912,9 @@ namespace flexasio {
 		Log() << "The host " << (result ? "supports" : "does not support") << " time info";
 		return result;
 	}()),
-		hostSupportsOutputReady(preparedState.flexASIO.hostSupportsOutputReady) {}
+		outputReadyState([&]() -> std::optional<std::atomic<bool>> {
+		if (preparedState.flexASIO.hostSupportsOutputReady) return true; else return std::nullopt;
+	}()) {}
 
 	void FlexASIO::PreparedState::RunningState::RunningState::Start() {
 		activeStream = StartStream(preparedState.streamWithExclusivity.stream.get());
@@ -1023,14 +1025,14 @@ namespace flexasio {
 			}
 		}
 
-		if (!hostSupportsOutputReady) {
+		if (!outputReadyState.has_value()) {
 			driverBufferIndex = (driverBufferIndex + 1) % 2;
 		}
 		else {
-			std::unique_lock outputReadyLock(outputReadyMutex);
+			auto& outputReady = *outputReadyState;
 			if (!outputReady) {
 				if (IsLoggingEnabled()) Log() << "Waiting for the ASIO Host Application to signal OutputReady";
-				outputReadyCondition.wait(outputReadyLock, [&] { return outputReady; });
+				outputReady.wait(false);
 			}
 			outputReady = false;
 		}
@@ -1038,7 +1040,7 @@ namespace flexasio {
 		if (IsLoggingEnabled()) Log() << "Transferring output buffers from buffer index #" << driverBufferIndex << " to PortAudio";
 		CopyToPortAudioBuffers(preparedState.bufferInfos, driverBufferIndex, output_samples, frameCount * outputSampleSizeInBytes);
 
-		if (hostSupportsOutputReady) driverBufferIndex = (driverBufferIndex + 1) % 2;
+		if (outputReadyState.has_value()) driverBufferIndex = (driverBufferIndex + 1) % 2;
 
 		if (state != State::STEADYSTATE) IncrementEnum(state);
 		return paContinue;
@@ -1076,11 +1078,13 @@ namespace flexasio {
 	}
 
 	void FlexASIO::PreparedState::RunningState::OutputReady() {
-		{
-			std::scoped_lock outputReadyLock(outputReadyMutex);
-			outputReady = true;
+		if (!outputReadyState.has_value()) {
+			if (IsLoggingEnabled()) Log() << "Received OutputReady signal, but the ASIO Host Application did not advertise support for OutputReady!";
+			return;
 		}
-		outputReadyCondition.notify_all();
+		auto& outputReady = *outputReadyState;
+		outputReady = true;
+		outputReady.notify_all();
 	}
 
 	void FlexASIO::PreparedState::RequestReset() {
