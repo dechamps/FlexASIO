@@ -177,7 +177,7 @@ namespace flexasio {
 	ConfigLoader::Watcher::~Watcher() noexcept(false) {
 		Log() << "Stopping config watcher";
 		{
-			std::unique_lock lock(directoryMutex);
+			std::scoped_lock lock(directoryMutex);
 			if (directory != INVALID_HANDLE_VALUE) {
 				Log() << "Cancelling any pending config directory operations";
 				if (::CancelIoEx(directory, NULL) == 0)
@@ -242,13 +242,13 @@ namespace flexasio {
 				throw std::system_error(::GetLastError(), std::system_category(), "Unable to open config directory for watching");
 
 			{
-				std::unique_lock lock(directoryMutex);
+				std::scoped_lock lock(directoryMutex);
 				assert(directory == INVALID_HANDLE_VALUE);
 				directory = handle;
 			}
 			const auto directoryDeleter = [&](HANDLE handle) {
 				{
-					std::unique_lock lock(directoryMutex);
+					std::scoped_lock lock(directoryMutex);
 					assert(directory == handle);
 					directory = INVALID_HANDLE_VALUE;
 				}
