@@ -268,9 +268,11 @@ settings.
 In principle, similar results should be obtained when using WASAPI Exclusive
 and Kernel Streaming, since they both offer exclusive access to the hardware.
 WASAPI is simpler and less likely to cause problems, but Kernel Streaming is
-more direct and more flexible. Furthermore, their internal implementation in
-PortAudio are very different. Therefore, the WASAPI Exclusive and WDM-KS
-PortAudio backends might behave somewhat differently depending on the situation.
+more direct and more flexible. For example, Kernel Streaming will typically
+provide access to underlying hardware buffer sizes that WASAPI Exclusive would
+not use internally. Furthermore, the PortAudio implementation is very different.
+Therefore, the WASAPI Exclusive and WDM-KS PortAudio backends might behave
+somewhat differently depending on the situation.
 
 The WDM-KS backend cannot redirect the stream if the default Windows audio
 device changes while streaming.
