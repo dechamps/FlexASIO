@@ -244,9 +244,6 @@ It depends on the [backend][backends]:
  - The default backend, **DirectSound**, as well as **MME**, are blind to most
    sources of latency (including the Windows audio pipeline itself), and can
    therefore grossly underestimate the actual latency.
-   - For example, both have been observed to report latencies below 20 ms, which
-     is not technically possible because that's the buffer size of the Windows
-     audio pipeline itself.
  - The **WASAPI** and **WDM-KS** backends have been observed to report more
    plausible latency numbers.
 

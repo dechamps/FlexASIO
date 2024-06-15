@@ -69,8 +69,8 @@ pipeline. In particular, choice of backend can affect:
   backends.
 
 **Note:** the internal buffer size of the shared Windows audio pipeline has been
-observed to be 20 ms. This means that only exclusive backends (i.e. WASAPI
-Exclusive, WDM-KS) can achieve an actual latency below 20 ms.
+observed to be 10 ms. This means that only exclusive backends (i.e. WASAPI
+Exclusive, WDM-KS) can achieve an actual latency below 10 ms.
 
 **Note:** In addition to APOs, hardware devices can also implement additional
 audio processing at a low level in the audio driver, or baked into the hardware
@@ -99,7 +99,7 @@ the fact that MME appears to [behave very poorly][issue30] with small buffer
 sizes.
 
 Latency numbers reported by MME do not seem to take the Windows audio pipeline
-into account. This means the reported latency is underestimated by at least 20
+into account. This means the reported latency is underestimated by at least 10
 ms, if not more.
 
 The MME backend exposes "virtual" devices called *"Microsoft Sound Mapper -
