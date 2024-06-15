@@ -128,6 +128,7 @@ Windows pipeline, converting as necessary.
 One would expect latency to be somewhat better than MME, though it's not clear
 if that's really the case in practice. The DirectSound backend has been observed
 to [behave very poorly][issue29] with small buffer sizes on the input side,
+where it appears to enforce an effective minimum buffer size of 31.25 ms,
 making it a poor choice for low-latency capture use cases.
 
 The DirectSound backend exposes "virtual" devices called *"Primary Sound Capture
