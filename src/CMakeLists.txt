@@ -57,6 +57,7 @@ ExternalProject_Add(
         # The CMAKE_INSTALL_INCLUDEDIR built-in was introduced in CMake 3.14.
         # Sadly current Visual Studio (16.11.3) ships with CMake 3.13, so we have to work around the missing built-in.
         -DCMAKE_INSTALL_INCLUDEDIR=include
+        -DPA_USE_ASIO=ON
 	EXCLUDE_FROM_ALL
 )
 
